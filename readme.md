@@ -15,6 +15,7 @@
 ### Lead
 
 - Nathan Li, @qiz-li
+- Nur Iscan, @nur4o4
 
 ### Design
 
