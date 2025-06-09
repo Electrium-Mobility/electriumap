@@ -18,6 +18,7 @@
 * Nur Iscan, [@nur4o4](https://github.com/nur4o4)
 
 ### 🎨 Design
+- Arwa Gawish, [@arwagawish](https://github.com/arwagawish)
 
 ### 💻 Frontend
 
