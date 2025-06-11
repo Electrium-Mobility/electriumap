@@ -1,0 +1,37 @@
+"use client";
+
+import React, { useEffect, useRef } from "react";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+
+const MapBox = () => {
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+
+  useEffect(() => {
+    mapboxgl.accessToken = 'pk.eyJ1IjoiaGFubmFod2llbnMiLCJhIjoiY21icHQ3dDFrMDh4dTJscHRlMGVvOTFjdyJ9.fF6Jk-_QVqb3AcWDzY636A';
+
+    if (mapContainerRef.current && !mapRef.current) {
+      mapRef.current = new mapboxgl.Map({
+        container: mapContainerRef.current,
+        center: [-74.5, 40],
+        zoom: 9,
+        style: "mapbox://styles/mapbox/streets-v11",
+      });
+    }
+
+    return () => {
+      mapRef.current?.remove();
+    };
+  }, []);
+
+  return (
+    <div
+      style={{ height: "100vh", width: "100vw" }}
+      ref={mapContainerRef}
+      className="map-container"
+    />
+  );
+};
+
+export default MapBox;
