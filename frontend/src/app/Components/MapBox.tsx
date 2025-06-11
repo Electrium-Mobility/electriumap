@@ -14,7 +14,7 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
   const mapRef = useRef<mapboxgl.Map | null>(null);
 
   useEffect(() => {
-    mapboxgl.accessToken = 'pk.eyJ1IjoiaGFubmFod2llbnMiLCJhIjoiY21icHQ3dDFrMDh4dTJscHRlMGVvOTFjdyJ9.fF6Jk-_QVqb3AcWDzY636A';
+    mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
     if (mapContainerRef.current && !mapRef.current) {
       mapRef.current = new mapboxgl.Map({

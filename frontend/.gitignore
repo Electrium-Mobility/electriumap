@@ -21,6 +21,7 @@ node_modules/
 /build
 
 # misc
+.env.local
 .DS_Store
 *.pem
 
