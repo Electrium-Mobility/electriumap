@@ -4,7 +4,12 @@ import React, { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-const MapBox = () => {
+type MapBoxProps = {
+  width?: string;
+  height?: string;
+};
+
+const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
 
@@ -27,7 +32,7 @@ const MapBox = () => {
 
   return (
     <div
-      style={{ height: "100vh", width: "100vw" }}
+      style={{ width, height }}
       ref={mapContainerRef}
       className="map-container"
     />

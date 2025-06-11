@@ -1,7 +1,9 @@
-import MapBox from './MapBox';
+import MapBox from './Components/MapBox';
 
 export default function Home() {
   return (
-  <MapBox/>
-);
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+      <MapBox width="800px" height="550px" />
+    </div>
+  );
 }
