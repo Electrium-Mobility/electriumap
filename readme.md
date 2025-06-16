@@ -18,6 +18,7 @@
 * Nur Iscan, [@nur4o4](https://github.com/nur4o4)
 
 ### 🎨 Design
+- Michelle Wang, [@michelle1271(https://github.com/michelle1271)]
 
 ### 💻 Frontend
 
