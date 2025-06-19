@@ -3,6 +3,8 @@
 import React, {useState} from 'react';
 import Image from 'next/image'; 
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
 // import * as Yup from "yup";
 
 type LoginPageProps = { 
@@ -80,7 +82,9 @@ const LoginPage: React.FC = () => {
             </div> 
 
             </form> 
-            <text> Don't have an account? Sign up </text>
+            <p className="text-white"> Don't have an account? {" "}
+                <Link href="/CreateAccount">Sign up</Link> 
+            </p>
         </div>
         );  
     }
