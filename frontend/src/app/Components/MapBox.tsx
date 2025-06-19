@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -14,6 +14,8 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const [showPinOverlay, setPinOverlay] = useState(false);
+  const [lastCoords, setLastCoords] = useState<{ lng: number; lat: number} | null>(null);
 
   useEffect(() => {
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -41,9 +43,16 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
           marker.remove();
           // Remove from marker refs
           markersRef.current = markersRef.current.filter(m => m !== marker);
+          //Removes white overlay
+          setPinOverlay(false);
+          setLastCoords(null);
         });
         // Log coordinates
         console.log('Dropped pin at:', { lng, lat });
+
+        //Shows white overlay when pin is dropped
+        setPinOverlay(true);
+        setLastCoords({lng, lat});
       });
     }
 
@@ -56,11 +65,20 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
   }, []);
 
   return (
-    <div
-      style={{ width, height }}
-      ref={mapContainerRef}
-      className="map-container"
-    />
+    <>
+      <div
+        style={{ width, height }}
+        ref={mapContainerRef}
+        className="map-container"
+      />
+      {showPinOverlay && (
+        <div className="fixed bottom-10 p-4 right-10 backdrop-blur bg-white/30 border border-white/60 rounded-2xl shadow-lg w-80 h-100 text-white">
+          <p className="font-semibold text-lg">You dropped a pin!</p>
+          <p className="font-sm"> Longitude: {lastCoords.lng.toFixed(5)}</p>
+          <p className="font-sm"> Latitude: {lastCoords.lat.toFixed(5)}</p>
+        </div>
+      )}
+    </>
   );
 };
 
