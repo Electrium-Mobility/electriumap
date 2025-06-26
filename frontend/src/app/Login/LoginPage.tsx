@@ -60,7 +60,7 @@ const LoginPage: React.FC = () => {
                     value={username}
                     placeholder='Username'
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full p-2 rounded bg-[#7676804D] text-white"/>
+                    className="w-full p-2 rounded bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"/>
                 </div>
                 {/* <label htmlFor="password" className="mb-0 font-medium">Password</label> */}
                 <div className="flex gap-4 items-center flex-col sm:flex-row">
@@ -70,7 +70,7 @@ const LoginPage: React.FC = () => {
                     placeholder='Password'
                     value={pwd}
                     onChange={(e) => setPwd(e.target.value)}
-                    className="w-full p-2 rounded  bg-[#7676804D] text-white"/>
+                    className="w-full p-2 rounded  bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"/>
                 </div>
 
                 {/* render error message if errorMsg is not empty*/}
