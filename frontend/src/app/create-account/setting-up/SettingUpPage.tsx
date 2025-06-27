@@ -17,13 +17,12 @@ function SettingUpPage(){
   }, [router]);
 
   return (
-    <div className="bg-sign-in min-h-screen flex items-center justify-center ">
+    <div className="bg-sign-in min-h-screen flex items-center justify-center">
 
-      <div className="absolute top-0 left-0 w-full flex flex-col items-center mt-[100px]">
-          <Image src={"/images/electrium.png"} width={160} height={110} className="absolute top-[100px]" alt="Electrium logo" />
-          <h1 className="text-2xl font-bold text-[#6AB657] mt-45">Setting up your profile...</h1>
+      <div className="absolute top-0 left-0 w-full flex flex-col items-center mt-[120px]">
+          <Image src={"/images/electrium.png"} width={160} height={110} className="absolute top-[120px]" alt="Electrium logo" />
+          <h1 className="text-2xl font-bold text-[#6AB657] mt-50">Setting up your profile...</h1>
       </div>
-
      
       {/* green bar status */}
       <div className="absolute bottom-0 left-0 w-full">

@@ -19,8 +19,7 @@ function VehiclePage(){
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Account Created.");
-    // router.push("/Login");
+    router.push("/create-account/setting-up");
   };
 
   return (
@@ -45,14 +44,14 @@ function VehiclePage(){
         <input
           type="Vechile-Type"
           name="Vechile-Type"
-          placeholder="Last Name"
+          placeholder="Type"
           value={VehicleData.Type}
           onChange={handleChange}
           className="w-full mt-5 p-2 rounded-xl bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"
           required
         />
 
-        {/* continue button with arrow */}
+        {/* add vehicle icon */}
         <div className="flex justify-end mt-5"> 
           <button
             type="submit"
@@ -64,15 +63,14 @@ function VehiclePage(){
           </button>
         </div>
 
+        <div className="flex justify-end mt-5"> 
+          <p className="font-semibold" style={{color:'#2E7D32'}}>
+              <Link href="/create-account/setting-up">Skip</Link> 
+          </p>
+        </div>
       </form>
-      
-      <div className="mt-5"> 
-        <p className="font-semibold" style={{color:'#2E7D32'}}>
-            <Link href="/create-account/setting-up">Skip</Link> 
-        </p>
-      </div>
-
-      {/* green bar status */}
+    
+        {/* green bar status */}
       <div className="absolute bottom-0 left-0 w-full">
         <div className="bg-[#6AB657] h-2.5 w-3/4"></div>
       </div>

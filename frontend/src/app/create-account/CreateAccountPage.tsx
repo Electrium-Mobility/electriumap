@@ -22,9 +22,7 @@ function CreateAccountPage(){
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Account Created.");
-    // route to login page 
-    router.push("/Login");
+    router.push("/create-account/profile");
   };
 
   return (

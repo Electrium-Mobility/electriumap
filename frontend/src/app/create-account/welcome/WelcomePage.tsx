@@ -7,11 +7,11 @@ import Image from "next/image";
 function WelcomePage(){
   const router = useRouter();
 
-    // 2s delay before rendering main page  
+    // 1.5s delay 
     useEffect(() => {
       const timer = setTimeout(() => {
         router.push("/"); // render map component
-      }, 2000);  
+      }, 1500);  
   
       return () => clearTimeout(timer); // cleanup
     }, [router]);

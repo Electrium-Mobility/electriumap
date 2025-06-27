@@ -19,8 +19,7 @@ function ProfilePage(){
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Account Created.");
-    // router.push("/Login");
+    router.push("/create-account/vehicle");
   };
 
   return (
