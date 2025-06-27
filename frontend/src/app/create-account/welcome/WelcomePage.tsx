@@ -1,11 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation"; 
 import Image from "next/image";
 
 function WelcomePage(){
-  const router = useRouter(); 
+  const router = useRouter();
+
+    // 2s delay before rendering main page  
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        router.push("/"); // render map component
+      }, 2000);  
+  
+      return () => clearTimeout(timer); // cleanup
+    }, [router]);
+  
 
   return (
     <div className="bg-sign-in min-h-screen flex items-center justify-center ">

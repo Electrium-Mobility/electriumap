@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 
 function SettingUpPage(){
-const router = useRouter();
+  const router = useRouter();
 
-  // 500ms delay before rendering welcome page 
+  // 2s delay before rendering welcome page 
   useEffect(() => {
     const timer = setTimeout(() => {
       router.push("/create-account/welcome");
-    }, 500);  
+    }, 2000);  
 
     return () => clearTimeout(timer); // cleanup
   }, [router]);

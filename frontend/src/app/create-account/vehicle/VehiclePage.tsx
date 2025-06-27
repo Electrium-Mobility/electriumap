@@ -65,11 +65,12 @@ function VehiclePage(){
         </div>
 
       </form>
-
       
-      <p className="font-semibold" style={{color:'#2E7D32'}}>
-          <Link href="/create-account/setting-up">Skip</Link> 
-      </p>
+      <div className="mt-5"> 
+        <p className="font-semibold" style={{color:'#2E7D32'}}>
+            <Link href="/create-account/setting-up">Skip</Link> 
+        </p>
+      </div>
 
       {/* green bar status */}
       <div className="absolute bottom-0 left-0 w-full">

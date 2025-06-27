@@ -10,6 +10,8 @@ function CreateAccountPage(){
     password: "",
     repassword: "", 
   });
+  const [showPwd, setShowPwd] = useState(false); 
+  const [showRePwd, setShowRePwd] = useState(false); 
   const router = useRouter(); 
 
   // update user's input via 'value'
@@ -27,7 +29,6 @@ function CreateAccountPage(){
 
   return (
     <div className="bg-sign-in min-h-screen flex items-center justify-center ">
-
       <div className="absolute top-0 left-0 w-full flex flex-col items-center">
           <Image src={"/images/electrium.png"} width={160} height={110} className="absolute top-[100px]" alt="Electrium logo" />
           <h1 className="text-2xl font-bold text-[#6AB657] m-0 absolute top-[180px]">Let's get started with your username</h1>   
@@ -36,9 +37,8 @@ function CreateAccountPage(){
 
       <form
         onSubmit={handleSubmit}
-        className="mt-5"
+        className="w-full max-w-sm"
       >
-        
         <input
           type="email"
           name="email"
@@ -49,25 +49,45 @@ function CreateAccountPage(){
           required
         />
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          className="w-full mt-5 p-2 rounded-xl bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"
-          required
-        />
+        <div className="relative">
+          <input
+            type={showPwd ? "text" : "password" } 
+            name="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+            className="w-full mt-5 p-2 rounded-xl bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"
+            required
+          />
+            {/* enable toggle password */}
+            <button 
+              type="button"
+              onClick={() => setShowPwd((prev) => !prev)}
+              className="absolute right-3 top-1/2 transform"
+            > 
+              {showPwd ? <Image src={"/images/hidden_toggle.png"} width={23} height={25} alt="hidden view" /> : <Image src={"/images/nonhidden_toggle.png"} width={25} height={25} alt="non-hidden view" />}
+            </button>
+          </div>
 
-        <input
-          type="repassword"
-          name="repassword"
-          placeholder="Re-enter password"
-          value={formData.repassword}
-          onChange={handleChange}
-          className="w-full mt-5 p-2 rounded-xl bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"
-          required
-        />
+        <div className="relative">
+          <input
+            type={showRePwd ? "text" : "password" }
+            name="repassword"
+            placeholder="Re-enter password"
+            value={formData.repassword}
+            onChange={handleChange}
+            className="w-full mt-5 p-2 rounded-xl bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"
+            required
+          />
+           {/* enable toggle re-password */}
+            <button 
+              type="button"
+              onClick={() => setShowRePwd((prev) => !prev)}
+              className="absolute right-3 top-1/2 transform"
+            > 
+              {showRePwd ? <Image src={"/images/hidden_toggle.png"} width={23} height={25} alt="hidden view" /> : <Image src={"/images/nonhidden_toggle.png"} width={25} height={25} alt="non-hidden view" />}
+            </button>
+        </div>
 
         {/* continue button with arrow */}
         <div className="flex justify-end mt-5"> 
@@ -80,14 +100,12 @@ function CreateAccountPage(){
             </svg>
           </button>
         </div>
-
       </form>
 
       {/* green bar status */}
       <div className="absolute bottom-0 left-0 w-full">
         <div className="bg-[#6AB657] h-2.5 w-1/4"></div>
       </div>
-
     </div>
   );
 } 

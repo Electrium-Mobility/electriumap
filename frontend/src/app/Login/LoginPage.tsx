@@ -1,11 +1,9 @@
 "use client"; 
 
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image'; 
 import Link from 'next/link';
-
-// import * as Yup from "yup";
 
 type LoginPageProps = { 
     username: string; 
@@ -28,6 +26,7 @@ const AuthButton: React.FC<AuthButtonProps> = ({src, alt, text}) => (
 const LoginPage: React.FC = () => {
     const [username, setUsername] = useState(''); 
     const [pwd, setPwd] = useState(''); 
+    const [showPwd, setShowPwd] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
     const router = useRouter()
 
@@ -62,15 +61,24 @@ const LoginPage: React.FC = () => {
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full p-2 rounded bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"/>
                 </div>
-                {/* <label htmlFor="password" className="mb-0 font-medium">Password</label> */}
-                <div className="flex gap-4 items-center flex-col sm:flex-row">
-                <input
-                    id="password"
-                    type="password"
-                    placeholder='Password'
-                    value={pwd}
-                    onChange={(e) => setPwd(e.target.value)}
-                    className="w-full p-2 rounded  bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"/>
+
+                <div className="relative flex gap-4 items-center flex-col sm:flex-row">
+                    <input
+                        id="password"
+                        type={showPwd ? "text" : "password" }
+                        placeholder='Password'
+                        value={pwd}
+                        onChange={(e) => setPwd(e.target.value)}
+                        className="w-full p-2 rounded  bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"/>
+
+                    {/* enable toggle password */}
+                    <button 
+                        type="button"
+                        onClick={() => setShowPwd((prev) => !prev)}
+                        className="absolute right-3 top-1/3 transform"
+                    > 
+                        {showPwd ? <Image src={"/images/hidden_toggle.png"} width={23} height={25} alt="hidden view" /> : <Image src={"/images/nonhidden_toggle.png"} width={25} height={25} alt="non-hidden view" />}
+                    </button>
                 </div>
 
                 {/* render error message if errorMsg is not empty*/}
