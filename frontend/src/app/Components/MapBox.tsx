@@ -95,7 +95,7 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
         container: mapContainerRef.current,
         center: [-74.5, 40],
         zoom: 9,
-        style: "mapbox://styles/mapbox/streets-v11",
+        style: "mapbox://styles/hannahwiens/cmcgjpr31008v01ry30byd0d4",
       });
 
       // Add moveend and zoomend event listeners
@@ -168,8 +168,8 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
       </div>
 
       {showPinOverlay && lastCoords && ( //Text inside pin drop overlay
-        <div className="fixed bottom-10 p-4 right-10 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg w-80 h-100 text-black">
-          <p className="font-semibold text-lg text-black">You dropped a pin!</p>
+        <div className="fixed bottom-10 right-10 z-50 p-4 backdrop-blur-sm bg-black/30 border border-white/20 rounded-2xl shadow-lg w-100 h-140 text-white">
+          <p className="font-semibold text-lg text-white">You dropped a pin!</p>
           <p className="font-sm"> Longitude: {lastCoords.lng.toFixed(5)}</p>
           <p className="font-sm"> Latitude: {lastCoords.lat.toFixed(5)}</p>
         </div>
