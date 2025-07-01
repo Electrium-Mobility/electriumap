@@ -9,6 +9,7 @@ function ProfilePage(){
     FirstName: "",
     LastName: "",
   });
+  const [errorMsg, setErrorMsg] = useState(''); 
   const router = useRouter(); 
 
   // update user's input via 'value'
@@ -19,6 +20,11 @@ function ProfilePage(){
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!profileData.FirstName || !profileData.LastName ){ 
+      setErrorMsg("First and last name are required. Please try again.");
+      return;  
+    }
     router.push("/create-account/vehicle");
   };
 
@@ -39,7 +45,6 @@ function ProfilePage(){
           value={profileData.FirstName}
           onChange={handleChange}
           className="w-full mt-75 p-2 rounded-xl bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"
-          required
         />
 
         <input
@@ -49,11 +54,24 @@ function ProfilePage(){
           value={profileData.LastName}
           onChange={handleChange}
           className="w-full mt-5 p-2 rounded-xl bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"
-          required
         />
 
-        {/* continue button with arrow */}
-        <div className="flex justify-end mt-5"> 
+        {/* error message */}
+        {errorMsg && ( <p className='text-red-500 text-sm mt-2'>{errorMsg}</p>)}
+
+        <div className="flex justify-between items-center mt-5"> 
+          {/* back button */}
+          <button
+            type="button"
+            className="mt-3 bg-[#6AB657] text-white w-12 h-12 rounded-full rounded-3xl flex items-center justify-center align-right"
+            onClick={() => router.back()}
+          >
+            <svg className="w-6 h-6 text-[#457D2E] dark:text-[#457D2E]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
+              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 5H1m0 0l4 4M1 5l4-4"/>
+            </svg>
+          </button>
+
+          {/* continue button */}
           <button
             type="submit"
             className="mt-3 bg-[#6AB657] text-white w-12 h-12 rounded-full rounded-3xl flex items-center justify-center align-right"

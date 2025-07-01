@@ -12,6 +12,7 @@ function CreateAccountPage(){
   });
   const [showPwd, setShowPwd] = useState(false); 
   const [showRePwd, setShowRePwd] = useState(false); 
+  const [errorMsg, setErrorMsg] = useState('');
   const router = useRouter(); 
 
   // update user's input via 'value'
@@ -22,6 +23,20 @@ function CreateAccountPage(){
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // check fields are not empty 
+    if ( !formData.email || !formData.password || !formData.repassword){ 
+      setErrorMsg("Please fill out all fields."); 
+      return; 
+    }
+
+    // ensure password and re-entered passwords match   
+    if(!(formData.password === formData.repassword)){ 
+      setErrorMsg("Passwords do not match. Please try again.");
+      return; 
+    }
+
+    setErrorMsg(""); 
     router.push("/create-account/profile");
   };
 
@@ -38,13 +53,12 @@ function CreateAccountPage(){
         className="w-full max-w-sm"
       >
         <input
-          type="email"
+          type="text"
           name="email"
           placeholder="Email"
           value={formData.email}
           onChange={handleChange}
           className="w-full mt-35 p-2 rounded-xl bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"
-          required
         />
 
         <div className="relative">
@@ -55,7 +69,6 @@ function CreateAccountPage(){
             value={formData.password}
             onChange={handleChange}
             className="w-full mt-5 p-2 rounded-xl bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"
-            required
           />
             {/* enable toggle password */}
             <button 
@@ -75,7 +88,6 @@ function CreateAccountPage(){
             value={formData.repassword}
             onChange={handleChange}
             className="w-full mt-5 p-2 rounded-xl bg-[#7676804D] text-white border-2 focus:outline-none focus:border-[#6AB657] border-transparent"
-            required
           />
            {/* enable toggle re-password */}
             <button 
@@ -86,6 +98,9 @@ function CreateAccountPage(){
               {showRePwd ? <Image src={"/images/hidden_toggle.png"} width={23} height={25} alt="hidden view" /> : <Image src={"/images/nonhidden_toggle.png"} width={25} height={25} alt="non-hidden view" />}
             </button>
         </div>
+
+        {/* error message */}
+        {errorMsg && ( <p className='text-red-500 text-sm mt-2'>{errorMsg}</p>)}
 
         {/* continue button with arrow */}
         <div className="flex justify-end mt-5"> 
