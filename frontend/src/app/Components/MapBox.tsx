@@ -87,5 +87,4 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
     </>
   );
 };
-
 export default MapBox;
