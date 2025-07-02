@@ -1,119 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Electriumap - Backend Upload Testing</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🔧 Ev's Backend Upload Testing Platform</h1>
-            <p>Test platform for Firebase image and point data uploads</p>
-        </header>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Electriumap - Backend Upload Testing</title>
+        <link rel="stylesheet" href="styles.css" />
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <h1>🔧 Ev's Backend Upload Testing Platform</h1>
+                <p>Test platform for Firebase image and point data uploads</p>
+            </header>
 
-        <div class="upload-sections">
-            <!-- Image Upload Section -->
-            <section class="upload-card">
-                <h2>📸 Image Upload Testing</h2>
-                <div class="upload-area" id="imageUploadArea">
-                    <div class="upload-placeholder">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                            <circle cx="8.5" cy="8.5" r="1.5"/>
-                            <polyline points="21,15 16,10 5,21"/>
-                        </svg>
-                        <p>Click to upload images or drag and drop</p>
-                        <small>Supports: JPG, PNG, GIF (Max 10MB)</small>
-                    </div>
-                    <input type="file" id="imageInput" accept="image/*" multiple hidden>
-                </div>
-                
-                <div class="upload-info">
-                    <div class="form-group">
-                        <label for="imageTitle">Image Title:</label>
-                        <input type="text" id="imageTitle" placeholder="Enter image title">
-                    </div>
-                    <div class="form-group">
-                        <label for="imageDescription">Description:</label>
-                        <textarea id="imageDescription" placeholder="Enter image description"></textarea>
-                    </div>
-                </div>
-
-                <div class="preview-container" id="imagePreview"></div>
-                
-                <button class="upload-btn" id="uploadImageBtn" disabled>
-                    <span id="uploadImageText">Upload Images to Firebase</span>
-                    <div class="loading-spinner" id="imageSpinner" style="display: none;"></div>
-                </button>
-
-                <div class="results" id="imageResults"></div>
-            </section>
-
-            <!-- Point Data Upload Section -->
-            <section class="upload-card">
-                <h2>📍 Point Data Upload Testing</h2>
-                
-                <div class="form-group">
-                    <label for="pointName">Location Name:</label>
-                    <input type="text" id="pointName" placeholder="e.g., Downtown Charging Station">
-                </div>
-
-                <div class="form-group">
-                    <label for="pointType">Point Type:</label>
-                    <div class="custom-select" id="customSelect">
-                        <div class="select-selected" id="selectSelected">Select type...</div>
-                        <div class="select-items select-hide" id="selectItems">
-                            <div data-value="charging-station">Charging Station</div>
-                            <div data-value="parking">Parking Spot</div>
-                            <div data-value="repair-shop">Repair Shop</div>
-                            <div data-value="rental-hub">Rental Hub</div>
-                            <div data-value="other">Other</div>
+            <div class="upload-sections">
+                <!-- Image Upload Section -->
+                <section class="upload-card">
+                    <h2>📸 Image Upload Testing</h2>
+                    <div class="upload-area" id="imageUploadArea">
+                        <div class="upload-placeholder">
+                            <svg
+                                width="48"
+                                height="48"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <rect
+                                    x="3"
+                                    y="3"
+                                    width="18"
+                                    height="18"
+                                    rx="2"
+                                    ry="2"
+                                />
+                                <circle cx="8.5" cy="8.5" r="1.5" />
+                                <polyline points="21,15 16,10 5,21" />
+                            </svg>
+                            <p>Click to upload images or drag and drop</p>
+                            <small>Supports: JPG, PNG, GIF (Max 10MB)</small>
                         </div>
+                        <input
+                            type="file"
+                            id="imageInput"
+                            accept="image/*"
+                            multiple
+                            hidden
+                        />
                     </div>
-                    <input type="hidden" id="pointType" value="">
-                </div>
 
-                <div class="coordinates-section">
-                    <h3>📍 Coordinates</h3>
-                    <div class="coordinate-inputs">
+                    <div class="upload-info">
                         <div class="form-group">
-                            <label for="latitude">Latitude:</label>
-                            <input type="text" id="latitude" placeholder="40.7128">
+                            <label for="imageTitle">Image Title:</label>
+                            <input
+                                type="text"
+                                id="imageTitle"
+                                placeholder="Enter image title"
+                            />
                         </div>
                         <div class="form-group">
-                            <label for="longitude">Longitude:</label>
-                            <input type="text" id="longitude" placeholder="-74.0060">
+                            <label for="imageDescription">Description:</label>
+                            <textarea
+                                id="imageDescription"
+                                placeholder="Enter image description"
+                            ></textarea>
                         </div>
                     </div>
-                    <button class="secondary-btn" id="generateRandomCoords">🎲 Generate Random Coordinates</button>
-                </div>
 
-                <div class="form-group">
-                    <label for="pointDescription">Description:</label>
-                    <textarea id="pointDescription" placeholder="Additional details about this location..."></textarea>
-                </div>
+                    <div class="preview-container" id="imagePreview"></div>
 
-                <div class="form-group">
-                    <label for="pointTags">Tags (comma-separated):</label>
-                    <input type="text" id="pointTags" placeholder="fast-charging, 24-hours, covered">
-                </div>
+                    <button class="upload-btn" id="uploadImageBtn" disabled>
+                        <span id="uploadImageText"
+                            >Upload Images to Firebase</span
+                        >
+                        <div
+                            class="loading-spinner"
+                            id="imageSpinner"
+                            style="display: none"
+                        ></div>
+                    </button>
 
-                <button class="upload-btn" id="uploadPointBtn">
-                    <span id="uploadPointText">Upload Point to Firebase</span>
-                    <div class="loading-spinner" id="pointSpinner" style="display: none;"></div>
-                </button>
+                    <div class="results" id="imageResults"></div>
+                </section>
 
-                <div class="results" id="pointResults"></div>
-            </section>
+                <!-- Point Data Upload Section -->
+                <section class="upload-card">
+                    <h2>📍 Point Data Upload Testing</h2>
 
+                    <div class="form-group">
+                        <label for="pointName">Location Name:</label>
+                        <input
+                            type="text"
+                            id="pointName"
+                            placeholder="e.g., Downtown Charging Station"
+                        />
+                    </div>
 
+                    <div class="form-group">
+                        <label for="pointType">Point Type:</label>
+                        <div class="custom-select" id="customSelect">
+                            <div class="select-selected" id="selectSelected">
+                                Select type...
+                            </div>
+                            <div
+                                class="select-items select-hide"
+                                id="selectItems"
+                            >
+                                <div data-value="charging-station">
+                                    Charging Station
+                                </div>
+                                <div data-value="parking">Parking Spot</div>
+                                <div data-value="repair-shop">Repair Shop</div>
+                                <div data-value="rental-hub">Rental Hub</div>
+                                <div data-value="other">Other</div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="pointType" value="" />
+                    </div>
+
+                    <div class="coordinates-section">
+                        <h3>📍 Coordinates</h3>
+                        <div class="coordinate-inputs">
+                            <div class="form-group">
+                                <label for="latitude">Latitude:</label>
+                                <input
+                                    type="text"
+                                    id="latitude"
+                                    placeholder="40.7128"
+                                />
+                            </div>
+                            <div class="form-group">
+                                <label for="longitude">Longitude:</label>
+                                <input
+                                    type="text"
+                                    id="longitude"
+                                    placeholder="-74.0060"
+                                />
+                            </div>
+                        </div>
+                        <button class="secondary-btn" id="generateRandomCoords">
+                            🎲 Generate Random Coordinates
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pointDescription">Description:</label>
+                        <textarea
+                            id="pointDescription"
+                            placeholder="Additional details about this location..."
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pointTags">Tags (comma-separated):</label>
+                        <input
+                            type="text"
+                            id="pointTags"
+                            placeholder="fast-charging, 24-hours, covered"
+                        />
+                    </div>
+
+                    <button class="upload-btn" id="uploadPointBtn">
+                        <span id="uploadPointText"
+                            >Upload Point to Firebase</span
+                        >
+                        <div
+                            class="loading-spinner"
+                            id="pointSpinner"
+                            style="display: none"
+                        ></div>
+                    </button>
+
+                    <div class="results" id="pointResults"></div>
+                </section>
+            </div>
         </div>
 
+        <!-- Firebase SDK -->
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-    </div>
-
-    <script src="upload-handler.js"></script>
-</body>
-</html> 
+        <script src="upload-handler.js"></script>
+    </body>
+</html>
