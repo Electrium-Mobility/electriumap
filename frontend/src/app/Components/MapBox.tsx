@@ -9,9 +9,10 @@ import pinsData from "./pins.json";
 type MapBoxProps = {
   width?: string;
   height?: string;
+  onPinDrop?: (lat: number, lng:number) => void;
 };
 
-const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
+const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -126,16 +127,13 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
           marker.remove();
           // Remove from marker refs
           markersRef.current = markersRef.current.filter((m) => m !== marker);
-          //Removes pin drop overlay
-          setPinOverlay(false);
-          setLastCoords(null);
         });
         // Log coordinates
         console.log("Dropped pin at:", { lng, lat });
 
         //Shows white overlay when pin is dropped
-        setPinOverlay(true);
-        setLastCoords({ lng, lat });
+        //setPinOverlay(true);
+        onPinDrop?.(lat, lng);
       });
     }
 
