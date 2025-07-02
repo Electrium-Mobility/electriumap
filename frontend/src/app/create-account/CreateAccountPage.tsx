@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation"; 
 import Image from "next/image";
+import { auth } from "../../../Firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 
 function CreateAccountPage(){
   const [formData, setFormData] = useState({
@@ -10,9 +12,12 @@ function CreateAccountPage(){
     password: "",
     repassword: "", 
   });
+  const [error, setError] = useState<string | null>(null); // Firebase error handling
   const [showPwd, setShowPwd] = useState(false); 
   const [showRePwd, setShowRePwd] = useState(false); 
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+
   const router = useRouter(); 
 
   // update user's input via 'value'
@@ -21,7 +26,7 @@ function CreateAccountPage(){
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // check fields are not empty 
@@ -36,8 +41,17 @@ function CreateAccountPage(){
       return; 
     }
 
-    setErrorMsg(""); 
-    router.push("/create-account/profile");
+    setError(null); // clear previous errors
+
+    try {
+      // attempt to create a new user with Firebase
+      await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+      console.log("Account created!");
+      router.push("/login");
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message);
+    }
   };
 
   return (
@@ -113,6 +127,10 @@ function CreateAccountPage(){
             </svg>
           </button>
         </div>
+        {error && (
+          <p className="text-red-500 text-sm">{error}</p>
+        )}
+
       </form>
 
       {/* green bar status */}

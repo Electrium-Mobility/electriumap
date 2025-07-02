@@ -22,9 +22,17 @@
 
 4. **Setup Environment Variables**
 
-   Create a .env file in the frontend folder, then add your Mapbox token to the file
+   Copy the environment template and configure your API keys:
 
-   NEXT_PUBLIC_MAPBOX_TOKEN=mapbox_token_here
+   ```bash
+   cp .env-template .env.local
+   ```
+
+   Then edit `.env.local` and fill in your actual values:
+   - **Firebase credentials** (get from Firebase Console)
+   - **Mapbox access token** (get from Mapbox Studio)
+   
+   See `.env-template` for all required environment variables.
 
 5. **Visit your app**
 

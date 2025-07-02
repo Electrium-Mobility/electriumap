@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { debounce, Bounds, PinData, isPointInBounds } from "./utils";
+import pinsData from "./pins.json";
 
 type MapBoxProps = {
   width?: string;
@@ -21,6 +23,69 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
     lng: number;
     lat: number;
   } | null>(null);
+  // Store current bounds and visible pins
+  const [currentBounds, setCurrentBounds] = useState<Bounds | null>(null);
+  const [visiblePins, setVisiblePins] = useState<PinData[]>([]);
+
+  // Function to get current map bounds
+  const getBounds = useCallback((): Bounds | null => {
+    if (!mapRef.current) return null;
+    
+    const bounds = mapRef.current.getBounds();
+    if (!bounds) return null;
+    
+    return {
+      sw: [bounds.getWest(), bounds.getSouth()],
+      ne: [bounds.getEast(), bounds.getNorth()]
+    };
+  }, []);
+
+  // Function to filter pins based on bounds
+  const filterPinsByBounds = useCallback((bounds: Bounds): PinData[] => {
+    return pinsData.filter(pin => isPointInBounds(pin, bounds));
+  }, []);
+
+  // Function to clear all markers
+  const clearAllMarkers = useCallback(() => {
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+  }, []);
+
+  // Function to render pins
+  const renderPins = useCallback((pins: PinData[]) => {
+    if (!mapRef.current) return;
+
+    clearAllMarkers();
+
+    pins.forEach(pin => {
+      const marker = new mapboxgl.Marker()
+        .setLngLat([pin.lng, pin.lat])
+        .addTo(mapRef.current!);
+
+      // Add click event to show pin info
+      marker.getElement().addEventListener("click", function (ev) {
+        ev.stopPropagation(); // Prevent map click event
+        console.log("Pin clicked:", pin);
+        // You can add a popup or tooltip here
+      });
+
+      markersRef.current.push(marker);
+    });
+  }, [clearAllMarkers]);
+
+  // Debounced function to update visible pins
+  const debouncedUpdatePins = useCallback(
+    debounce(() => {
+      const bounds = getBounds();
+      if (!bounds) return;
+
+      setCurrentBounds(bounds);
+      const filteredPins = filterPinsByBounds(bounds);
+      setVisiblePins(filteredPins);
+      renderPins(filteredPins);
+    }, 300), // 300ms debounce
+    [getBounds, filterPinsByBounds, renderPins]
+  );
 
   useEffect(() => {
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -32,6 +97,19 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
         zoom: 9,
         style: "mapbox://styles/mapbox/streets-v11",
       });
+
+      // Add moveend and zoomend event listeners
+      mapRef.current.on("moveend", debouncedUpdatePins);
+      mapRef.current.on("zoomend", debouncedUpdatePins);
+
+      // Initial pin rendering
+      const initialBounds = getBounds();
+      if (initialBounds) {
+        const initialPins = filterPinsByBounds(initialBounds);
+        setCurrentBounds(initialBounds);
+        setVisiblePins(initialPins);
+        renderPins(initialPins);
+      }
 
       // Add click event to drop a pin and log coordinates
       mapRef.current.on("click", (e: mapboxgl.MapMouseEvent) => {
@@ -63,11 +141,10 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
 
     return () => {
       // Remove all markers
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
+      clearAllMarkers();
       mapRef.current?.remove();
     };
-  }, []);
+  }, [debouncedUpdatePins, getBounds, filterPinsByBounds, renderPins, clearAllMarkers]);
 
   return (
     <>
@@ -77,7 +154,20 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
         className="map-container"
       />
 
-      {showPinOverlay && ( //Text inside pin drop overlay
+      {/* Debug info overlay */}
+      <div className="fixed top-4 left-4 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg p-4 text-black">
+        <p className="font-semibold text-sm">Viewport Info</p>
+        <p className="text-xs">Visible Pins: {visiblePins.length}</p>
+        <p className="text-xs">Total Pins: {pinsData.length}</p>
+        {currentBounds && (
+          <>
+            <p className="text-xs">SW: [{currentBounds.sw[0].toFixed(3)}, {currentBounds.sw[1].toFixed(3)}]</p>
+            <p className="text-xs">NE: [{currentBounds.ne[0].toFixed(3)}, {currentBounds.ne[1].toFixed(3)}]</p>
+          </>
+        )}
+      </div>
+
+      {showPinOverlay && lastCoords && ( //Text inside pin drop overlay
         <div className="fixed bottom-10 p-4 right-10 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg w-80 h-100 text-black">
           <p className="font-semibold text-lg text-black">You dropped a pin!</p>
           <p className="font-sm"> Longitude: {lastCoords.lng.toFixed(5)}</p>
