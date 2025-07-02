@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation"; 
 import Image from "next/image";
+import { setGlobalFirstName } from "../../globals";
 
 function ProfilePage(){
   const [profileData, setProfileData] = useState({
@@ -25,6 +26,10 @@ function ProfilePage(){
       setErrorMsg("First and last name are required. Please try again.");
       return;  
     }
+
+    // set global first name variable 
+    setGlobalFirstName(profileData.FirstName); 
+
     router.push("/create-account/vehicle");
   };
 

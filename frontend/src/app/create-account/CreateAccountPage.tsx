@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { auth } from "../../../Firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
+import validator from "validator"; 
 
 function CreateAccountPage(){
   const [formData, setFormData] = useState({
@@ -16,7 +17,6 @@ function CreateAccountPage(){
   const [showPwd, setShowPwd] = useState(false); 
   const [showRePwd, setShowRePwd] = useState(false); 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
 
   const router = useRouter(); 
 
@@ -35,6 +35,12 @@ function CreateAccountPage(){
       return; 
     }
 
+    // check for valid email address
+    if (!validator.isEmail(formData.email)) {
+      setErrorMsg("Please enter a valid email address.");
+      return;
+    }
+
     // ensure password and re-entered passwords match   
     if(!(formData.password === formData.repassword)){ 
       setErrorMsg("Passwords do not match. Please try again.");
@@ -42,6 +48,7 @@ function CreateAccountPage(){
     }
 
     setError(null); // clear previous errors
+    setErrorMsg(null); 
 
     try {
       // attempt to create a new user with Firebase
