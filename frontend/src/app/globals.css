@@ -19,6 +19,15 @@
   }
 }
 
+/* sign-in map background */
+@layer utilities { 
+  .bg-sign-in { 
+    background-image: url('/images/map_bg.png'); 
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+}
 body {
   background: var(--background);
   color: var(--foreground);

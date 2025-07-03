@@ -1,0 +1,803 @@
+[
+  {
+    "id": "1",
+    "lng": -74.5,
+    "lat": 40.0,
+    "title": "New York City",
+    "description": "The Big Apple",
+    "category": "city"
+  },
+  {
+    "id": "2",
+    "lng": -74.0,
+    "lat": 40.7,
+    "title": "Newark",
+    "description": "Newark Liberty International Airport",
+    "category": "airport"
+  },
+  {
+    "id": "3",
+    "lng": -75.0,
+    "lat": 39.9,
+    "title": "Philadelphia",
+    "description": "City of Brotherly Love",
+    "category": "city"
+  },
+  {
+    "id": "4",
+    "lng": -73.9,
+    "lat": 40.7,
+    "title": "Queens",
+    "description": "Borough of New York",
+    "category": "borough"
+  },
+  {
+    "id": "5",
+    "lng": -74.2,
+    "lat": 40.5,
+    "title": "Jersey City",
+    "description": "Across the Hudson",
+    "category": "city"
+  },
+  {
+    "id": "6",
+    "lng": -73.8,
+    "lat": 40.6,
+    "title": "Brooklyn",
+    "description": "The Borough of Kings",
+    "category": "borough"
+  },
+  {
+    "id": "7",
+    "lng": -74.8,
+    "lat": 40.3,
+    "title": "Trenton",
+    "description": "Capital of New Jersey",
+    "category": "city"
+  },
+  {
+    "id": "8",
+    "lng": -73.7,
+    "lat": 40.8,
+    "title": "Bronx",
+    "description": "The Bronx",
+    "category": "borough"
+  },
+  {
+    "id": "9",
+    "lng": -74.1,
+    "lat": 40.9,
+    "title": "Yonkers",
+    "description": "Gateway to the Hudson Valley",
+    "category": "city"
+  },
+  {
+    "id": "10",
+    "lng": -73.6,
+    "lat": 40.5,
+    "title": "Manhattan",
+    "description": "The Heart of NYC",
+    "category": "borough"
+  },
+  {
+    "id": "11",
+    "lng": -75.2,
+    "lat": 39.7,
+    "title": "Camden",
+    "description": "Across from Philadelphia",
+    "category": "city"
+  },
+  {
+    "id": "12",
+    "lng": -73.5,
+    "lat": 40.9,
+    "title": "Mount Vernon",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "13",
+    "lng": -74.3,
+    "lat": 40.2,
+    "title": "Princeton",
+    "description": "Home of Princeton University",
+    "category": "city"
+  },
+  {
+    "id": "14",
+    "lng": -73.4,
+    "lat": 40.4,
+    "title": "Staten Island",
+    "description": "The Forgotten Borough",
+    "category": "borough"
+  },
+  {
+    "id": "15",
+    "lng": -74.9,
+    "lat": 40.8,
+    "title": "Paterson",
+    "description": "Silk City",
+    "category": "city"
+  },
+  {
+    "id": "16",
+    "lng": -73.3,
+    "lat": 40.7,
+    "title": "New Rochelle",
+    "description": "Queen City of the Sound",
+    "category": "city"
+  },
+  {
+    "id": "17",
+    "lng": -74.4,
+    "lat": 40.1,
+    "title": "Toms River",
+    "description": "Jersey Shore",
+    "category": "city"
+  },
+  {
+    "id": "18",
+    "lng": -73.2,
+    "lat": 40.6,
+    "title": "White Plains",
+    "description": "Westchester County Seat",
+    "category": "city"
+  },
+  {
+    "id": "19",
+    "lng": -74.6,
+    "lat": 40.4,
+    "title": "Elizabeth",
+    "description": "Port City",
+    "category": "city"
+  },
+  {
+    "id": "20",
+    "lng": -73.1,
+    "lat": 40.5,
+    "title": "Hempstead",
+    "description": "Long Island",
+    "category": "city"
+  },
+  {
+    "id": "21",
+    "lng": -73.0,
+    "lat": 40.3,
+    "title": "Garden City",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "22",
+    "lng": -74.7,
+    "lat": 40.6,
+    "title": "Morristown",
+    "description": "Revolutionary War history",
+    "category": "city"
+  },
+  {
+    "id": "23",
+    "lng": -73.8,
+    "lat": 40.9,
+    "title": "New Rochelle",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "24",
+    "lng": -74.1,
+    "lat": 40.3,
+    "title": "Red Bank",
+    "description": "Jersey Shore town",
+    "category": "city"
+  },
+  {
+    "id": "25",
+    "lng": -73.9,
+    "lat": 40.8,
+    "title": "Pelham",
+    "description": "Westchester suburb",
+    "category": "city"
+  },
+  {
+    "id": "26",
+    "lng": -74.3,
+    "lat": 40.8,
+    "title": "Parsippany",
+    "description": "Morris County",
+    "category": "city"
+  },
+  {
+    "id": "27",
+    "lng": -73.7,
+    "lat": 40.3,
+    "title": "Freeport",
+    "description": "Long Island fishing village",
+    "category": "city"
+  },
+  {
+    "id": "28",
+    "lng": -74.5,
+    "lat": 40.7,
+    "title": "Summit",
+    "description": "Union County",
+    "category": "city"
+  },
+  {
+    "id": "29",
+    "lng": -73.6,
+    "lat": 40.8,
+    "title": "Scarsdale",
+    "description": "Westchester suburb",
+    "category": "city"
+  },
+  {
+    "id": "30",
+    "lng": -74.2,
+    "lat": 40.3,
+    "title": "Asbury Park",
+    "description": "Jersey Shore music scene",
+    "category": "city"
+  },
+  {
+    "id": "31",
+    "lng": -73.5,
+    "lat": 40.4,
+    "title": "Rockville Centre",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "32",
+    "lng": -74.8,
+    "lat": 40.5,
+    "title": "Flemington",
+    "description": "Hunterdon County",
+    "category": "city"
+  },
+  {
+    "id": "33",
+    "lng": -73.4,
+    "lat": 40.6,
+    "title": "Great Neck",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "34",
+    "lng": -74.4,
+    "lat": 40.9,
+    "title": "Wayne",
+    "description": "Passaic County",
+    "category": "city"
+  },
+  {
+    "id": "35",
+    "lng": -73.3,
+    "lat": 40.5,
+    "title": "Mineola",
+    "description": "Nassau County seat",
+    "category": "city"
+  },
+  {
+    "id": "36",
+    "lng": -74.6,
+    "lat": 40.2,
+    "title": "Brick",
+    "description": "Ocean County",
+    "category": "city"
+  },
+  {
+    "id": "37",
+    "lng": -73.2,
+    "lat": 40.7,
+    "title": "Port Chester",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "38",
+    "lng": -74.7,
+    "lat": 40.4,
+    "title": "Lakewood",
+    "description": "Ocean County",
+    "category": "city"
+  },
+  {
+    "id": "39",
+    "lng": -73.1,
+    "lat": 40.6,
+    "title": "Rye",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "40",
+    "lng": -74.9,
+    "lat": 40.6,
+    "title": "Clinton",
+    "description": "Hunterdon County",
+    "category": "city"
+  },
+  {
+    "id": "41",
+    "lng": -73.0,
+    "lat": 40.4,
+    "title": "Oceanside",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "42",
+    "lng": -74.1,
+    "lat": 40.8,
+    "title": "Ridgewood",
+    "description": "Bergen County",
+    "category": "city"
+  },
+  {
+    "id": "43",
+    "lng": -73.9,
+    "lat": 40.2,
+    "title": "Long Beach",
+    "description": "Long Island beach town",
+    "category": "city"
+  },
+  {
+    "id": "44",
+    "lng": -74.3,
+    "lat": 40.7,
+    "title": "Livingston",
+    "description": "Essex County",
+    "category": "city"
+  },
+  {
+    "id": "45",
+    "lng": -73.8,
+    "lat": 40.5,
+    "title": "Valley Stream",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "46",
+    "lng": -74.5,
+    "lat": 40.8,
+    "title": "Montclair",
+    "description": "Essex County",
+    "category": "city"
+  },
+  {
+    "id": "47",
+    "lng": -73.7,
+    "lat": 40.7,
+    "title": "Elmont",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "48",
+    "lng": -74.2,
+    "lat": 40.6,
+    "title": "Westfield",
+    "description": "Union County",
+    "category": "city"
+  },
+  {
+    "id": "49",
+    "lng": -73.6,
+    "lat": 40.6,
+    "title": "Floral Park",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "50",
+    "lng": -74.4,
+    "lat": 40.5,
+    "title": "Short Hills",
+    "description": "Essex County",
+    "category": "city"
+  },
+  {
+    "id": "51",
+    "lng": -73.5,
+    "lat": 40.8,
+    "title": "Bronxville",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "52",
+    "lng": -74.6,
+    "lat": 40.9,
+    "title": "Madison",
+    "description": "Morris County",
+    "category": "city"
+  },
+  {
+    "id": "53",
+    "lng": -73.4,
+    "lat": 40.3,
+    "title": "Lynbrook",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "54",
+    "lng": -74.8,
+    "lat": 40.7,
+    "title": "Chatham",
+    "description": "Morris County",
+    "category": "city"
+  },
+  {
+    "id": "55",
+    "lng": -73.3,
+    "lat": 40.8,
+    "title": "Tuckahoe",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "56",
+    "lng": -74.1,
+    "lat": 40.4,
+    "title": "Point Pleasant",
+    "description": "Jersey Shore",
+    "category": "city"
+  },
+  {
+    "id": "57",
+    "lng": -73.9,
+    "lat": 40.6,
+    "title": "Baldwin",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "58",
+    "lng": -74.3,
+    "lat": 40.6,
+    "title": "Maplewood",
+    "description": "Essex County",
+    "category": "city"
+  },
+  {
+    "id": "59",
+    "lng": -73.8,
+    "lat": 40.4,
+    "title": "Wantagh",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "60",
+    "lng": -74.5,
+    "lat": 40.6,
+    "title": "South Orange",
+    "description": "Essex County",
+    "category": "city"
+  },
+  {
+    "id": "61",
+    "lng": -73.7,
+    "lat": 40.8,
+    "title": "Eastchester",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "62",
+    "lng": -74.2,
+    "lat": 40.5,
+    "title": "Cranford",
+    "description": "Union County",
+    "category": "city"
+  },
+  {
+    "id": "63",
+    "lng": -73.6,
+    "lat": 40.5,
+    "title": "Franklin Square",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "64",
+    "lng": -74.4,
+    "lat": 40.4,
+    "title": "Millburn",
+    "description": "Essex County",
+    "category": "city"
+  },
+  {
+    "id": "65",
+    "lng": -73.5,
+    "lat": 40.7,
+    "title": "Pelham Manor",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "66",
+    "lng": -74.6,
+    "lat": 40.8,
+    "title": "Florham Park",
+    "description": "Morris County",
+    "category": "city"
+  },
+  {
+    "id": "67",
+    "lng": -73.4,
+    "lat": 40.4,
+    "title": "Seaford",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "68",
+    "lng": -74.8,
+    "lat": 40.6,
+    "title": "Bernardsville",
+    "description": "Somerset County",
+    "category": "city"
+  },
+  {
+    "id": "69",
+    "lng": -73.3,
+    "lat": 40.6,
+    "title": "New Hyde Park",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "70",
+    "lng": -74.1,
+    "lat": 40.3,
+    "title": "Belmar",
+    "description": "Jersey Shore",
+    "category": "city"
+  },
+  {
+    "id": "71",
+    "lng": -73.9,
+    "lat": 40.5,
+    "title": "Oceanside",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "72",
+    "lng": -74.3,
+    "lat": 40.5,
+    "title": "Verona",
+    "description": "Essex County",
+    "category": "city"
+  },
+  {
+    "id": "73",
+    "lng": -73.8,
+    "lat": 40.6,
+    "title": "Glen Cove",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "74",
+    "lng": -74.5,
+    "lat": 40.5,
+    "title": "Cedar Grove",
+    "description": "Essex County",
+    "category": "city"
+  },
+  {
+    "id": "75",
+    "lng": -73.7,
+    "lat": 40.7,
+    "title": "Harrison",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "76",
+    "lng": -74.2,
+    "lat": 40.4,
+    "title": "Spring Lake",
+    "description": "Jersey Shore",
+    "category": "city"
+  },
+  {
+    "id": "77",
+    "lng": -73.6,
+    "lat": 40.6,
+    "title": "Hicksville",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "78",
+    "lng": -74.4,
+    "lat": 40.6,
+    "title": "Nutley",
+    "description": "Essex County",
+    "category": "city"
+  },
+  {
+    "id": "79",
+    "lng": -73.5,
+    "lat": 40.8,
+    "title": "Mamaroneck",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "80",
+    "lng": -74.6,
+    "lat": 40.7,
+    "title": "Harding",
+    "description": "Morris County",
+    "category": "city"
+  },
+  {
+    "id": "81",
+    "lng": -73.4,
+    "lat": 40.5,
+    "title": "Levittown",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "82",
+    "lng": -74.8,
+    "lat": 40.5,
+    "title": "Far Hills",
+    "description": "Somerset County",
+    "category": "city"
+  },
+  {
+    "id": "83",
+    "lng": -73.3,
+    "lat": 40.7,
+    "title": "Larchmont",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "84",
+    "id": "84",
+    "lng": -74.1,
+    "lat": 40.2,
+    "title": "Manasquan",
+    "description": "Jersey Shore",
+    "category": "city"
+  },
+  {
+    "id": "85",
+    "lng": -73.9,
+    "lat": 40.4,
+    "title": "Massapequa",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "86",
+    "lng": -74.3,
+    "lat": 40.4,
+    "title": "Bloomfield",
+    "description": "Essex County",
+    "category": "city"
+  },
+  {
+    "id": "87",
+    "lng": -73.8,
+    "lat": 40.5,
+    "title": "Syosset",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "88",
+    "lng": -74.5,
+    "lat": 40.4,
+    "title": "North Caldwell",
+    "description": "Essex County",
+    "category": "city"
+  },
+  {
+    "id": "89",
+    "lng": -73.7,
+    "lat": 40.6,
+    "title": "Dobbs Ferry",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "90",
+    "lng": -74.2,
+    "lat": 40.3,
+    "title": "Sea Girt",
+    "description": "Jersey Shore",
+    "category": "city"
+  },
+  {
+    "id": "91",
+    "lng": -73.6,
+    "lat": 40.7,
+    "title": "Plainview",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "92",
+    "lng": -74.4,
+    "lat": 40.7,
+    "title": "West Caldwell",
+    "description": "Essex County",
+    "category": "city"
+  },
+  {
+    "id": "93",
+    "lng": -73.5,
+    "lat": 40.9,
+    "title": "Hastings-on-Hudson",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "94",
+    "lng": -74.6,
+    "lat": 40.6,
+    "title": "Long Hill",
+    "description": "Morris County",
+    "category": "city"
+  },
+  {
+    "id": "95",
+    "lng": -73.4,
+    "lat": 40.6,
+    "title": "Bethpage",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "96",
+    "lng": -74.8,
+    "lat": 40.4,
+    "title": "Peapack-Gladstone",
+    "description": "Somerset County",
+    "category": "city"
+  },
+  {
+    "id": "97",
+    "lng": -73.3,
+    "lat": 40.8,
+    "title": "Irvington",
+    "description": "Westchester County",
+    "category": "city"
+  },
+  {
+    "id": "98",
+    "lng": -74.1,
+    "lat": 40.1,
+    "title": "Spring Lake Heights",
+    "description": "Jersey Shore",
+    "category": "city"
+  },
+  {
+    "id": "99",
+    "lng": -73.9,
+    "lat": 40.3,
+    "title": "Farmingdale",
+    "description": "Long Island suburb",
+    "category": "city"
+  },
+  {
+    "id": "100",
+    "lng": -74.3,
+    "lat": 40.3,
+    "title": "Belleville",
+    "description": "Essex County",
+    "category": "city"
+  }
+] 
