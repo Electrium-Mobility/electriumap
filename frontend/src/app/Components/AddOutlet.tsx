@@ -55,10 +55,10 @@ const AddOutlet: React.FC<AddOutletProps> = ({showOverlay, coords, onClose }) =>
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="text-lg bg-white/35 text-white rounded-md shadow-lg w-99 h-7 p-1">
+                className="text-lg bg-white/35 text-white rounded-md shadow-lg w-99 h-7 p-1 pb-1">
               </input>
               <div className="flex items-center space-x-2">
-                <h2 className="font-semibold text-lg text-white p-1 pb-1 pr-1 pl-0">
+                <h2 className="font-semibold text-lg text-white p-1 pb-1 pt-2 pr-1 pl-0">
                   Number of Outlets <span className="text-red-500">*</span>
                 </h2>
                 <select className="bg-white/35 w-8 h-7 pl-0 rounded-md text-lg text-white">
@@ -169,21 +169,23 @@ const AddOutlet: React.FC<AddOutletProps> = ({showOverlay, coords, onClose }) =>
         )}
 
         {!showAddOutlet && showOverlay && (
-          <div className="fixed top-[120px] bottom-[5px] right-6 z-50 p-7 backdrop-blur-sm bg-white/15 border-2 border-white/40 rounded-4xl shadow-lg w-120 h-160 text-white overflow-auto scrollbar-hide">
-            <h2 className="font-semibold text-lg text-white pt-0 p-1 pl-0">
-              You dropped a pin!
-            </h2>
-            <p className="text-lg text-white pt-0 p-1 pl-0">
-              Longitude: {coords?.lng.toFixed(5)}
-            </p>
-            <p className="text-lg text-white pt-0 p-1 pl-0">
-              Latitude: {coords?.lat.toFixed(5)}
-            </p>
-            <button
-              onClick={onClose}
-                className="text-lg font-semibold bg-lime-700 rounded-4xl text-white pl-5 pr-5 p-1 flex justify-center">
-                  Close
-            </button>
+          <div className="fixed top-[110px] right-6 z-50 p-6 backdrop-blur-sm bg-white/15 border-2 border-white/40 rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col">
+            <div className="flex-grow">
+              <h2 className="font-semibold text-lg text-white pt-0 p-1 pl-0">
+                You dropped a pin!
+              </h2>
+              <p className="text-lg text-white pt-0 p-1 pl-0">
+                Longitude: {coords?.lng.toFixed(5)}
+              </p>
+              <p className="text-lg text-white pt-0 p-1 pl-0">
+                Latitude: {coords?.lat.toFixed(5)}
+              </p>
+              <button
+                onClick={onClose}
+                  className="text-lg font-semibold bg-lime-700 rounded-4xl text-white pl-5 pr-5 p-1 flex justify-center">
+                    Close
+              </button>
+            </div>
           </div>
         )}
       </div>
