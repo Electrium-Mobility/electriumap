@@ -146,7 +146,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
       />
 
       {/* Debug info overlay */}
-      <div className="fixed top-4 left-4 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg p-4 text-black">
+      <div className="fixed top-22 left-10 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg p-4 text-black">
         <p className="font-semibold text-sm">Viewport Info</p>
         <p className="text-xs">Visible Pins: {visiblePins.length}</p>
         <p className="text-xs">Total Pins: {pinsData.length}</p>

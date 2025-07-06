@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import MapBox from './Components/MapBox';
-import AddOutlet from './Components/AddOutlet';
+import Overlay from './Components/Overlay';
 
 export default function Home() {
-  const [showOverlay, setShowOverlay] = useState(false);
+  const [showPinOverlay, setShowPinOverlay] = useState(false);
     //displays last coordinates on pin drop overlay
   const [coords, setCoords] = useState<{lng: number; lat: number} | null>(null);
 
@@ -14,13 +14,13 @@ export default function Home() {
       <MapBox 
         onPinDrop={(lat, lng) => {
           setCoords({ lat, lng });
-          setShowOverlay(true);
+          setShowPinOverlay(true);
         }}
       />
-      <AddOutlet 
-        showOverlay={showOverlay}
+      <Overlay 
+        showPinOverlay={showPinOverlay}
         coords={coords}
-        onClose={() => setShowOverlay(false)}
+        onClose={() => setShowPinOverlay(false)}
       />
     </div>
   );
