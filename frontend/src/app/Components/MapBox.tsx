@@ -17,13 +17,6 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  //controls whether pin drop overlay is showing
-  const [showPinOverlay, setPinOverlay] = useState(false);
-  //displays last coordinates on pin drop overlay
-  const [lastCoords, setLastCoords] = useState<{
-    lng: number;
-    lat: number;
-  } | null>(null);
   // Store current bounds and visible pins
   const [currentBounds, setCurrentBounds] = useState<Bounds | null>(null);
   const [visiblePins, setVisiblePins] = useState<PinData[]>([]);
@@ -164,14 +157,6 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
           </>
         )}
       </div>
-
-      {showPinOverlay && lastCoords && ( //Text inside pin drop overlay
-        <div className="fixed bottom-10 right-10 z-50 p-4 backdrop-blur-sm bg-black/30 border border-white/20 rounded-2xl shadow-lg w-100 h-140 text-white">
-          <p className="font-semibold text-lg text-white">You dropped a pin!</p>
-          <p className="font-sm"> Longitude: {lastCoords.lng.toFixed(5)}</p>
-          <p className="font-sm"> Latitude: {lastCoords.lat.toFixed(5)}</p>
-        </div>
-      )}
     </>
   );
 };
