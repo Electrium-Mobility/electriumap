@@ -89,7 +89,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
         container: mapContainerRef.current,
         center: [-74.5, 40],
         zoom: 9,
-        style: "mapbox://styles/hannahwiens/cmcgjpr31008v01ry30byd0d4",
+        style: "mapbox://styles/hannahwiens/cmcj9t5wf000v01p6chg0e07a",
       });
 
       // Add moveend and zoomend event listeners
