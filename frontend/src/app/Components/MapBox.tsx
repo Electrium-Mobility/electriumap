@@ -3,8 +3,27 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { FeatureCollection, Point, Feature } from "geojson";
 import { debounce, Bounds, PinData, isPointInBounds } from "./utils";
 import pinsData from "./pins.json";
+
+// Helper: Convert pinsData to GeoJSON FeatureCollection
+const pinsToGeoJSON = (pins: PinData[]): FeatureCollection<Point> => ({
+  type: "FeatureCollection",
+  features: pins.map<Feature<Point>>((pin) => ({
+    type: "Feature",
+    geometry: {
+      type: "Point",
+      coordinates: [pin.lng, pin.lat],
+    },
+    properties: {},
+  })),
+});
+
+const HEATMAP_SOURCE_ID = "pins-heatmap-source";
+const HEATMAP_LAYER_ID = "pins-heatmap-layer";
+const HEATMAP_MAX_ZOOM = 8; // Show heatmap at zoom <= 8
+
 
 type MapBoxProps = {
   width?: string;
@@ -76,15 +95,22 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
   // Debounced function to update visible pins
   const debouncedUpdatePins = useCallback(
     debounce(() => {
+      if (!mapRef.current) return;
+      const zoom = mapRef.current.getZoom();
       const bounds = getBounds();
       if (!bounds) return;
 
       setCurrentBounds(bounds);
       const filteredPins = filterPinsByBounds(bounds);
       setVisiblePins(filteredPins);
-      renderPins(filteredPins);
+
+      if (zoom > HEATMAP_MAX_ZOOM) {
+        renderPins(filteredPins);
+      } else {
+        clearAllMarkers(); // Ensure pins are hidden when heatmap is visible
+      }
     }, 300), // 300ms debounce
-    [getBounds, filterPinsByBounds, renderPins]
+    [getBounds, filterPinsByBounds, renderPins, clearAllMarkers]
   );
 
   useEffect(() => {
@@ -98,9 +124,79 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
         style: "mapbox://styles/mapbox/streets-v11",
       });
 
+      // Add heatmap source and layer
+      mapRef.current.on("load", () => {
+        if (!mapRef.current) return;
+        // Add GeoJSON source for pins
+        if (!mapRef.current.getSource(HEATMAP_SOURCE_ID)) {
+          mapRef.current.addSource(HEATMAP_SOURCE_ID, {
+            type: "geojson",
+            data: pinsToGeoJSON(pinsData),
+          });
+        }
+        // Add heatmap layer
+        if (!mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
+          mapRef.current.addLayer({
+            id: HEATMAP_LAYER_ID,
+            type: "heatmap",
+            source: HEATMAP_SOURCE_ID,
+            maxzoom: HEATMAP_MAX_ZOOM,
+            paint: {
+              // Heatmap color and intensity config (tweak as needed)
+              "heatmap-weight": 1,
+              "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 8, 2],
+              "heatmap-color": [
+                "interpolate",
+                ["linear"],
+                ["heatmap-density"],
+                0, "rgba(33,102,172,0)",
+                0.2, "rgb(103,169,207)",
+                0.4, "rgb(209,229,240)",
+                0.6, "rgb(253,219,199)",
+                0.8, "rgb(239,138,98)",
+                1, "rgb(178,24,43)"
+              ],
+              "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 5, 8, 25],
+              "heatmap-opacity": 0.7,
+            },
+          });
+        }
+        // Set initial visibility
+        if (mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
+          mapRef.current.setLayoutProperty(
+            HEATMAP_LAYER_ID,
+            "visibility",
+            mapRef.current!.getZoom() <= HEATMAP_MAX_ZOOM ? "visible" : "none"
+          );
+        }
+      });
+
       // Add moveend and zoomend event listeners
       mapRef.current.on("moveend", debouncedUpdatePins);
       mapRef.current.on("zoomend", debouncedUpdatePins);
+
+      // Toggle heatmap/marker visibility on zoom
+      mapRef.current.on("zoom", () => {
+        if (!mapRef.current) return;
+        const zoom = mapRef.current.getZoom();
+        const showHeatmap = zoom <= HEATMAP_MAX_ZOOM;
+
+        // Toggle heatmap layer visibility
+        if (mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
+          mapRef.current.setLayoutProperty(
+            HEATMAP_LAYER_ID,
+            "visibility",
+            showHeatmap ? "visible" : "none"
+          );
+        }
+        if (showHeatmap) {
+          // Hide all pins
+          clearAllMarkers();
+        } else {
+          // Hide heatmap (already done above), show pins
+          renderPins(visiblePins);
+        }
+      });
 
       // Initial pin rendering
       const initialBounds = getBounds();
