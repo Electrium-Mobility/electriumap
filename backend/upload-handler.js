@@ -1,6 +1,22 @@
 // Backend Upload Testing Platform - JavaScript Handler
 // This file provides the UI interactions and data preparation
 // Backend team should replace the placeholder upload functions with Firebase logic
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyApxNuehMUOxEDybG45Eymv8er6bqCB6mQ",
+  authDomain: "electriumap.firebaseapp.com",
+  projectId: "electriumap",
+  storageBucket: "electriumap.firebasestorage.app",
+  messagingSenderId: "369697728783",
+  appId: "1:369697728783:web:2e4be6df906e1f66c2f67a",
+  measurementId: "G-FSV8JQKCLN"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 class UploadHandler {
   constructor() {
@@ -372,16 +388,31 @@ class UploadHandler {
   }
 
   async simulateFirebasePointUpload(pointData) {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    console.log("=== POINT UPLOAD DATA ===");
-    console.log("Point Data:", pointData);
-
-    return {
-      success: true,
-      message: "Data logged to console for Firebase integration",
-      pointId: pointData.id,
-    };
+    try {
+      const docRef = await addDoc(collection(db, "Outlets"), {
+        latitude: pointData.latitude,
+        longitude: pointData.longitude,
+        userName: "Test User", 
+        userid: "test123",     
+        locationName: pointData.name,
+        chargerType: pointData.type,
+        description: pointData.description,
+        tags: pointData.tags || [],
+        createdAt: serverTimestamp()
+      });
+  
+      return {
+        success: true,
+        message: `Data uploaded to Firestore (ID: ${docRef.id})`,
+        pointId: docRef.id
+      };
+    } catch (error) {
+      console.error("Error uploading to Firestore:", error);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
   }
 
   // === UTILITY FUNCTIONS ===

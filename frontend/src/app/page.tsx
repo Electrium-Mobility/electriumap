@@ -1,5 +1,27 @@
-import MapBox from "./Components/MapBox";
+'use client';
+
+import { useState } from 'react';
+import MapBox from './Components/MapBox';
+import Overlay from './Components/Overlay';
 
 export default function Home() {
-  return <MapBox />;
+  const [showPinOverlay, setShowPinOverlay] = useState(false);
+    //displays last coordinates on pin drop overlay
+  const [coords, setCoords] = useState<{lng: number; lat: number} | null>(null);
+
+  return (
+    <div className="relative w-full h-screen">
+      <MapBox 
+        onPinDrop={(lat, lng) => {
+          setCoords({ lat, lng });
+          setShowPinOverlay(true);
+        }}
+      />
+      <Overlay 
+        showPinOverlay={showPinOverlay}
+        coords={coords}
+        onClose={() => setShowPinOverlay(false)}
+      />
+    </div>
+  );
 }

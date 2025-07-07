@@ -27,20 +27,14 @@ const HEATMAP_MAX_ZOOM = 11; // Show heatmap at zoom <= 10, heatmap fades out fu
 type MapBoxProps = {
   width?: string;
   height?: string;
+  onPinDrop?: (lat: number, lng:number) => void;
 };
 
-const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
+const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  //controls whether pin drop overlay is showing
-  const [showPinOverlay, setPinOverlay] = useState(false);
-  //displays last coordinates on pin drop overlay
-  const [lastCoords, setLastCoords] = useState<{
-    lng: number;
-    lat: number;
-  } | null>(null);
   // Store current bounds and visible pins
   const [currentBounds, setCurrentBounds] = useState<Bounds | null>(null);
   const [visiblePins, setVisiblePins] = useState<PinData[]>([]);
@@ -120,7 +114,7 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
         container: mapContainerRef.current,
         center: [-74.5, 40],
         zoom: 9,
-        style: "mapbox://styles/mapbox/streets-v11",
+        style: "mapbox://styles/hannahwiens/cmcj9t5wf000v01p6chg0e07a",
       });
 
       // Add heatmap source and layer
@@ -230,16 +224,13 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
           marker.remove();
           // Remove from marker refs
           markersRef.current = markersRef.current.filter((m) => m !== marker);
-          //Removes pin drop overlay
-          setPinOverlay(false);
-          setLastCoords(null);
         });
         // Log coordinates
         console.log("Dropped pin at:", { lng, lat });
 
         //Shows white overlay when pin is dropped
-        setPinOverlay(true);
-        setLastCoords({ lng, lat });
+        //setPinOverlay(true);
+        onPinDrop?.(lat, lng);
       });
     }
 
@@ -260,5 +251,4 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
     </>
   );
 };
-
 export default MapBox;

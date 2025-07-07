@@ -1,4 +1,4 @@
 // login page router
-import LoginPage from "./LoginPage";
+import LoginPage from "../login/LoginPage";
 
 export default LoginPage;

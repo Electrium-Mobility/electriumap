@@ -19,8 +19,29 @@
   }
 }
 
+/* sign-in map background */
+@layer utilities { 
+  .bg-sign-in { 
+    background-image: url('/images/map_bg.png'); 
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+}
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* prettier scroll bar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: bg-white/15;
+  border-radius: 8px;
 }
