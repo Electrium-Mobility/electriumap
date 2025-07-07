@@ -16,14 +16,13 @@ const pinsToGeoJSON = (pins: PinData[]): FeatureCollection<Point> => ({
       type: "Point",
       coordinates: [pin.lng, pin.lat],
     },
-    properties: {},
+    properties: {}, 
   })),
 });
 
 const HEATMAP_SOURCE_ID = "pins-heatmap-source";
 const HEATMAP_LAYER_ID = "pins-heatmap-layer";
-const HEATMAP_MAX_ZOOM = 8; // Show heatmap at zoom <= 8
-
+const HEATMAP_MAX_ZOOM = 11; // Show heatmap at zoom <= 10, heatmap fades out fully before zoom 11
 
 type MapBoxProps = {
   width?: string;
@@ -144,7 +143,7 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
             paint: {
               // Heatmap color and intensity config (tweak as needed)
               "heatmap-weight": 1,
-              "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 8, 2],
+              "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
               "heatmap-color": [
                 "interpolate",
                 ["linear"],
@@ -156,12 +155,18 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
                 0.8, "rgb(239,138,98)",
                 1, "rgb(178,24,43)"
               ],
-              "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 5, 8, 25],
-              "heatmap-opacity": 0.7,
+              // adjust radius of heatmap locations 
+              "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 
+              0, 2, 
+              4, 8,
+              8, 15],
+              // fade heatmap between zoom 9 and 11 before rendering pins 
+              "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 9, 1, 11, 0]
             },
           });
         }
-        // Set initial visibility
+
+        // Set initial visibility of heatmap 
         if (mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
           mapRef.current.setLayoutProperty(
             HEATMAP_LAYER_ID,
@@ -179,7 +184,8 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
       mapRef.current.on("zoom", () => {
         if (!mapRef.current) return;
         const zoom = mapRef.current.getZoom();
-        const showHeatmap = zoom <= HEATMAP_MAX_ZOOM;
+        const showHeatmap = zoom <11; // fade heatmap out gradually 
+        const showPins = zoom >= HEATMAP_MAX_ZOOM; // show pins staring at zoom 10
 
         // Toggle heatmap layer visibility
         if (mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
@@ -189,6 +195,8 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
             showHeatmap ? "visible" : "none"
           );
         }
+
+        // manage marker visibility
         if (showHeatmap) {
           // Hide all pins
           clearAllMarkers();
@@ -249,27 +257,6 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
         ref={mapContainerRef}
         className="map-container"
       />
-
-      {/* Debug info overlay */}
-      <div className="fixed top-4 left-4 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg p-4 text-black">
-        <p className="font-semibold text-sm">Viewport Info</p>
-        <p className="text-xs">Visible Pins: {visiblePins.length}</p>
-        <p className="text-xs">Total Pins: {pinsData.length}</p>
-        {currentBounds && (
-          <>
-            <p className="text-xs">SW: [{currentBounds.sw[0].toFixed(3)}, {currentBounds.sw[1].toFixed(3)}]</p>
-            <p className="text-xs">NE: [{currentBounds.ne[0].toFixed(3)}, {currentBounds.ne[1].toFixed(3)}]</p>
-          </>
-        )}
-      </div>
-
-      {showPinOverlay && lastCoords && ( //Text inside pin drop overlay
-        <div className="fixed bottom-10 p-4 right-10 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg w-80 h-100 text-black">
-          <p className="font-semibold text-lg text-black">You dropped a pin!</p>
-          <p className="font-sm"> Longitude: {lastCoords.lng.toFixed(5)}</p>
-          <p className="font-sm"> Latitude: {lastCoords.lat.toFixed(5)}</p>
-        </div>
-      )}
     </>
   );
 };
