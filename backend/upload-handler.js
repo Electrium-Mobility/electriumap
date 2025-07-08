@@ -2,6 +2,11 @@
 // This file provides the UI interactions and data preparation
 // Backend team should replace the placeholder upload functions with Firebase logic
 
+import { db } from "../db/firebase"; 
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { addOutlet } from "../utils/addOutlet"; // Adjust the import path as necessary
+
+
 class UploadHandler {
   constructor() {
     this.selectedImages = [];
@@ -319,13 +324,19 @@ class UploadHandler {
       const pointData = this.collectPointData();
 
       // TODO: Replace this with actual Firebase upload logic
-      const result = await this.simulateFirebasePointUpload(pointData);
+      await addOutlet({
+        latitude: pointData.latitude,
+        longitude: pointData.longitude,
+        userName: "Test User",  
+        userId: "user_12345",    
+      });
 
       this.showResult(
         "pointResults",
         "success",
-        `Successfully uploaded point: ${pointData.name}. ${result.message}`
+        `Successfully uploaded point: ${pointData.name}`
       );
+
 
       // Reset form
       document.getElementById("pointName").value = "";

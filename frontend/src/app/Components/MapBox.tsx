@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { debounce, Bounds, PinData, isPointInBounds } from "./utils";
-import pinsData from "./pins.json";
 
 type MapBoxProps = {
   width?: string;
@@ -26,6 +25,17 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
   // Store current bounds and visible pins
   const [currentBounds, setCurrentBounds] = useState<Bounds | null>(null);
   const [visiblePins, setVisiblePins] = useState<PinData[]>([]);
+  const [ outlets, setOutlets ] = useState<PinData[]>([]); // Store all outlet data
+
+  useEffect(() => {
+    fetch("/api/outlets")
+      .then(res => res.json())
+      .then((data) => {
+            setOutlets(data);
+            console.log("Fetched outlets:", data);
+      })
+      .catch(console.error);
+  }, []);
 
   // Function to get current map bounds
   const getBounds = useCallback((): Bounds | null => {
@@ -42,7 +52,7 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
 
   // Function to filter pins based on bounds
   const filterPinsByBounds = useCallback((bounds: Bounds): PinData[] => {
-    return pinsData.filter(pin => isPointInBounds(pin, bounds));
+    return outlets.filter(pin => isPointInBounds(pin, bounds));
   }, []);
 
   // Function to clear all markers
@@ -158,7 +168,7 @@ const MapBox = ({ width = "100vw", height = "100vh" }: MapBoxProps) => {
       <div className="fixed top-4 left-4 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg p-4 text-black">
         <p className="font-semibold text-sm">Viewport Info</p>
         <p className="text-xs">Visible Pins: {visiblePins.length}</p>
-        <p className="text-xs">Total Pins: {pinsData.length}</p>
+        <p className="text-xs">Total Pins: {outlets.length}</p>
         {currentBounds && (
           <>
             <p className="text-xs">SW: [{currentBounds.sw[0].toFixed(3)}, {currentBounds.sw[1].toFixed(3)}]</p>
