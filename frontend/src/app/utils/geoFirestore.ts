@@ -8,10 +8,59 @@ import {
   endAt, 
   serverTimestamp,
   DocumentData,
-  QueryDocumentSnapshot
+  QueryDocumentSnapshot,
+  limit as firestoreLimit
 } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import * as geofire from 'geofire-common';
+import { withAnalytics } from './spatialAnalytics';
+
+// Add caching for frequently accessed data
+interface QueryCache {
+  [key: string]: {
+    data: GeoOutlet[];
+    timestamp: number;
+    expiresAt: number;
+  };
+}
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+let queryCache: QueryCache = {};
+
+// Cache key generator
+function generateCacheKey(type: string, params: any): string {
+  return `${type}_${JSON.stringify(params)}`;
+}
+
+// Cache utilities
+function getCachedData(key: string): GeoOutlet[] | null {
+  const cached = queryCache[key];
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.data;
+  }
+  return null;
+}
+
+function setCachedData(key: string, data: GeoOutlet[]): void {
+  queryCache[key] = {
+    data,
+    timestamp: Date.now(),
+    expiresAt: Date.now() + CACHE_DURATION
+  };
+}
+
+// Clean expired cache entries
+function cleanCache(): void {
+  const now = Date.now();
+  Object.keys(queryCache).forEach(key => {
+    if (queryCache[key].expiresAt < now) {
+      delete queryCache[key];
+    }
+  });
+}
+
+// Run cache cleanup every 10 minutes
+setInterval(cleanCache, 10 * 60 * 1000);
 
 //interface for data describing an outlet
 export interface Outlet {
@@ -32,39 +81,23 @@ export interface GeoOutlet extends Outlet {
   distance?: number; // distance from query point in km
 }
 
-//function to add outlet to database with spatial indexing using geohash
-export async function addGeoOutlet(outlet: Outlet): Promise<string> {
-  try {
-    // Generate geohash for the outlet's location
-    const geohash = geofire.geohashForLocation([outlet.latitude, outlet.longitude]);
-    
-    // Add outlet data with geohash for spatial indexing
-    const docRef = await addDoc(collection(db, "Outlets"), {
-      latitude: outlet.latitude,
-      longitude: outlet.longitude,
-      geohash: geohash,
-      userName: outlet.userName,
-      userId: outlet.userId,
-      locationName: outlet.locationName,
-      chargerType: outlet.chargerType,
-      description: outlet.description,
-      createdAt: serverTimestamp()
-    });
-    
-    console.log("Outlet added to database with spatial indexing, ID: ", docRef.id);
-    return docRef.id;
-  } catch (e) {
-    console.error("Error adding outlet to database: ", e);
-    throw e;
-  }
-}
-
-//function to get outlets within a specified radius of a center point
-export async function getOutletsWithinRadius(
+// Internal function without monitoring (for internal use)
+async function _getOutletsWithinRadius(
   centerLat: number, 
   centerLng: number, 
-  radiusKm: number
+  radiusKm: number,
+  useCache: boolean = true
 ): Promise<GeoOutlet[]> {
+  const cacheKey = generateCacheKey('radius', { centerLat, centerLng, radiusKm });
+  
+  if (useCache) {
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      console.log('Returning cached radius query results');
+      return cached;
+    }
+  }
+
   try {
     const center: [number, number] = [centerLat, centerLng];
     const radiusInM = radiusKm * 1000;
@@ -79,7 +112,8 @@ export async function getOutletsWithinRadius(
         collection(db, 'Outlets'),
         orderBy('geohash'),
         startAt(b[0]),
-        endAt(b[1])
+        endAt(b[1]),
+        firestoreLimit(100) // Limit to prevent overwhelming results
       );
       promises.push(getDocs(q).then(snapshot => snapshot.docs));
     }
@@ -89,8 +123,13 @@ export async function getOutletsWithinRadius(
     
     // Combine results from all queries
     const matchingDocs: GeoOutlet[] = [];
+    const seenIds = new Set<string>(); // Prevent duplicates
+    
     for (const docsArray of snapshots) {
       for (const doc of docsArray) {
+        if (seenIds.has(doc.id)) continue;
+        seenIds.add(doc.id);
+        
         const data = doc.data() as GeoOutlet;
         const lat = data.latitude;
         const lng = data.longitude;
@@ -109,6 +148,13 @@ export async function getOutletsWithinRadius(
       }
     }
     
+    // Sort by distance for consistent results
+    matchingDocs.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+    
+    if (useCache) {
+      setCachedData(cacheKey, matchingDocs);
+    }
+    
     return matchingDocs;
   } catch (error) {
     console.error("Error querying outlets within radius: ", error);
@@ -116,14 +162,30 @@ export async function getOutletsWithinRadius(
   }
 }
 
-//function to get outlets within a bounding box
-export async function getOutletsWithinBounds(
+// Internal function without monitoring (for internal use)
+async function _getOutletsWithinBounds(
   southWestLat: number,
   southWestLng: number,
   northEastLat: number,
-  northEastLng: number
+  northEastLng: number,
+  useCache: boolean = true
 ): Promise<GeoOutlet[]> {
+  const cacheKey = generateCacheKey('bounds', { southWestLat, southWestLng, northEastLat, northEastLng });
+  
+  if (useCache) {
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      console.log('Returning cached bounds query results');
+      return cached;
+    }
+  }
+
   try {
+    // Input validation
+    if (southWestLat >= northEastLat || southWestLng >= northEastLng) {
+      throw new Error('Invalid bounding box: southwest corner must be southwest of northeast corner');
+    }
+
     // Calculate center point and radius for the bounding box
     const centerLat = (southWestLat + northEastLat) / 2;
     const centerLng = (southWestLng + northEastLng) / 2;
@@ -134,8 +196,8 @@ export async function getOutletsWithinBounds(
       geofire.distanceBetween([centerLat, centerLng], [northEastLat, northEastLng])
     );
     
-    // Get outlets within the calculated radius
-    const outlets = await getOutletsWithinRadius(centerLat, centerLng, radiusKm);
+    // Get outlets within the calculated radius (don't use cache for this intermediate call)
+    const outlets = await _getOutletsWithinRadius(centerLat, centerLng, radiusKm, false);
     
     // Filter to only include outlets within the exact bounding box
     const filteredOutlets = outlets.filter(outlet => {
@@ -145,6 +207,10 @@ export async function getOutletsWithinBounds(
              outlet.longitude <= northEastLng;
     });
     
+    if (useCache) {
+      setCachedData(cacheKey, filteredOutlets);
+    }
+    
     return filteredOutlets;
   } catch (error) {
     console.error("Error querying outlets within bounds: ", error);
@@ -152,37 +218,36 @@ export async function getOutletsWithinBounds(
   }
 }
 
-//function to get all outlets (fallback for when no spatial filtering is needed)
-export async function getAllGeoOutlets(): Promise<GeoOutlet[]> {
-  try {
-    const querySnapshot = await getDocs(collection(db, "Outlets"));
-    
-    const outlets: GeoOutlet[] = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data() as GeoOutlet
-    }));
-    
-    return outlets;
-  } catch (error) {
-    console.error("Error reading all outlets from database: ", error);
-    throw error;
-  }
-}
-
-//function to find the nearest outlets to a given point
-export async function getNearestOutlets(
+// Internal function without monitoring (for internal use)
+async function _getNearestOutlets(
   centerLat: number,
   centerLng: number,
-  limit: number = 10
+  limit: number = 10,
+  useCache: boolean = true
 ): Promise<GeoOutlet[]> {
+  const cacheKey = generateCacheKey('nearest', { centerLat, centerLng, limit });
+  
+  if (useCache) {
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      console.log('Returning cached nearest query results');
+      return cached;
+    }
+  }
+
   try {
+    // Input validation
+    if (limit <= 0 || limit > 100) {
+      throw new Error('Limit must be between 1 and 100');
+    }
+
     // Start with a reasonable search radius (50km)
     let searchRadius = 50;
     let outlets: GeoOutlet[] = [];
     
     // Expand search radius until we find enough outlets or reach maximum radius
     while (outlets.length < limit && searchRadius <= 500) {
-      outlets = await getOutletsWithinRadius(centerLat, centerLng, searchRadius);
+      outlets = await _getOutletsWithinRadius(centerLat, centerLng, searchRadius, false);
       if (outlets.length < limit) {
         searchRadius *= 2; // Double the search radius
       }
@@ -190,12 +255,82 @@ export async function getNearestOutlets(
     
     // Sort by distance and return only the requested number
     outlets.sort((a, b) => (a.distance || 0) - (b.distance || 0));
-    return outlets.slice(0, limit);
+    const result = outlets.slice(0, limit);
+    
+    if (useCache) {
+      setCachedData(cacheKey, result);
+    }
+    
+    return result;
   } catch (error) {
     console.error("Error finding nearest outlets: ", error);
     throw error;
   }
 }
+
+// Public functions with monitoring
+export const getOutletsWithinRadius = withAnalytics('radius', 
+  (centerLat: number, centerLng: number, radiusKm: number, useCache: boolean = true) => 
+    _getOutletsWithinRadius(centerLat, centerLng, radiusKm, useCache)
+);
+
+export const getOutletsWithinBounds = withAnalytics('bounds',
+  (southWestLat: number, southWestLng: number, northEastLat: number, northEastLng: number, useCache: boolean = true) =>
+    _getOutletsWithinBounds(southWestLat, southWestLng, northEastLat, northEastLng, useCache)
+);
+
+export const getNearestOutlets = withAnalytics('nearest',
+  (centerLat: number, centerLng: number, limit: number = 10, useCache: boolean = true) =>
+    _getNearestOutlets(centerLat, centerLng, limit, useCache)
+);
+
+//function to add outlet to database with spatial indexing using geohash
+export const addGeoOutlet = withAnalytics('add',
+  async (outlet: Outlet): Promise<string> => {
+    try {
+      // Generate geohash for the outlet's location
+      const geohash = geofire.geohashForLocation([outlet.latitude, outlet.longitude]);
+      
+      // Add outlet data with geohash for spatial indexing
+      const docRef = await addDoc(collection(db, "Outlets"), {
+        latitude: outlet.latitude,
+        longitude: outlet.longitude,
+        geohash: geohash,
+        userName: outlet.userName,
+        userId: outlet.userId,
+        locationName: outlet.locationName,
+        chargerType: outlet.chargerType,
+        description: outlet.description,
+        createdAt: serverTimestamp()
+      });
+      
+      console.log("Outlet added to database with spatial indexing, ID: ", docRef.id);
+      return docRef.id;
+    } catch (e) {
+      console.error("Error adding outlet to database: ", e);
+      throw e;
+    }
+  }
+);
+
+//function to get all outlets (fallback for when no spatial filtering is needed)
+export const getAllGeoOutlets = withAnalytics('all',
+  async (): Promise<GeoOutlet[]> => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "Outlets"));
+      
+      const outlets: GeoOutlet[] = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data() as GeoOutlet
+      }));
+      
+      return outlets;
+    } catch (error) {
+      console.error("Error reading all outlets from database: ", error);
+      throw error;
+    }
+  }
+);
 
 //helper function to calculate distance between two points using the geofire-common library
 export function calculateDistance(
@@ -229,7 +364,7 @@ export async function migrateExistingOutlets(): Promise<void> {
         
         // Add to batch update
         batch.push({
-          id: doc.id,
+          docRef: doc.ref,
           geohash: geohash
         });
       }
@@ -237,11 +372,11 @@ export async function migrateExistingOutlets(): Promise<void> {
     
     console.log(`Found ${batch.length} outlets to migrate`);
     
-    // Update documents with geohash
-    // Note: In a real application, you might want to use batch writes for better performance
+    // Update documents with geohash using updateDoc
+    const { updateDoc } = await import("firebase/firestore");
+    
     for (const update of batch) {
-      await addDoc(collection(db, "Outlets"), {
-        ...querySnapshot.docs.find(doc => doc.id === update.id)?.data(),
+      await updateDoc(update.docRef, {
         geohash: update.geohash
       });
     }

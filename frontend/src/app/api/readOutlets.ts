@@ -30,7 +30,7 @@ export const readOutlets = async (params?: SpatialQueryParams): Promise<GeoOutle
     // Handle different query types
     switch (params.type) {
       case 'radius':
-        if (params.centerLat && params.centerLng && params.radius) {
+        if (params.centerLat !== undefined && params.centerLng !== undefined && params.radius !== undefined) {
           return await getOutletsWithinRadius(
             params.centerLat, 
             params.centerLng, 
@@ -40,7 +40,8 @@ export const readOutlets = async (params?: SpatialQueryParams): Promise<GeoOutle
         throw new Error('Missing required parameters for radius query: centerLat, centerLng, radius');
 
       case 'bounds':
-        if (params.southWestLat && params.southWestLng && params.northEastLat && params.northEastLng) {
+        if (params.southWestLat !== undefined && params.southWestLng !== undefined && 
+            params.northEastLat !== undefined && params.northEastLng !== undefined) {
           return await getOutletsWithinBounds(
             params.southWestLat,
             params.southWestLng,
@@ -51,7 +52,7 @@ export const readOutlets = async (params?: SpatialQueryParams): Promise<GeoOutle
         throw new Error('Missing required parameters for bounds query: southWestLat, southWestLng, northEastLat, northEastLng');
 
       case 'nearest':
-        if (params.centerLat && params.centerLng) {
+        if (params.centerLat !== undefined && params.centerLng !== undefined) {
           return await getNearestOutlets(
             params.centerLat, 
             params.centerLng, 
