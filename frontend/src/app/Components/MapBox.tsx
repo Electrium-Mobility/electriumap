@@ -28,9 +28,10 @@ type MapBoxProps = {
   width?: string;
   height?: string;
   onPinDrop?: (lat: number, lng:number) => void;
+  lightMode?: boolean;
 };
 
-const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) => {
+const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode}: MapBoxProps) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -252,6 +253,16 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
       mapRef.current?.remove();
     };
   }, [debouncedUpdatePins, getBounds, filterPinsByBounds, renderPins, clearAllMarkers]);
+  
+  useEffect(() => {
+      if (!mapRef.current) return;
+
+      const newStyle = lightMode
+      ? "mapbox://styles/hannahwiens/cmcjq7lyu003l01p6a93lhg38"
+      : "mapbox://styles/hannahwiens/cmcj9t5wf000v01p6chg0e07a"; 
+
+      mapRef.current.setStyle(newStyle)
+    })
 
   return (
     <>

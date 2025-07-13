@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState} from 'react';
 import MapBox from './Components/MapBox';
 import Overlay from './Components/Overlay';
 
@@ -8,6 +8,7 @@ export default function Home() {
   const [showPinOverlay, setShowPinOverlay] = useState(false);
     //displays last coordinates on pin drop overlay
   const [coords, setCoords] = useState<{lng: number; lat: number} | null>(null);
+  const [lightMode, setLightMode] = useState(false);
 
   return (
     <div className="relative w-full h-screen">
@@ -16,11 +17,14 @@ export default function Home() {
           setCoords({ lat, lng });
           setShowPinOverlay(true);
         }}
+        lightMode={lightMode}
       />
       <Overlay 
         showPinOverlay={showPinOverlay}
         coords={coords}
         onClose={() => setShowPinOverlay(false)}
+        lightMode={lightMode}
+        setLightMode={setLightMode}
       />
     </div>
   );
