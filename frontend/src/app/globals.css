@@ -3,6 +3,13 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --overlay-bg: bg-white/15;
+  --overlay-border: border-white/40
+}
+
+.light {
+  --overlay-bg: bg-white/5;
+  --overlay-border: border-white/80
 }
 
 @theme inline {
