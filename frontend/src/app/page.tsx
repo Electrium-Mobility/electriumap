@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState} from 'react';
 import MapBox from './Components/MapBox';
 import Overlay from './Components/Overlay';
 
@@ -13,6 +13,7 @@ export default function Home() {
   const handleSearchSelect = (lng: number, lat: number) => {
     setFlyToLocation({ lng, lat });
   };
+  const [lightMode, setLightMode] = useState(false);
 
   return (
     <div className="relative w-full h-screen">
@@ -21,13 +22,14 @@ export default function Home() {
           setCoords({ lat, lng });
           setShowPinOverlay(true);
         }}
-        flyTo={flyToLocation}
       />
       <Overlay 
         showPinOverlay={showPinOverlay}
         coords={coords}
         onClose={() => setShowPinOverlay(false)}
         onSearchSelect={handleSearchSelect}
+        lightMode={lightMode}
+        setLightMode={setLightMode}
       />
     </div>
   );

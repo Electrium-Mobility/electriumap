@@ -29,11 +29,12 @@ interface MapBoxProps {
   width?: string;
   height?: string;
   onPinDrop?: (lat: number, lng: number) => void;
+  lightMode?: boolean;
   onMapLoad?: () => void;
   flyTo?: { lng: number; lat: number } | null;
 }
 
-const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, flyTo }: MapBoxProps) => {
+const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo }: MapBoxProps) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -297,6 +298,16 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, flyTo }: MapBoxP
       mapRef.current = null; // ensure we can recreate the map on remount (e.g. in React Strict Mode)
     };
   }, [debouncedUpdatePins, getBounds, filterPinsByBounds, renderPins, clearAllMarkers]);
+  
+  useEffect(() => {
+      if (!mapRef.current) return;
+
+      const newStyle = lightMode
+      ? "mapbox://styles/hannahwiens/cmcjq7lyu003l01p6a93lhg38"
+      : "mapbox://styles/hannahwiens/cmcj9t5wf000v01p6chg0e07a"; 
+
+      mapRef.current.setStyle(newStyle)
+    })
 
   return (
     <>
