@@ -9,10 +9,10 @@ import pinsData from "./pins.json";
 type MapBoxProps = {
   width?: string;
   height?: string;
-  onPinDrop?: (lat: number, lng:number) => void;
+  onPinDrop?: (lat: number, lng: number) => void;
 };
 
-const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) => {
+const MapBox = ({ width = "100vw", height = "100vh", onPinDrop }: MapBoxProps) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -20,26 +20,16 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
   // Store current bounds and visible pins
   const [currentBounds, setCurrentBounds] = useState<Bounds | null>(null);
   const [visiblePins, setVisiblePins] = useState<PinData[]>([]);
-  const [ outlets, setOutlets ] = useState<PinData[]>([]); 
+  const [outlets, setOutlets] = useState<PinData[]>([]);
 
-  // Fetch outlets data from the backend
-  useEffect(() => {
-    fetch("/api/outlets")
-      .then(res => res.json())
-      .then((data) => {
-            setOutlets(data);
-            console.log("Fetched outlets:", data);
-      })
-      .catch(console.error);
-  }, []);
 
   // Function to get current map bounds
   const getBounds = useCallback((): Bounds | null => {
     if (!mapRef.current) return null;
-    
+
     const bounds = mapRef.current.getBounds();
     if (!bounds) return null;
-    
+
     return {
       sw: [bounds.getWest(), bounds.getSouth()],
       ne: [bounds.getEast(), bounds.getNorth()]
@@ -79,7 +69,40 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
     });
   }, [clearAllMarkers]);
 
-  // Debounced function to update visible pins
+  // Debounced function to update pins in the firebase based on bounds
+  const debouncedUpdatePinsFirebase = useCallback(
+    debounce(async () => {
+      const bounds = getBounds();
+      if (!bounds) return;
+
+      try {
+        const params = new URLSearchParams({
+          southWestLat: bounds.sw[1].toString(),
+          southWestLng: bounds.sw[0].toString(),
+          northEastLat: bounds.ne[1].toString(),
+          northEastLng: bounds.ne[0].toString(),
+          type: 'bounds'
+        });
+
+        const response = await fetch(`/api/outlets?${params.toString()}`);
+        if (!response.ok) throw new Error("Failed to fetch outlets");
+
+        const result = await response.json();
+        setOutlets(result.data);
+        setVisiblePins(result.data);
+        renderPins(result.data);
+        console.log("Fetched outlets:", result.data);
+      } catch (err) {
+        console.error("Error fetching outlets:", err);
+        setOutlets([]);
+        setVisiblePins([]);
+        clearAllMarkers();
+      }
+    }, 300),
+    [getBounds, renderPins, clearAllMarkers]
+  );
+
+  // Debounced function to update pins based on bounds
   const debouncedUpdatePins = useCallback(
     debounce(() => {
       const bounds = getBounds();
@@ -93,6 +116,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
     [getBounds, filterPinsByBounds, renderPins]
   );
 
+
   useEffect(() => {
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -105,17 +129,15 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
       });
 
       // Add moveend and zoomend event listeners
-      mapRef.current.on("moveend", debouncedUpdatePins);
-      mapRef.current.on("zoomend", debouncedUpdatePins);
+      mapRef.current.on("moveend", debouncedUpdatePinsFirebase);
+      mapRef.current.on("zoomend", debouncedUpdatePinsFirebase);
 
       // Initial pin rendering
       const initialBounds = getBounds();
       if (initialBounds) {
-        const initialPins = filterPinsByBounds(initialBounds);
         setCurrentBounds(initialBounds);
-        setVisiblePins(initialPins);
-        renderPins(initialPins);
       }
+
 
       // Add click event to drop a pin and log coordinates
       mapRef.current.on("click", (e: mapboxgl.MapMouseEvent) => {
@@ -147,7 +169,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
       clearAllMarkers();
       mapRef.current?.remove();
     };
-  }, [debouncedUpdatePins, getBounds, filterPinsByBounds, renderPins, clearAllMarkers]);
+  }, [debouncedUpdatePinsFirebase, debouncedUpdatePins, getBounds, filterPinsByBounds, renderPins, clearAllMarkers]);
 
   return (
     <>
