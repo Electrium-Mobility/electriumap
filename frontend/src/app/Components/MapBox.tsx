@@ -38,6 +38,18 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
   // Store current bounds and visible pins
   const [currentBounds, setCurrentBounds] = useState<Bounds | null>(null);
   const [visiblePins, setVisiblePins] = useState<PinData[]>([]);
+  const [ outlets, setOutlets ] = useState<PinData[]>([]); 
+
+  // Fetch outlets data from the backend
+  useEffect(() => {
+    fetch("/api/outlets")
+      .then(res => res.json())
+      .then((data) => {
+            setOutlets(data);
+            console.log("Fetched outlets:", data);
+      })
+      .catch(console.error);
+  }, []);
 
   // Function to get current map bounds
   const getBounds = useCallback((): Bounds | null => {
