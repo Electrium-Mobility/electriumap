@@ -1,9 +1,170 @@
 // Backend Upload Testing Platform - JavaScript Handler
 // This file provides the UI interactions and data preparation
 // Backend team should replace the placeholder upload functions with Firebase logic
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// Console capture and display functionality
+class ConsoleCapture {
+  constructor() {
+    this.originalConsole = {
+      log: console.log,
+      warn: console.warn,
+      error: console.error,
+      info: console.info,
+    };
+    this.initializeConsoleCapture();
+  }
+
+  initializeConsoleCapture() {
+    const consoleOutput = document.getElementById("consoleOutput");
+    const clearButton = document.getElementById("clearConsole");
+    const toggleButton = document.getElementById("consoleToggle");
+    const minimizeButton = document.getElementById("minimizeConsole");
+    const fixedConsole = document.getElementById("fixedConsole");
+
+    // Console toggle functionality
+    let isConsoleOpen = false;
+
+    toggleButton.addEventListener("click", () => {
+      isConsoleOpen = !isConsoleOpen;
+      if (isConsoleOpen) {
+        fixedConsole.classList.add("open");
+        fixedConsole.classList.remove("minimized");
+        document.body.classList.add("console-open");
+        toggleButton.textContent = "📝 Hide Console";
+      } else {
+        fixedConsole.classList.remove("open");
+        fixedConsole.classList.remove("minimized");
+        document.body.classList.remove("console-open");
+        toggleButton.textContent = "📝 Show Console";
+      }
+    });
+
+    // Minimize/maximize functionality
+    let isMinimized = false;
+
+    minimizeButton.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevent header click
+      isMinimized = !isMinimized;
+      if (isMinimized) {
+        fixedConsole.classList.add("minimized");
+        minimizeButton.textContent = "□";
+      } else {
+        fixedConsole.classList.remove("minimized");
+        minimizeButton.textContent = "−";
+      }
+    });
+
+    // Click header to minimize/maximize
+    const consoleHeader = fixedConsole.querySelector(".console-header");
+    consoleHeader.addEventListener("click", (e) => {
+      if (e.target === clearButton || e.target === minimizeButton) return;
+      minimizeButton.click();
+    });
+
+    // Override console methods
+    console.log = (...args) => {
+      this.originalConsole.log(...args);
+      this.addConsoleMessage("log", args.join(" "));
+    };
+
+    console.warn = (...args) => {
+      this.originalConsole.warn(...args);
+      this.addConsoleMessage("warn", args.join(" "));
+    };
+
+    console.error = (...args) => {
+      this.originalConsole.error(...args);
+      this.addConsoleMessage("error", args.join(" "));
+    };
+
+    console.info = (...args) => {
+      this.originalConsole.info(...args);
+      this.addConsoleMessage("info", args.join(" "));
+    };
+
+    // Add clear button functionality
+    clearButton.addEventListener("click", (e) => {
+      e.stopPropagation(); // Prevent header click
+      this.clearConsole();
+    });
+
+    // Add a custom success method for positive feedback
+    console.success = (...args) => {
+      this.originalConsole.log(...args);
+      this.addConsoleMessage("success", args.join(" "));
+    };
+
+    // Catch unhandled JavaScript errors
+    window.addEventListener("error", (event) => {
+      this.addConsoleMessage(
+        "error",
+        `JavaScript Error: ${event.message} (Line: ${event.lineno})`
+      );
+    });
+
+    // Catch unhandled promise rejections
+    window.addEventListener("unhandledrejection", (event) => {
+      this.addConsoleMessage(
+        "error",
+        `Unhandled Promise Rejection: ${event.reason}`
+      );
+    });
+
+    // Auto-open console on first message
+    this.autoOpenOnFirstMessage = true;
+  }
+
+  addConsoleMessage(type, message) {
+    const consoleOutput = document.getElementById("consoleOutput");
+    const fixedConsole = document.getElementById("fixedConsole");
+    const toggleButton = document.getElementById("consoleToggle");
+
+    // Auto-open console on first real message (not the initial one)
+    if (
+      this.autoOpenOnFirstMessage &&
+      !message.includes("Console initialized")
+    ) {
+      if (!fixedConsole.classList.contains("open")) {
+        fixedConsole.classList.add("open");
+        document.body.classList.add("console-open");
+        toggleButton.textContent = "📝 Hide Console";
+      }
+      this.autoOpenOnFirstMessage = false;
+    }
+
+    const messageDiv = document.createElement("div");
+    messageDiv.className = `console-message ${type}`;
+
+    // Add timestamp
+    const timestamp = new Date().toLocaleTimeString();
+    messageDiv.textContent = `[${timestamp}] ${message}`;
+
+    consoleOutput.appendChild(messageDiv);
+
+    // Auto-scroll to bottom
+    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+
+    // Limit to last 100 messages to prevent memory issues
+    const messages = consoleOutput.children;
+    if (messages.length > 100) {
+      consoleOutput.removeChild(messages[1]); // Keep the first "initialized" message
+    }
+  }
+
+  clearConsole() {
+    const consoleOutput = document.getElementById("consoleOutput");
+    consoleOutput.innerHTML =
+      '<div class="console-message info">Console cleared. Check here for debug information...</div>';
+  }
+}
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  serverTimestamp,
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyApxNuehMUOxEDybG45Eymv8er6bqCB6mQ",
@@ -12,7 +173,7 @@ const firebaseConfig = {
   storageBucket: "electriumap.firebasestorage.app",
   messagingSenderId: "369697728783",
   appId: "1:369697728783:web:2e4be6df906e1f66c2f67a",
-  measurementId: "G-FSV8JQKCLN"
+  measurementId: "G-FSV8JQKCLN",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -211,6 +372,7 @@ class UploadHandler {
     const pointTypeInput = document.getElementById("pointType");
 
     selectSelected.addEventListener("click", () => {
+      console.log("📋 Point type dropdown clicked");
       selectItems.classList.toggle("select-hide");
       selectSelected.classList.toggle("select-arrow-active");
     });
@@ -231,6 +393,8 @@ class UploadHandler {
         items.forEach((i) => i.classList.remove("same-as-selected"));
         // Add active class to selected item
         e.target.classList.add("same-as-selected");
+
+        console.success(`✅ Point type selected: ${text} (${value})`);
       });
     });
 
@@ -244,6 +408,8 @@ class UploadHandler {
   }
 
   generateRandomCoordinates() {
+    console.log("🎲 Generating random coordinates...");
+
     // Generate random coordinates within reasonable bounds
     // Latitude: -90 to 90, Longitude: -180 to 180
     const latitude = (Math.random() * 180 - 90).toFixed(6);
@@ -251,6 +417,10 @@ class UploadHandler {
 
     document.getElementById("latitude").value = latitude;
     document.getElementById("longitude").value = longitude;
+
+    console.success(
+      `📍 Random coordinates generated: ${latitude}, ${longitude}`
+    );
 
     this.showResult(
       "pointResults",
@@ -314,7 +484,10 @@ class UploadHandler {
   }
 
   async uploadPoint() {
+    console.log("🔄 Starting point upload process...");
+
     if (!this.validatePointForm()) {
+      console.error("❌ Form validation failed - missing required fields");
       this.showResult(
         "pointResults",
         "error",
@@ -322,6 +495,8 @@ class UploadHandler {
       );
       return;
     }
+
+    console.success("✅ Form validation passed");
 
     const uploadBtn = document.getElementById("uploadPointBtn");
     const uploadText = document.getElementById("uploadPointText");
@@ -333,9 +508,12 @@ class UploadHandler {
 
     try {
       const pointData = this.collectPointData();
+      console.log("📊 Point data collected:", pointData);
 
       // TODO: Replace this with actual Firebase upload logic
       const result = await this.simulateFirebasePointUpload(pointData);
+
+      console.success(`🎉 Point uploaded successfully: ${pointData.name}`);
 
       this.showResult(
         "pointResults",
@@ -346,11 +524,15 @@ class UploadHandler {
       // Reset form
       document.getElementById("pointName").value = "";
       document.getElementById("pointType").value = "";
+      document.getElementById("selectSelected").textContent = "Select type...";
       document.getElementById("latitude").value = "";
       document.getElementById("longitude").value = "";
       document.getElementById("pointDescription").value = "";
       document.getElementById("pointTags").value = "";
+
+      console.log("🔄 Form reset completed");
     } catch (error) {
+      console.error("💥 Upload failed:", error.message);
       this.showResult(
         "pointResults",
         "error",
@@ -392,25 +574,25 @@ class UploadHandler {
       const docRef = await addDoc(collection(db, "Outlets"), {
         latitude: pointData.latitude,
         longitude: pointData.longitude,
-        userName: "Test User", 
-        userid: "test123",     
+        userName: "Test User",
+        userid: "test123",
         locationName: pointData.name,
         chargerType: pointData.type,
         description: pointData.description,
         tags: pointData.tags || [],
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
       });
-  
+
       return {
         success: true,
         message: `Data uploaded to Firestore (ID: ${docRef.id})`,
-        pointId: docRef.id
+        pointId: docRef.id,
       };
     } catch (error) {
       console.error("Error uploading to Firestore:", error);
       return {
         success: false,
-        message: error.message
+        message: error.message,
       };
     }
   }
@@ -438,9 +620,15 @@ class UploadHandler {
 
 // Initialize the upload handler when DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
+  // Initialize console capture first
+  window.consoleCapture = new ConsoleCapture();
+
+  // Initialize upload handler
   window.uploadHandler = new UploadHandler();
-  console.log("🚀 Backend Upload Testing Platform initialized");
+
+  console.success("🚀 Backend Upload Testing Platform initialized");
+  console.info("👀 All console outputs will now appear above");
   console.log(
-    "👀 Check console for uploaded data that can be sent to Firebase"
+    "📝 You can test the point type dropdown, random coordinates, and upload functionality"
   );
 });

@@ -120,14 +120,6 @@
     "category": "city"
   },
   {
-    "id": "16",
-    "lng": -73.3,
-    "lat": 40.7,
-    "title": "New Rochelle",
-    "description": "Queen City of the Sound",
-    "category": "city"
-  },
-  {
     "id": "17",
     "lng": -74.4,
     "lat": 40.1,
@@ -665,7 +657,6 @@
   },
   {
     "id": "84",
-    "id": "84",
     "lng": -74.1,
     "lat": 40.2,
     "title": "Manasquan",
@@ -799,5 +790,133 @@
     "title": "Belleville",
     "description": "Essex County",
     "category": "city"
+  },
+  {
+    "id": "101",
+    "lng": -79.38,
+    "lat": 43.65,
+    "title": "Downtown Toronto",
+    "description": "CN Tower area",
+    "category": "city"
+  },
+  {
+    "id": "102",
+    "lng": -79.40,
+    "lat": 43.66,
+    "title": "Queen Street West",
+    "description": "Art and shopping district",
+    "category": "neighborhood"
+  },
+  {
+    "id": "103",
+    "lng": -79.35,
+    "lat": 43.64,
+    "title": "Distillery District",
+    "description": "Historic and cultural area",
+    "category": "neighborhood"
+  },
+  {
+    "id": "104",
+    "lng": -79.30,
+    "lat": 43.70,
+    "title": "The Beaches",
+    "description": "Waterfront neighborhood",
+    "category": "neighborhood"
+  },
+  {
+    "id": "105",
+    "lng": -79.50,
+    "lat": 43.67,
+    "title": "High Park",
+    "description": "Large green park",
+    "category": "park"
+  },
+  {
+    "id": "106",
+    "lng": -79.60,
+    "lat": 43.75,
+    "title": "Etobicoke",
+    "description": "Western suburb",
+    "category": "borough"
+  },
+  {
+    "id": "107",
+    "lng": -79.35,
+    "lat": 43.75,
+    "title": "North York",
+    "description": "Northern district of Toronto",
+    "category": "borough"
+  },
+  {
+    "id": "108",
+    "lng": -79.25,
+    "lat": 43.70,
+    "title": "Scarborough",
+    "description": "Eastern suburb",
+    "category": "borough"
+  },
+  {
+    "id": "109",
+    "lng": -79.42,
+    "lat": 43.68,
+    "title": "University of Toronto",
+    "description": "Main campus",
+    "category": "education"
+  },
+  {
+    "id": "110",
+    "lng": -79.37,
+    "lat": 43.63,
+    "title": "Harbourfront",
+    "description": "Waterfront recreation",
+    "category": "neighborhood"
+  },
+  {
+    "id": "111",
+    "lng": -80.53,
+    "lat": 43.47,
+    "title": "University of Waterloo",
+    "description": "Engineering",
+    "category": "education"
+  },
+  {
+    "id": "112",
+    "lng": -80.54,
+    "lat": 43.38,
+    "title": "Wilfrid Laurier University",
+    "description": "Business",
+    "category": "education"
+  },
+  {
+    "id": "113",
+    "lng": -79.93,
+    "lat": 43.26,
+    "title": "McMaster University",
+    "description": "Health and science",
+    "category": "education"
+  },
+  {
+    "id": "115",
+    "lng": -81.28,
+    "lat": 42.96,
+    "title": "Western University",
+    "description": "University in London, Ontario",
+    "category": "education"
+  },
+  {
+    "id": "117",
+    "lng": -79.68,
+    "lat": 43.55,
+    "title": "Sheridan College",
+    "description": "Arts and animation",
+    "category": "education"
+  },
+  {
+    "id": "118",
+    "lng": -79.38,
+    "lat": 43.66,
+    "title": "Toronto Metropolitan University",
+    "description": "University located in downtown Toronto",
+    "category": "education"
   }
 ] 
