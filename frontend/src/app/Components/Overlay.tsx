@@ -21,8 +21,11 @@ const AddOutlet: React.FC<OverlayProps> = ({showPinOverlay, coords, onClose }) =
     const [selectedPort, setSelectedPort] = useState("Triple Peg");
     const [selectedCondition, setSelectedCondition] = useState("New");
     const [extraDetails, setExtraDetails] = useState("");
+
     // temp values for search bar dropdown values 
-    const tempValue = ["University of Waterloo"]; 
+    const Location = ["University of Waterloo", "Dana Porter Library", "Engineering 7 (E7)"]; 
+    const Address = ["University Avenue W, Waterloo ON", "University Avenue W, Waterloo ON", "University Avenue W, Waterloo ON"]; 
+
     const [value, setValue] = useState("Testing..."); 
 
     //if coordinates exist, will fill them in for address
@@ -35,18 +38,13 @@ const AddOutlet: React.FC<OverlayProps> = ({showPinOverlay, coords, onClose }) =
     return (
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
         {/* search bar + dropdown options */}
-        <div className="flex items-center px-4 h-full backdrop-blur-sm bg-white/15 border-2 border-white/40 rounded-full shadow-lg w-[360px]">
-          <Dropdown 
-            options={tempValue}
-            selectedOption={setValue}
-          /> 
-          <LucideSearch className="w-5 h-5 font-semibold text-white " />
-          {/* <input
-            type="text"
-            placeholder="Search Electriumap"
-            className="bg-transparent outline-none text-white placeholder-white/60 w-full text-md"
-          />
-          <LucideSearch className="w-5 h-5 font-semibold text-white" /> */}
+        <div className="relative flex items-center h-full backdrop-blur-sm bg-white/15 border-2 border-white/40 rounded-full shadow-lg w-[360px]">
+            <Dropdown 
+              options={Location}
+              address={Address}
+              selectedOption={setValue}
+            /> 
+            <LucideSearch className="w-5 h-5 font-semibold text-white" />
         </div>
 
         <div className="flex items-center gap-6">
