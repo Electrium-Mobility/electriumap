@@ -90,11 +90,13 @@ const AddOutlet: React.FC<OverlayProps> = ({
           </button>
         </div>
 
-          <div className={`flex items-center justify-center h-14 aspect-square rounded-full backdrop-blur-sm border-2 shadow-md text-white font-semibold text-sm w-14
+          <div className={`flex items-center justify-center h-14 aspect-square rounded-full backdrop-blur-sm border-2 shadow-md text-white font-semibold text-sm w-14 cursor-pointer
             ${lightMode
           ? "bg-white/5 border-white/80"
           : "bg-white/15 border-white/40"
-          }`}>
+          }`}
+          onClick={() => setShowSettings(true)}
+          title="Settings">
             AG
           </div>
         </div>
