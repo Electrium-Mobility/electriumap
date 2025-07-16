@@ -49,7 +49,7 @@ const Dropdown: React.FC<DropdownProps> = ({ options, address, selectedOption })
 
             {/* display drop down panel - only show if showDropDown is true */}
             {showDropDown && filteredOptions.length > 0 && ( 
-                <div className="absolute left-0 top-full mt-3.5 w-[360px] z-50 rounded-b-[28px] backdrop-blur-sm bg-white/10 border-x-2 border-b-2 border-white/40 text-white shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute left-1 top-full mt-3.5 w-[350px] z-50 rounded-b-[28px] backdrop-blur-sm bg-white/10 border-x-2 border-b-2 border-white/40 text-white shadow-lg max-h-60 overflow-y-auto">
                     {/* "near me" location drop down option */}
                     <div
                         className="flex items-start gap-3 px-4 py-3 hover:bg-white/25 cursor-pointer transition-colors"

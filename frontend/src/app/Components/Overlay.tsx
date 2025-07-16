@@ -44,7 +44,7 @@ const AddOutlet: React.FC<OverlayProps> = ({showPinOverlay, coords, onClose }) =
               address={Address}
               selectedOption={setValue}
             /> 
-            <LucideSearch className="w-5 h-5 font-semibold text-white" />
+            <LucideSearch className="absolute right-5 w-5 h-5 font-semibold text-white" />
         </div>
 
         <div className="flex items-center gap-6">
