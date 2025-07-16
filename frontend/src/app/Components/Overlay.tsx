@@ -146,14 +146,31 @@ const AddOutlet: React.FC<OverlayProps> = ({
           </button>
         </div>
 
-        <div
-          className="flex items-center justify-center h-14 aspect-square rounded-full backdrop-blur-sm bg-white/15 border-2 border-white/40 shadow-md text-white font-semibold text-sm w-14 cursor-pointer"
+          <div className={`flex items-center justify-center h-14 aspect-square rounded-full backdrop-blur-sm border-2 shadow-md text-white font-semibold text-sm w-14 cursor-pointer
+            ${lightMode
+          ? "bg-white/5 border-white/80"
+          : "bg-white/15 border-white/40"
+          }`}
           onClick={() => setShowSettings(true)}
-          title="Settings"
-        >
-          AG
+          title="Settings">
+            AG
+          </div>
         </div>
-      </div>
+
+        <div className="fixed top-53 left-10">
+          <button
+            onClick={() => setLightMode(!lightMode)}
+            className={`w-16 h-8 rounded-full p-1 transition-colors duration-300 ${
+              lightMode ? 'bg-gray-300' : 'bg-gray-700'
+            }`}
+          >
+            <div
+              className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
+            lightMode ? 'translate-x-8' : 'translate-x-0'
+          }`}
+            />
+          </button>
+        </div>
 
         {showAddOutlet && (
           <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm  text-white border-2 border-white rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
