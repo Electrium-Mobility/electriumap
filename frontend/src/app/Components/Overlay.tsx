@@ -56,7 +56,6 @@ const AddOutlet: React.FC<OverlayProps> = ({showPinOverlay, coords, onClose }) =
             </div>
           </div>
 
-
         <div className="flex items-center gap-6">
           <div className="flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm bg-white/15 font-semibold border-2 border-white/40 rounded-full shadow-md text-white">
             <button className="flex flex-col items-center justify-center  w-20 h-14">

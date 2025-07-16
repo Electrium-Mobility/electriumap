@@ -15,7 +15,6 @@ const Dropdown: React.FC<DropdownProps> = ({ options, address, selectedOption, s
     const [searchText, setSearchText] = useState(""); 
     const [filteredOptions, setFilteredOptions] = useState<string[]>(options); 
     const dropdownRef = useRef<HTMLDivElement>(null);
-
     // handle user input change in search bar and changes filter options accordingly 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => { 
         const value = e.target.value;
@@ -25,7 +24,7 @@ const Dropdown: React.FC<DropdownProps> = ({ options, address, selectedOption, s
         ));
         setShowDropDown(true); 
     };
-    
+  
     // disable dropdown when options is clicked, reset values 
     const optionPressed = (option: string) => { 
         setSearchText(option); 
@@ -52,9 +51,8 @@ const Dropdown: React.FC<DropdownProps> = ({ options, address, selectedOption, s
                 value={searchText}
                 onChange={handleSearch}
                 placeholder="Search Electriumap" 
-                className="bg-transparent outline-none text-white placeholder-white/60 w-full text-md"
+                className="bg-transparent outline-none text-white placeholder-white/60 w-full text-md px-4"
             />  
-
             {/* display dropdown panel only if results exist */}
             {showDropDown && filteredOptions.length > 0 && (
                 <div className="absolute top-full -left-4 mt-4 w-[360px] z-30">
