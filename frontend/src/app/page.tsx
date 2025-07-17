@@ -5,6 +5,7 @@ import MapBox from './Components/MapBox';
 import Overlay from './Components/Overlay';
 
 export default function Home() {
+
   const [showPinOverlay, setShowPinOverlay] = useState(false);
     //displays last coordinates on pin drop overlay
   const [coords, setCoords] = useState<{lng: number; lat: number} | null>(null);
@@ -24,4 +25,5 @@ export default function Home() {
       />
     </div>
   );
+
 }
