@@ -8,7 +8,11 @@ import {
   LucidePlus,
   LucideSearch,
   LucideUpload,
+  LucideFilter,
+  LucideSlidersHorizontal,
+  LucideSunMedium,
 } from "lucide-react";
+import { FaPlug } from "react-icons/fa6";
 
 interface OverlayProps {
   showPinOverlay: boolean;
@@ -18,6 +22,17 @@ interface OverlayProps {
 
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
 const conditionOptions = ["New", "Worn", "Slightly Damaged", "Damaged"];
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+  return isMobile;
+}
 
 const AddOutlet: React.FC<OverlayProps> = ({
   showPinOverlay,
@@ -32,6 +47,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [selectedCondition, setSelectedCondition] = useState("New");
   const [extraDetails, setExtraDetails] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const isMobile = useIsMobile();
 
   //if coordinates exist, will fill them in for address
   useEffect(() => {
@@ -39,6 +56,53 @@ const AddOutlet: React.FC<OverlayProps> = ({
       setAddress(`${coords?.lng.toFixed(5)} ${coords?.lat.toFixed(5)}`);
     }
   }, [coords]);
+
+  if (isMobile) {
+    return (
+      <>
+        <div className="fixed top-0 left-0 w-full z-50 flex flex-col items-center">
+          <div className="flex items-center px-4 h-14 mt-4 w-[95vw] max-w-lg backdrop-blur-sm bg-white/15 border-2 border-white/40 rounded-full shadow-lg">
+            <div className="flex items-center w-full">
+              {searchValue === "" && (
+                <LucideSearch className="w-5 h-5 font-semibold text-white mr-2" />
+              )}
+              <input
+                type="text"
+                placeholder="Search Electriumap"
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
+                className="bg-transparent outline-none text-white placeholder-white/60 w-full text-md"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="fixed bottom-[110px] right-4 z-50 flex flex-col items-end">
+          <button
+            onClick={() => setShowAddOutlet((prev) => !prev)}
+            className="flex items-center justify-center w-11 h-11 rounded-full bg-green-600 border-2 border-white shadow-lg"
+          >
+            <FaPlug className="w-6 h-6 text-white" />
+          </button>
+        </div>
+        <div className="fixed bottom-0 left-0 w-full z-50 flex flex-col items-center">
+          <div className="flex justify-between items-center px-4 h-14 mb-4 w-[95vw] max-w-lg backdrop-blur-sm bg-white/15 font-semibold border-2 border-white/40 rounded-full shadow-lg text-white">
+            <button className="flex flex-col items-center justify-center flex-1">
+              <LucideSlidersHorizontal className="w-6 h-6" />
+              <span className="text-[10px] mt-1 whitespace-nowrap">Filter</span>
+            </button>
+            <button className="flex flex-col items-center justify-center flex-1">
+              <LucideBookmark className="w-6 h-6" />
+              <span className="text-[10px] mt-1 whitespace-nowrap">Saved</span>
+            </button>
+            <button className="flex flex-col items-center justify-center flex-1">
+              <LucideSunMedium className="w-6 h-6" />
+              <span className="text-[10px] mt-1 whitespace-nowrap">Mode</span>
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
