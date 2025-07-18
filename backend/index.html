@@ -11,6 +11,7 @@
         <header>
             <h1>🔧 Ev's Backend Upload Testing Platform</h1>
             <p>Test platform for Firebase image and point data uploads</p>
+            <button class="console-toggle-btn" id="consoleToggle">📝 Toggle Console</button>
         </header>
 
         <div class="upload-sections">
@@ -111,7 +112,20 @@
 
         </div>
 
+    </div>
 
+    <!-- Fixed Console (moved outside container) -->
+    <div class="fixed-console" id="fixedConsole">
+        <div class="console-header">
+            <h3>📝 Console Output</h3>
+            <div class="console-controls">
+                <button class="clear-btn" id="clearConsole">Clear</button>
+                <button class="minimize-btn" id="minimizeConsole">−</button>
+            </div>
+        </div>
+        <div class="console-output" id="consoleOutput">
+            <div class="console-message info">Console initialized. Check here for debug information...</div>
+        </div>
     </div>
 
     <script type="module" src="upload-handler.js"></script>

@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image'; 
 import Link from 'next/link';
+import { auth } from "../firebase/firebase";
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
 type LoginPageProps = { 
     username: string; 
@@ -14,10 +16,11 @@ type AuthButtonProps = {
     src: string; 
     alt: string; 
     text: string; 
+    onClick?: () => void;
 };
 
-const AuthButton: React.FC<AuthButtonProps> = ({src, alt, text}) => ( 
-    <button className="flex items-center gap-3 justify-center border border-[#848488] text-white px-2 py-1 rounded bg-[#2B2D2B] hover:bg-[#2E7D32] transition w-full mt-2"> 
+const AuthButton: React.FC<AuthButtonProps> = ({src, alt, text, onClick}) => ( 
+    <button type="button" onClick={onClick} className="flex items-center gap-3 justify-center border border-[#848488] text-white px-2 py-1 rounded bg-[#2B2D2B] hover:bg-[#2E7D32] transition w-full mt-2"> 
         <Image src={src} alt={alt} width={20} height={20} />
         <span >{text}</span>
     </button>
@@ -31,16 +34,34 @@ const LoginPage: React.FC = () => {
     const router = useRouter()
 
     // pop-up alert for form validation (username and password) 
-    const handleLogin = (event: React.FormEvent) => { 
+    const handleLogin = async (event: React.FormEvent) => { 
         event.preventDefault(); 
-        if(!username || !pwd){ 
+        if (!username || !pwd) { 
             setErrorMsg("Please enter valid username and password");
             return; 
         }
-        alert('Submitted successfully.')
-        // after user successfully logins, change route to map page 
-        router.push('/');
+
+        try {
+            // attempt sign in with Firebase
+            await signInWithEmailAndPassword(auth, username, pwd);
+            alert('Submitted successfully.')
+            // after user successfully logins, change route to map page 
+            router.push('/');
+        } catch (error: any) {
+            setErrorMsg(error.message); // or display a custom message
+        }
     };  
+
+    const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+        await signInWithPopup(auth, provider);
+        alert('Submitted successfully.')
+        router.push('/');
+        } catch (error: any) {
+            setErrorMsg(error.message);
+        }
+    };
 
     return(
         <div className="bg-sign-in grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
@@ -103,7 +124,7 @@ const LoginPage: React.FC = () => {
 
             {/* different open authorization buttons for login*/}
             <div className="w-[400px] flex flex-col gap-2 mt-5"> 
-                <AuthButton src="/images/google_logo.png" alt="Google" text="Continue with Google" />
+                <AuthButton src="/images/google_logo.png" alt="Google" text="Continue with Google" onClick={handleGoogleSignIn} />
                 <AuthButton src="/images/facebook_logo.png" alt="Facebook" text="Continue with Facebook" />
                 <AuthButton src="/images/apple_logo.png" alt="Apple" text="Continue with Apple" />
             </div> 

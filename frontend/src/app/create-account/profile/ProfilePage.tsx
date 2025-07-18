@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation"; 
 import Image from "next/image";
-import { setGlobalFirstName } from "../../globals";
+import { useUserData } from "../../create-account/UserDataContext";
 
 function ProfilePage(){
   const [profileData, setProfileData] = useState({
@@ -12,6 +12,14 @@ function ProfilePage(){
   });
   const [errorMsg, setErrorMsg] = useState(''); 
   const router = useRouter(); 
+  const { userData, setUserData } = useUserData();
+
+  useEffect(() => {
+    setProfileData({
+      FirstName: userData.firstName || "",
+      LastName: userData.lastName || "",
+    });
+  }, [userData]);
 
   // update user's input via 'value'
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,8 +35,11 @@ function ProfilePage(){
       return;  
     }
 
-    // set global first name variable 
-    setGlobalFirstName(profileData.FirstName); 
+    setUserData((prev) => ({
+      ...prev,
+      firstName: profileData.FirstName,
+      lastName: profileData.LastName,
+    }));
 
     router.push("/create-account/vehicle");
   };

@@ -11,6 +11,12 @@ body {
     color: #1a1a1a;
     background: #ffffff;
     min-height: 100vh;
+    margin-bottom: 0;
+    transition: margin-bottom 0.3s ease;
+}
+
+body.console-open {
+    margin-bottom: 295px; /* Height of console + header */
 }
 
 .container {
@@ -42,6 +48,147 @@ header p {
     font-size: 0.9rem;
     color: #666666;
     font-weight: 400;
+}
+
+.console-toggle-btn {
+    background: #1a1a1a;
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    margin-top: 10px;
+}
+
+.console-toggle-btn:hover {
+    background: #2a2a2a;
+}
+
+/* Fixed Console at bottom */
+.fixed-console {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #1a1a1a;
+    border-top: 2px solid #3a3a3a;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    z-index: 1000;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.fixed-console.open {
+    transform: translateY(0);
+}
+
+.fixed-console.minimized {
+    transform: translateY(calc(100% - 45px));
+}
+
+.fixed-console .console-header {
+    background: #2a2a2a;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #3a3a3a;
+    cursor: pointer;
+}
+
+.fixed-console .console-header h3 {
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+.console-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.clear-btn, .minimize-btn {
+    background: #4a4a4a;
+    color: #ffffff;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.clear-btn:hover, .minimize-btn:hover {
+    background: #5a5a5a;
+}
+
+.minimize-btn {
+    padding: 4px 8px;
+    font-weight: bold;
+}
+
+.fixed-console .console-output {
+    background: #1a1a1a;
+    color: #ffffff;
+    font-family: 'SF Mono', Monaco, 'Consolas', monospace;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    padding: 10px 15px;
+    height: 250px;
+    overflow-y: auto;
+}
+
+.console-message {
+    margin-bottom: 4px;
+    padding: 2px 0;
+    word-wrap: break-word;
+    border-left: 3px solid transparent;
+    padding-left: 8px;
+}
+
+.console-message.info {
+    color: #87ceeb;
+    border-left-color: #87ceeb;
+}
+
+.console-message.log {
+    color: #ffffff;
+    border-left-color: #666666;
+}
+
+.console-message.warn {
+    color: #ffa500;
+    border-left-color: #ffa500;
+}
+
+.console-message.error {
+    color: #ff6b6b;
+    border-left-color: #ff6b6b;
+}
+
+.console-message.success {
+    color: #90ee90;
+    border-left-color: #90ee90;
+}
+
+.fixed-console .console-output::-webkit-scrollbar {
+    width: 6px;
+}
+
+.fixed-console .console-output::-webkit-scrollbar-track {
+    background: #2a2a2a;
+}
+
+.fixed-console .console-output::-webkit-scrollbar-thumb {
+    background: #4a4a4a;
+    border-radius: 3px;
+}
+
+.fixed-console .console-output::-webkit-scrollbar-thumb:hover {
+    background: #5a5a5a;
 }
 
 /* Upload sections */

@@ -20,7 +20,7 @@ export async function addOutlet(outlet: Outlet) {
       latitude: outlet.latitude,
       longitude: outlet.longitude,
       userName: outlet.userName,
-      userId: outlet.userId,
+      userid: outlet.userId,
       locationName: outlet.locationName,
       chargerType: outlet.chargerType,
       description: outlet.description,
@@ -31,5 +31,50 @@ export async function addOutlet(outlet: Outlet) {
   } catch (e) {
     //log errorss
     console.error("Error adding outlet to database: ", e);
+  }
+}
+interface FrontendOutletInput {
+  locationName: string;
+  chargerType: string;
+  description: string;
+  userName: string;
+  userId: string;
+}
+
+// Geocoding helper
+async function getLatLngFromAddress(address: string): Promise<{ lat: number; lng: number }> {
+  const encoded = encodeURIComponent(address);
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}`;
+
+  const response = await fetch(url);
+  const data = await response.json();
+
+  if (!data || data.length === 0) {
+    throw new Error("Unable to geocode address.");
+  }
+
+  return {
+    lat: parseFloat(data[0].lat),
+    lng: parseFloat(data[0].lon),
+  };
+}
+
+// Frontend wrapper function
+export async function addOutletFrontend(input: FrontendOutletInput): Promise<void> {
+  try {
+    const { lat, lng } = await getLatLngFromAddress(input.locationName);
+
+    await addOutlet({
+      latitude: lat,
+      longitude: lng,
+      userName: input.userName,
+      userId: input.userId,
+      locationName: input.locationName,
+      chargerType: input.chargerType,
+      description: input.description,
+    });
+  } catch (error) {
+    console.error("Failed to add outlet from frontend:", error);
+    throw error;
   }
 }
