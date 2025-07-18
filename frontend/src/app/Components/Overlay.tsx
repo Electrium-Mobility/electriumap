@@ -11,6 +11,10 @@ import {
   LucideFilter,
   LucideSlidersHorizontal,
   LucideSunMedium,
+  LucideHome,
+  LucideBriefcase,
+  LucideGraduationCap,
+  LucideHistory,
 } from "lucide-react";
 import { FaPlug } from "react-icons/fa6";
 
@@ -34,6 +38,21 @@ function useIsMobile() {
   return isMobile;
 }
 
+const dummyRecents = [
+  {
+    title: "University of Waterloo",
+    address: "University Avenue West, Waterloo, ON",
+  },
+  {
+    title: "University of Waterloo",
+    address: "University Avenue West, Waterloo, ON",
+  },
+  {
+    title: "University of Waterloo",
+    address: "University Avenue West, Waterloo, ON",
+  },
+];
+
 const AddOutlet: React.FC<OverlayProps> = ({
   showPinOverlay,
   coords,
@@ -48,6 +67,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [extraDetails, setExtraDetails] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [searchValue, setSearchValue] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
   const isMobile = useIsMobile();
 
   //if coordinates exist, will fill them in for address
@@ -61,18 +81,74 @@ const AddOutlet: React.FC<OverlayProps> = ({
     return (
       <>
         <div className="fixed top-0 left-0 w-full z-50 flex flex-col items-center">
-          <div className="flex items-center px-4 h-14 mt-4 w-[95vw] max-w-lg backdrop-blur-sm bg-white/15 border-2 border-white/40 rounded-full shadow-lg">
-            <div className="flex items-center w-full">
-              {searchValue === "" && (
-                <LucideSearch className="w-5 h-5 font-semibold text-white mr-2" />
+          <div
+            className={`flex flex-col items-center w-full transition-all duration-300 mt-4
+            }`}
+          >
+            <div className="relative w-[95vw] max-w-lg">
+              <div
+                className={`flex items-center px-4 h-14 w-full backdrop-blur-sm bg-white/15 border-2 border-white/40 ${
+                  searchFocused ? "rounded-t-[32px]" : "rounded-full"
+                } shadow-lg transition-all duration-300`}
+              >
+                <div className="flex items-center w-full">
+                  {searchValue === "" && (
+                    <LucideSearch className="w-5 h-5 font-semibold text-white mr-2" />
+                  )}
+                  <input
+                    type="text"
+                    placeholder="Search Electriumap"
+                    value={searchValue}
+                    onFocus={() => setSearchFocused(true)}
+                    onBlur={() => setSearchFocused(false)}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    className="bg-transparent outline-none text-white placeholder-white/60 w-full text-md"
+                  />
+                </div>
+              </div>
+              {searchFocused && (
+                <div className="w-full bg-[#232323]/90 border-2 border-t-0 border-white/40 rounded-b-[32px] shadow-xl pt-4 pb-2 px-6 flex flex-col transition-all duration-300">
+                  {/* Home, Work, School */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-row items-center gap-2">
+                      <LucideHome className="w-7 h-7 text-white" />
+                      <span className="text-white text-base font-medium">
+                        Home
+                      </span>
+                    </div>
+                    <div className="flex flex-row items-center gap-2">
+                      <LucideBriefcase className="w-7 h-7 text-white" />
+                      <span className="text-white text-base font-medium">
+                        Work
+                      </span>
+                    </div>
+                    <div className="flex flex-row items-center gap-2">
+                      <LucideGraduationCap className="w-7 h-7 text-white" />
+                      <span className="text-white text-base font-medium">
+                        School
+                      </span>
+                    </div>
+                  </div>
+                  <hr className="border-white/20 mb-2" />
+                  {/* Recent Searches */}
+                  {dummyRecents.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center py-2 border-b border-white/10 last:border-b-0"
+                    >
+                      <LucideHistory className="w-6 h-6 text-white/80 mr-3" />
+                      <div>
+                        <div className="text-white text-base font-semibold leading-tight">
+                          {item.title}
+                        </div>
+                        <div className="text-white/60 text-sm leading-tight">
+                          {item.address}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
-              <input
-                type="text"
-                placeholder="Search Electriumap"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                className="bg-transparent outline-none text-white placeholder-white/60 w-full text-md"
-              />
             </div>
           </div>
         </div>
