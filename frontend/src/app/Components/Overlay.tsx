@@ -9,6 +9,7 @@ interface OverlayProps {
   showPinOverlay: boolean;
   coords: { lat: number; lng: number } | null;
   onClose: () => void;
+  onSearchSelect?: (lng: number, lat: number) => void;
 }
 
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
@@ -18,6 +19,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
   showPinOverlay,
   coords,
   onClose,
+  onSearchSelect,
 }) => {
   const [showAddOutlet, setShowAddOutlet] = useState(false);
   const [address, setAddress] = useState("");
@@ -27,6 +29,9 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [selectedCondition, setSelectedCondition] = useState("New");
   const [extraDetails, setExtraDetails] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [searchResults, setSearchResults] = useState<Array<{place_name: string, center: [number, number]}>>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   //if coordinates exist, will fill them in for address
   useEffect(() => {
@@ -34,17 +39,70 @@ const AddOutlet: React.FC<OverlayProps> = ({
       setAddress(`${coords?.lng.toFixed(5)} ${coords?.lat.toFixed(5)}`);
     }
   }, [coords]);
-  
+
+  const handleSearch = async (value: string) => {
+    if (!value.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(value)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&limit=5`
+      );
+      const data = await response.json();
+      setSearchResults(data.features.map((feature: any) => ({
+        place_name: feature.place_name,
+        center: feature.center
+      })));
+      setShowSearchResults(true);
+    } catch (error) {
+      console.error('Error fetching search results:', error);
+    }
+  };
+
+  const handleSearchResultClick = (result: {place_name: string, center: [number, number]}) => {
+    setSearchValue(result.place_name);
+    setShowSearchResults(false);
+    onSearchSelect?.(result.center[0], result.center[1]);
+  };
+
+  // Debounce search to avoid too many API calls
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      handleSearch(searchValue);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchValue]);
 
   return (
     <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
-      <div className="flex items-center px-4 h-full backdrop-blur-sm bg-white/15 border-2 border-white/40 rounded-full shadow-lg w-[360px]">
+      <div className="relative flex items-center px-4 h-full backdrop-blur-sm bg-white/15 border-2 border-white/40 rounded-full shadow-lg w-[360px]">
         <input
           type="text"
           placeholder="Search Electriumap"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
           className="bg-transparent outline-none text-white placeholder-white/60 w-full text-md"
         />
         <LucideSearch className="w-5 h-5 font-semibold text-white" />
+        
+        {/* Search Results Dropdown */}
+        {showSearchResults && searchResults.length > 0 && (
+          <div className="absolute top-full left-0 w-full mt-2 bg-black/80 backdrop-blur-md rounded-lg shadow-lg max-h-60 overflow-y-auto border border-white/20">
+            {searchResults.map((result, index) => (
+              <div
+                key={index}
+                className="px-4 py-3 hover:bg-white/20 cursor-pointer text-white border-b border-white/10 last:border-b-0"
+                onClick={() => handleSearchResultClick(result)}
+              >
+                {result.place_name}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-6">

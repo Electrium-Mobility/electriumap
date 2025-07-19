@@ -9,7 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@turf/boolean-point-in-polygon": "^7.2.0",
+    "@turf/helpers": "^7.2.0",
     "firebase": "^11.10.0",
+    "geofire-common": "^6.0.0",
     "lucide-react": "^0.525.0",
     "mapbox-gl": "^3.13.0",
     "next": "15.3.3",

@@ -26,13 +26,15 @@ const HEATMAP_SOURCE_ID = "pins-heatmap-source";
 const HEATMAP_LAYER_ID = "pins-heatmap-layer";
 const HEATMAP_MAX_ZOOM = 11; // Show heatmap at zoom <= 10, heatmap fades out fully before zoom 11
 
-type MapBoxProps = {
+interface MapBoxProps {
   width?: string;
   height?: string;
-  onPinDrop?: (lat: number, lng:number) => void;
-};
+  onPinDrop?: (lat: number, lng: number) => void;
+  onMapLoad?: () => void;
+  flyTo?: { lng: number; lat: number } | null;
+}
 
-const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) => {
+const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, flyTo }: MapBoxProps) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -41,6 +43,17 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
   const [currentBounds, setCurrentBounds] = useState<Bounds | null>(null);
   const [visiblePins, setVisiblePins] = useState<PinData[]>([]);
   const [ outlets, setOutlets ] = useState<PinData[]>([]); 
+
+  // Effect to handle flying to searched location
+  useEffect(() => {
+    if (flyTo && mapRef.current) {
+      mapRef.current.flyTo({
+        center: [flyTo.lng, flyTo.lat],
+        zoom: 14,
+        essential: true
+      });
+    }
+  }, [flyTo]);
 
   // Fetch outlets data from the backend
   useEffect(() => {

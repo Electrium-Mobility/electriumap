@@ -1,8 +1,9 @@
 {
   "dependencies": {
-
-    "react-icons": "^5.5.0",
-    "firebase": "^11.9.1"
-
+    "@turf/boolean-point-in-polygon": "^7.2.0",
+    "@turf/helpers": "^7.2.0",
+    "firebase": "^11.9.1",
+    "geofire-common": "^6.0.0",
+    "react-icons": "^5.5.0"
   }
 }
