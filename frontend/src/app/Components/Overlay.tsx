@@ -23,6 +23,7 @@ const AddOutlet: React.FC<OverlayProps> = ({showPinOverlay, coords, onClose }) =
     const [extraDetails, setExtraDetails] = useState("");
 
     // temp values for search bar dropdown values 
+    const [showDropDown, setShowDropDown] = useState(false);
     const Location = ["University of Waterloo", "Dana Porter Library", "Engineering 7 (E7)"]; 
     const Address = ["University Avenue W, Waterloo ON", "University Avenue W, Waterloo ON", "University Avenue W, Waterloo ON"]; 
 
@@ -37,15 +38,24 @@ const AddOutlet: React.FC<OverlayProps> = ({showPinOverlay, coords, onClose }) =
 
     return (
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
-        {/* search bar + dropdown options */}
-        <div className="relative flex items-center h-full backdrop-blur-sm bg-white/15 border-2 border-white/40 rounded-full shadow-lg w-[360px]">
-            <Dropdown 
-              options={Location}
-              address={Address}
-              selectedOption={setValue}
-            /> 
-            <LucideSearch className="absolute right-5 w-5 h-5 font-semibold text-white" />
-        </div>
+        <div className="relative z-50 h-14 w-[360px]">
+          {/*search bar fully rounded when closed, otherwise when inputting text, make bottom edge straight to align with dropdown bar*/}
+          <div className={`absolute inset-0 bg-white/15 backdrop-blur-sm border-2 border-white/40 shadow-lg z-50 transition-all duration-300 ${
+            showDropDown ? "rounded-tl-[30px] rounded-tr-[35px]" : "rounded-full"
+            }`} />     
+            {/* Search input and icon */}
+            <div className="relative z-50 h-full w-full flex items-center px-4">
+              <Dropdown 
+                options={Location}
+                address={Address}
+                selectedOption={setValue}
+                showDropDown={showDropDown}
+                setShowDropDown={setShowDropDown}
+              /> 
+              <LucideSearch className="absolute right-5 w-5 h-5 text-white" />
+            </div>
+          </div>
+
 
         <div className="flex items-center gap-6">
           <div className="flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm bg-white/15 font-semibold border-2 border-white/40 rounded-full shadow-md text-white">

@@ -1,92 +1,103 @@
-// dropdown component for search bar 
-"use client"; 
+"use client";
 
-import React, { useState, useEffect, useRef } from "react"; 
+import React, { useState, useRef, useEffect } from "react"; 
 import { LucideMapPin, LucideClock } from 'lucide-react';
 
 type DropdownProps = { 
-    options: string[]; // list of locations 
-    address: string[]; // associated addresses to locations 
+    options: string[]; 
+    address: string[]; 
     selectedOption: (value: string) => void; 
+    showDropDown: boolean;
+    setShowDropDown: (value: boolean) => void;
 }
 
-const Dropdown: React.FC<DropdownProps> = ({ options, address, selectedOption }) => { 
+const Dropdown: React.FC<DropdownProps> = ({ options, address, selectedOption, showDropDown, setShowDropDown }) => { 
     const [searchText, setSearchText] = useState(""); 
-    const [filteredOptions, setfilteredOptions] = useState<string[]>(options); 
-    const [showDropDown, setShowDropDown] = useState(false); 
-    const searchValueRef = useRef(null); // store input value without need of re-rendering 
-    
-    // filter the titles based on current search input 
-    const filteredTitles = options.filter(title => 
-      title.toLowerCase().includes(searchText.toLowerCase())
-    );
+    const [filteredOptions, setFilteredOptions] = useState<string[]>(options); 
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     // handle user input change in search bar and changes filter options accordingly 
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => { 
-        setSearchText(e.target.value); 
-        setfilteredOptions(options.filter((option) => option.toLowerCase().includes((e.target.value).toLowerCase()))); 
+        const value = e.target.value;
+        setSearchText(value); 
+        setFilteredOptions(options.filter((option) =>
+          option.toLowerCase().includes(value.toLowerCase())
+        ));
         setShowDropDown(true); 
     };
-  
+    
     // disable dropdown when options is clicked, reset values 
     const optionPressed = (option: string) => { 
         setSearchText(option); 
-        setfilteredOptions(options); // reset options 
+        setFilteredOptions(options); 
         setShowDropDown(false); 
         selectedOption(option); 
-    }; 
+    };
 
-    return( 
-        <div className="relative w-full">
+    // close dropdown on outside click
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          setShowDropDown(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    return ( 
+        <div className="relative w-full" ref={dropdownRef}>
             <input 
-                ref={searchValueRef}
                 type="text"
                 value={searchText}
                 onChange={handleSearch}
                 placeholder="Search Electriumap" 
-                className="bg-transparent outline-none text-white placeholder-white/60 w-full text-md px-4"
+                className="bg-transparent outline-none text-white placeholder-white/60 w-full text-md"
             />  
 
-            {/* display drop down panel - only show if showDropDown is true */}
-            {showDropDown && filteredOptions.length > 0 && ( 
-                <div className="absolute left-1 top-full mt-3.5 w-[350px] z-50 rounded-b-[28px] backdrop-blur-sm bg-white/10 border-x-2 border-b-2 border-white/40 text-white shadow-lg max-h-60 overflow-y-auto">
-                    {/* "near me" location drop down option */}
-                    <div
-                        className="flex items-start gap-3 px-4 py-3 hover:bg-white/25 cursor-pointer transition-colors"
-                        // keep search bar empty, need to render map to user's location 
-                        onClick={() => optionPressed("")} 
-                    >
-                        <LucideMapPin className="w-5 h-5 text-white" />
-                        <div className="flex flex-col">
-                            <span className="text-sm font-semibold leading-tight">Near Me</span>
-                        </div>
-                    </div> 
+            {/* display dropdown panel only if results exist */}
+            {showDropDown && filteredOptions.length > 0 && (
+                <div className="absolute top-full -left-4 mt-4 w-[360px] z-30">
+                    {/* connector bridge to searchbar */}
+                    {/* <div className="h-4 w-full border-x-2 border-white/40"/> */}
+                    
+                    {/* display drop down panel */}
+                    <div className="backdrop-blur-sm bg-white/15 border-x-2 border-b-2 border-white/40 rounded-b-[28px] shadow-lg text-white max-h-60 overflow-y-auto">
+                        
+                        {/* "near Me" option */}
+                        <div
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-white/25 cursor-pointer transition-colors"
+                            onClick={() => optionPressed("")}
+                        >
+                            <LucideMapPin className="w-6 h-5 text-white" />
+                            <div className="flex flex-col h-8">
+                                <span className="text-sm mt-2 font-semibold leading-tight">Near Me</span>
+                            </div>
+                        </div> 
 
-                    {/* render the filtered titles as dropdown options from array*/}
-                    {filteredTitles.map((title, index) => { 
-                        // match origin index with associated address   
-                        const optionsIndex = options.indexOf(title);
-                        const matchedAddress = address[optionsIndex]; 
-                         
-                        return ( 
-                            <div 
-                                key={index}
-                                onClick={() => optionPressed(title)}
-                                className="flex items-start gap-3 px-4 py-3 hover:bg-white/25 cursor-pointer transition-colors"
-                            > 
-                                <LucideClock className="w-6 h-5 font-semibold text-white" />
-                                {/* display droptown search options veritcally */}
-                                <div className="flex flex-col"> 
-                                    <span className="text-sm font-semibold leading-tight">{title}</span>
-                                    <span className="text-xs text-white/60">{matchedAddress}</span>
+                        {/* Other dropdown options */}
+                        {filteredOptions.map((title, index) => {
+                            const originalIndex = options.indexOf(title);
+                            const matchedAddress = address[originalIndex];
+                            return (
+                                <div 
+                                    key={index}
+                                    onClick={() => optionPressed(title)}
+                                    className="flex items-center gap-3 px-4 py-3 hover:bg-white/25 cursor-pointer transition-colors border-t border-white/40"
+                                >
+                                    <LucideClock className="w-6 h-5 text-white" />
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-semibold leading-tight">{title}</span>
+                                        <span className="text-xs text-white/60">{matchedAddress}</span>
+                                    </div>
                                 </div>
-                            </div> 
-                        ); 
-                    })}
-                </div> 
+                            );
+                        })}
+                    </div>
+                </div>
             )}
         </div>  
     );
 };
 
-export default Dropdown; 
+export default Dropdown;
