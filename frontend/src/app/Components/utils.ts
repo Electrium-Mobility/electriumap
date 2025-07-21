@@ -1,0 +1,37 @@
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
+
+export interface Bounds {
+  sw: [number, number]; // southwest [lng, lat]
+  ne: [number, number]; // northeast [lng, lat]
+}
+
+export interface PinData {
+  id: string;
+  lng: number;
+  lat: number;
+  title: string;
+  description: string;
+  category: string;
+}
+
+export function isPointInBounds(
+  point: { lng: number; lat: number },
+  bounds: Bounds
+): boolean {
+  return (
+    point.lng >= bounds.sw[0] &&
+    point.lng <= bounds.ne[0] &&
+    point.lat >= bounds.sw[1] &&
+    point.lat <= bounds.ne[1]
+  );
+} 

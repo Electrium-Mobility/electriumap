@@ -20,8 +20,23 @@
    npm run dev
    ```
 
-4. **Visit your app**
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
+4. **Setup Environment Variables**
+
+   Copy the environment template and configure your API keys:
+
+   ```bash
+   cp .env-template .env.local
+   ```
+
+   Then edit `.env.local` and fill in your actual values:
+   - **Firebase credentials** (get from Firebase Console)
+   - **Mapbox access token** (get from Mapbox Studio)
+   
+   See `.env-template` for all required environment variables.
+
+5. **Visit your app**
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
