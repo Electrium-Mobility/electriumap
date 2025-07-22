@@ -8,6 +8,7 @@ import { LucideZap, LucideBookmark, LucideClock, LucidePlus, LucideSearch, Lucid
 interface OverlayProps {
   showPinOverlay: boolean;
   coords: { lat: number; lng: number } | null;
+  onSearchSelect?: (lng: number, lat: number) => void;
   onClose: () => void;
   lightMode: boolean;
   setLightMode: (value: boolean) => void;
@@ -37,12 +38,12 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [searchResults, setSearchResults] = useState<Array<{place_name: string, center: [number, number]}>>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
 
-    //if coordinates exist, will fill them in for address
-    useEffect(() =>{
-      if (coords) {
-        setAddress(`${coords?.lng.toFixed(5)} ${coords?.lat.toFixed(5)}`);
-      }
-    }, [coords]);
+  //if coordinates exist, will fill them in for address
+  useEffect(() => {
+    if (coords) {
+      setAddress(`${coords?.lng.toFixed(5)} ${coords?.lat.toFixed(5)}`);
+    }
+  }, [coords]);
 
 
   const handleSearch = async (value: string) => {
@@ -84,10 +85,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
     return (
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
-        <div className={`relative flex items-center px-4 h-full backdrop-blur-sm border-2 rounded-full shadow-lg w-[360px]
+        <div className={`flex items-center px-4 h-full backdrop-blur-sm border-1  rounded-full shadow-lg w-[360px]
           ${lightMode
-          ? "bg-white/5 border-white/80"
-          : "bg-white/15 border-white/40"
+          ? "bg-white/5 border-white/60 "
+          : "bg-white/15 border-white/40 "
           }`}>
           <input
             type="text"
@@ -115,12 +116,12 @@ const AddOutlet: React.FC<OverlayProps> = ({
       </div>
 
         <div className="flex items-center gap-6">
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-2 rounded-full shadow-md text-white
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-full shadow-md text-white
           ${lightMode
-          ? "bg-white/5 border-white/80"
-          : "bg-white/15 border-white/40"
+          ? "bg-white/5 border-white/60 "
+          : "bg-white/15 border-white/40 "
           }`}>
-            <button className="flex flex-col items-center justify-center  w-20 h-14">
+            <button className="flex flex-col items-center justify-center w-20 h-14">
               <LucideZap className="w-6 h-6 " />
               <span className="text-[10px] mt-1 whitespace-nowrap">Outlets Near Me</span>
             </button>
@@ -145,10 +146,9 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </span>
           </button>
         </div>
-
-          <div className={`flex items-center justify-center h-14 aspect-square rounded-full backdrop-blur-sm border-2 shadow-md text-white font-semibold text-sm w-14 cursor-pointer
+          <div className={`flex items-center justify-center h-14 aspect-square rounded-full backdrop-blur-sm border-1  shadow-md text-white font-semibold text-sm w-14 cursor-pointer
             ${lightMode
-          ? "bg-white/5 border-white/80"
+          ? "bg-white/5 border-white/60"
           : "bg-white/15 border-white/40"
           }`}
           onClick={() => setShowSettings(true)}
@@ -157,25 +157,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
           </div>
         </div>
 
-        <div className="fixed top-53 left-10">
-          <button
-            onClick={() => setLightMode(!lightMode)}
-            className={`w-16 h-8 rounded-full p-1 transition-colors duration-300 ${
-              lightMode ? 'bg-gray-300' : 'bg-gray-700'
-            }`}
-          >
-            <div
-              className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
-            lightMode ? 'translate-x-8' : 'translate-x-0'
-          }`}
-            />
-          </button>
-        </div>
-
         {showAddOutlet && (
-          <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm  text-white border-2 border-white rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
+          <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1   text-white   rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
           ${lightMode
-          ? "bg-white/5 border-white/80"
+          ? "bg-white/5 border-white/60"
           : "bg-white/15 border-white/40"
           }`}>
             <div className="flex-grow">
@@ -278,7 +263,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </div>
             <div className={`relative p-7 mt-4 w-full flex-grow flex-shrink min-h-[80px] max-h-[25vh] overflow-hidden backdrop-blur-sm bg-white/1 border-2 border-dotted border-white rounded-2xl shadow-lg flex items-center justify-center text-center
               ${lightMode
-                ? "text-white/80 bg-white/20 border-white/80"
+                ? "text-white/60 bg-white/20 border-white/60"
                 : "text-white/40 bg-white/15 border-white/40"
                 }`}>
 
@@ -317,12 +302,11 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </div>
           </div>
         )}
-
       {!showAddOutlet && showPinOverlay && (
-        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-2 bg-white/5 text-lg text-white border-white/40 rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
+        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1  text-lg text-white  rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
           ${lightMode
-          ? "bg-white/5 border-white/80"
-          : "bg-white/15 border-white/40"
+          ? "bg-white/5 border-white/60 "
+          : "bg-white/15 border-white/40 "
           }`}>
           <div className="flex-grow">
             <h2 className="font-semibold pt-0 p-1 pl-0">
@@ -346,16 +330,30 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
       {showSettings && (
         <div className="fixed top-1/2 left-1/2 z-50 w-[400px] max-w-full p-0 transform -translate-x-1/2 -translate-y-1/2">
-          <div className="relative bg-gradient-to-br from-white/30 via-lime-100/20 to-white/10 backdrop-blur-xl border border-white/40 rounded-3xl shadow-2xl px-8 pt-8 pb-6 flex flex-col items-center">
+          <div className="relative bg-gradient-to-br from-white/30 via-black-100/20 to-white/10 backdrop-blur-xl border-1 border-white/60 rounded-3xl shadow-2xl px-8 pt-8 pb-6 flex flex-col items-center">
             <button
               onClick={() => setShowSettings(false)}
-              className="absolute top-4 right-4 bg-white/15 border-2 border-white/40 text-white hover:bg-white/25 transition-colors rounded-full w-10 h-10 flex items-center justify-center shadow-lg"
+              className="absolute top-4 right-4 bg-white/15 border-white/40 text-white hover:bg-white/25 transition-colors rounded-full w-10 h-10 flex items-center justify-center shadow-lg"
               aria-label="Close"
             >
               <span className="text-2xl font-bold leading-none">×</span>
             </button>
+            <div className="fixed top-3 left-3">
+              <button
+                onClick={() => setLightMode(!lightMode)}
+                className={`w-16 h-8 rounded-full p-1 transition-colors duration-300 ${
+                  lightMode ? 'bg-gray-100/80' : 'bg-gray-700'
+                }`}
+              >
+                <div
+                  className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
+                lightMode ? 'translate-x-8' : 'translate-x-0'
+              }`}
+                />
+              </button>
+            </div>
             <div className="flex flex-col items-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-white/15 border-2 border-white/40 flex items-center justify-center shadow-lg mb-2">
+              <div className="w-16 h-16 rounded-full bg-white/15 border-white/40  flex items-center justify-center shadow-lg mb-2">
                 <span className="text-white text-2xl font-bold">AG</span>
               </div>
               <div className="text-lg font-semibold text-neutral-100">
@@ -367,12 +365,12 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </div>
 
             <div className="w-full flex flex-col gap-4">
-              <button className="flex items-center gap-3 text-md font-semibold bg-neutral-800 hover:bg-lime-900 transition-colors rounded-xl text-lime-400 px-5 py-3 w-full shadow border border-white/10">
-                <LucidePlus className="w-5 h-5 text-lime-400" />
+              <button className="flex items-center gap-3 text-md font-semibold bg-neutral-800 hover:bg-lime-900 transition-colors rounded-xl text-lime-600 px-5 py-3 w-full shadow border border-white/10">
+                <LucidePlus className="w-5 h-5 text-lime-600" />
                 Change Password
               </button>
-              <button className="flex items-center gap-3 text-md font-semibold bg-neutral-800 hover:bg-red-900 transition-colors rounded-xl text-red-400 px-5 py-3 w-full shadow border border-white/10">
-                <LucideUpload className="w-5 h-5 text-red-400" />
+              <button className="flex items-center gap-3 text-md font-semibold bg-neutral-800 hover:bg-red-900 transition-colors rounded-xl text-red-500 px-5 py-3 w-full shadow border border-white/10">
+                <LucideUpload className="w-5 h-5 text-red-500" />
                 Logout
               </button>
             </div>
@@ -384,3 +382,4 @@ const AddOutlet: React.FC<OverlayProps> = ({
 };
 
 export default AddOutlet;
+
