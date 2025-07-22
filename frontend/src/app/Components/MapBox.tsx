@@ -115,6 +115,10 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
     clearAllMarkers();
 
     pins.forEach((pin) => {
+      const el = document.createElement("div");
+      el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+      el.style.cursor = "pointer";
+
       const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
         `<div>
           <h3 style=\"margin:0;font-weight:600;\">${pin.title}</h3>
@@ -123,10 +127,15 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
         </div>`
       );
 
-      const marker = new mapboxgl.Marker()
+      const marker = new mapboxgl.Marker(el)
         .setLngLat([pin.lng, pin.lat])
         .setPopup(popup)
         .addTo(mapRef.current!);
+
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        console.log("Pin clicked:", pin);
+      });
 
       markersRef.current.push(marker);
     });
@@ -264,8 +273,13 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
           console.log("Dropped point is in water — ignoring.");
           return; //  prevent pin drop
         }
+
+        const el = document.createElement("div");
+        el.innerHTML =  `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+        el.style.cursor = "pointer";
+
         // Create a marker
-        const marker = new mapboxgl.Marker()
+        const marker = new mapboxgl.Marker(el)
           .setLngLat([lng, lat])
           .addTo(mapRef.current!);
         // Add to marker refs
@@ -335,3 +349,4 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
   );
 };
 export default MapBox;
+
