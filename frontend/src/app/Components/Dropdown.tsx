@@ -56,8 +56,6 @@ const Dropdown: React.FC<DropdownProps> = ({ options, address, selectedOption, s
             {/* display dropdown panel only if results exist */}
             {showDropDown && filteredOptions.length > 0 && (
                 <div className="absolute top-full -left-4 mt-4 w-[360px] z-30">
-                    {/* connector bridge to searchbar */}
-                    {/* <div className="h-4 w-full border-x-2 border-white/40"/> */}
                     
                     {/* display drop down panel */}
                     <div className="backdrop-blur-sm bg-white/15 border-x-2 border-b-2 border-white/40 rounded-b-[28px] shadow-lg text-white max-h-60 overflow-y-auto">

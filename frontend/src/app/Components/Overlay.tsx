@@ -45,7 +45,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
     return (
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
         <div className="relative z-50 h-14 w-[360px]">
-          {/*search bar fully rounded when closed, otherwise when inputting text, make bottom edge straight to align with dropdown bar*/}
+          {/*search bar fully rounded when no input, otherwise align bottom edge of search bar with dropdown bar*/}
           <div className={`absolute inset-0 bg-white/15 backdrop-blur-sm border-2 border-white/40 shadow-lg z-50 transition-all duration-300 ${
             showDropDown ? "rounded-tl-[30px] rounded-tr-[35px]" : "rounded-full"
             }`} />     
