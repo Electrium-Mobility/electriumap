@@ -19,6 +19,9 @@
 
 ### 🎨 Design
 
+- Michelle Wang, [@michelle1271](https://github.com/michelle1271)
+- Arwa Gawish, [@arwagawish](https://github.com/arwagawish)
+
 ### 💻 Frontend
 
 - **Lead**: Gordon Zhang, [@gordonzhang1](https://github.com/gordonzhang1)
