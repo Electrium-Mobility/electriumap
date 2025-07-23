@@ -8,7 +8,6 @@ import { LucideZap, LucideBookmark, LucideClock, LucidePlus, LucideSearch, Lucid
 interface OverlayProps {
   showPinOverlay: boolean;
   coords: { lat: number; lng: number } | null;
-  onSearchSelect?: (lng: number, lat: number) => void;
   onClose: () => void;
   lightMode: boolean;
   setLightMode: (value: boolean) => void;
@@ -85,7 +84,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
     return (
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
-        <div className={`flex items-center px-4 h-full backdrop-blur-sm border-1  rounded-full shadow-lg w-[360px]
+        <div className={`flex items-center px-4 h-full backdrop-blur-sm border-1 font-semibold rounded-full shadow-lg w-[360px]
           ${lightMode
           ? "bg-white/5 border-white/60 "
           : "bg-white/15 border-white/40 "
@@ -95,17 +94,21 @@ const AddOutlet: React.FC<OverlayProps> = ({
             placeholder="Search Electriumap"
             value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
-          className="bg-transparent outline-none text-white placeholder-white w-full text-md"
+          className="bg-transparent outline-none text-white placeholder-white/60 w-full text-md"
           />
           <LucideSearch className="w-5 h-5 font-semibold text-white" />
           
         {/* Search Results Dropdown */}
         {showSearchResults && searchResults.length > 0 && (
-          <div className="absolute top-full left-0 w-full mt-2 bg-black/80 backdrop-blur-md rounded-lg shadow-lg max-h-60 overflow-y-auto border border-white/20">
+          <div className={`absolute top-full left-0 w-full mt-2 bg-white/10 text-white font-semibold rounded-lg shadow-lg max-h-60 overflow-y-auto border-1 backdrop-blur-sm
+            ${lightMode
+          ? " border-white/60 "
+          : " border-white/40 "
+          }`}>
             {searchResults.map((result, index) => (
               <div
                 key={index}
-                className="px-4 py-3 hover:bg-white/20 cursor-pointer text-white border-b border-white/10 last:border-b-0"
+                className="px-4 py-3 hover:bg-white/20 backdrop-blur-sm cursor-pointer text-white border-b border-white/10 last:border-b-0"
                 onClick={() => handleSearchResultClick(result)}
               >
                 {result.place_name}
@@ -365,11 +368,19 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </div>
 
             <div className="w-full flex flex-col gap-4">
-              <button className="flex items-center gap-3 text-md font-semibold bg-neutral-800 hover:bg-lime-900 transition-colors rounded-xl text-lime-600 px-5 py-3 w-full shadow border border-white/10">
+              <button className={`flex items-center gap-3 text-md font-semibold hover:bg-lime-900 transition-colors rounded-xl text-lime-600 px-5 py-3 w-full shadow border border-white/10
+              ${lightMode
+                ? "bg-neutral-200"
+                : "bg-neutral-800"
+              }`}>
                 <LucidePlus className="w-5 h-5 text-lime-600" />
                 Change Password
               </button>
-              <button className="flex items-center gap-3 text-md font-semibold bg-neutral-800 hover:bg-red-900 transition-colors rounded-xl text-red-500 px-5 py-3 w-full shadow border border-white/10">
+              <button className={`flex items-center gap-3 text-md font-semibold hover:bg-red-900 transition-colors rounded-xl text-red-500 px-5 py-3 w-full shadow border border-white/10
+              ${lightMode
+                ? "bg-neutral-200"
+                : "bg-neutral-800"
+              }`}>
                 <LucideUpload className="w-5 h-5 text-red-500" />
                 Logout
               </button>
