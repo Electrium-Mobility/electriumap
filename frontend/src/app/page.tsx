@@ -22,6 +22,7 @@ export default function Home() {
           setCoords({ lat, lng });
           setShowPinOverlay(true);
         }}
+        lightMode={lightMode}
       />
       <Overlay 
         showPinOverlay={showPinOverlay}
