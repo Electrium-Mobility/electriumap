@@ -256,6 +256,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
         const marker = new mapboxgl.Marker(el)
           .setLngLat([lng, lat])
           .addTo(mapRef.current!);
+          
         // Add to marker refs
         markersRef.current.push(marker);
         // Add click event to remove marker
