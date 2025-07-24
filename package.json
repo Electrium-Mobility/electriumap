@@ -8,7 +8,7 @@
   "devDependencies": {
     "@types/mapbox-gl": "^3.4.1",
     "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6"
+    "@types/react-dom": "^19.1.6",
 
     "@turf/boolean-point-in-polygon": "^7.2.0",
     "@turf/helpers": "^7.2.0",
