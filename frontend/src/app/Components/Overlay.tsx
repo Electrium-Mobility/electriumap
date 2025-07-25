@@ -86,29 +86,29 @@ const AddOutlet: React.FC<OverlayProps> = ({
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
         <div className={`flex items-center px-4 h-full backdrop-blur-sm border-1 font-semibold rounded-full shadow-lg w-[360px]
           ${lightMode
-          ? "bg-white/5 border-white/60 "
-          : "bg-white/15 border-white/40 "
+          ? "bg-white/5 border-white/60 text-black"
+          : "bg-white/15 border-white/60 text-white "
           }`}>
           <input
             type="text"
             placeholder="Search Electriumap"
             value={searchValue}
           onChange={(e) => setSearchValue(e.target.value)}
-          className="bg-transparent outline-none text-white placeholder-white/60 w-full text-md"
+          className={`bg-transparent outline-none  w-full text-md ${lightMode ? "placeholder-black/60" : "placeholder-white/60"}`}
           />
-          <LucideSearch className="w-5 h-5 font-semibold text-white" />
+          <LucideSearch className={`w-5 h-5 font-semibold`} />
           
         {/* Search Results Dropdown */}
         {showSearchResults && searchResults.length > 0 && (
-          <div className={`absolute top-full left-0 w-full mt-2 bg-white/10 text-white font-semibold rounded-lg shadow-lg max-h-60 overflow-y-auto border-1 backdrop-blur-sm
+          <div className={`absolute top-full left-0 w-full mt-2 bg-white/10 font-semibold rounded-lg shadow-lg max-h-60 overflow-y-auto border-1 backdrop-blur-sm
             ${lightMode
-          ? " border-white/60 "
-          : " border-white/40 "
+          ? " border-white/60 text-black"
+          : " border-white/60 text-white "
           }`}>
             {searchResults.map((result, index) => (
               <div
                 key={index}
-                className="px-4 py-3 hover:bg-white/20 backdrop-blur-sm cursor-pointer text-white border-b border-white/10 last:border-b-0"
+                className="px-4 py-3 hover:bg-white/20 backdrop-blur-sm cursor-pointer border-b border-white/10 last:border-b-0"
                 onClick={() => handleSearchResultClick(result)}
               >
                 {result.place_name}
@@ -119,10 +119,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
       </div>
 
         <div className="flex items-center gap-6">
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-full shadow-md text-white
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-full shadow-md 
           ${lightMode
-          ? "bg-white/5 border-white/60 "
-          : "bg-white/15 border-white/40 "
+          ? "bg-white/5 border-white/60 text-black"
+          : "bg-white/15 border-white/60 text-white "
           }`}>
             <button className="flex flex-col items-center justify-center w-20 h-14">
               <LucideZap className="w-6 h-6 " />
@@ -149,10 +149,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </span>
           </button>
         </div>
-          <div className={`flex items-center justify-center h-14 aspect-square rounded-full backdrop-blur-sm border-1  shadow-md text-white font-semibold text-sm w-14 cursor-pointer
+          <div className={`flex items-center justify-center h-14 aspect-square rounded-full backdrop-blur-sm border-1  shadow-md font-semibold text-sm w-14 cursor-pointer
             ${lightMode
-          ? "bg-white/5 border-white/60"
-          : "bg-white/15 border-white/40"
+          ? "bg-white/5 border-white/60 text-black"
+          : "bg-white/15 border-white/60 text-white"
           }`}
           onClick={() => setShowSettings(true)}
           title="Settings">
@@ -161,10 +161,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
         </div>
 
         {showAddOutlet && (
-          <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1   text-white   rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
+          <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1  rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
           ${lightMode
-          ? "bg-white/5 border-white/60"
-          : "bg-white/15 border-white/40"
+          ? "bg-white/5 border-white/60 text-black"
+          : "bg-white/15 border-white/60 text-white"
           }`}>
             <div className="flex-grow">
               <h2 className="font-semibold text-lg pb-1 pt-0 p-1 pl-0">
@@ -266,8 +266,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </div>
             <div className={`relative p-7 mt-4 w-full flex-grow flex-shrink min-h-[80px] max-h-[25vh] overflow-hidden backdrop-blur-sm bg-white/1 border-2 border-dotted border-white rounded-2xl shadow-lg flex items-center justify-center text-center
               ${lightMode
-                ? "text-white/60 bg-white/20 border-white/60"
-                : "text-white/40 bg-white/15 border-white/40"
+                ? "text-black/60 bg-white/20 border-white/60"
+                : "text-white/40 bg-white/15 border-white/60"
                 }`}>
 
               <div>
@@ -306,10 +306,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
           </div>
         )}
       {!showAddOutlet && showPinOverlay && (
-        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1  text-lg text-white  rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
+        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1  text-lg   rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
           ${lightMode
-          ? "bg-white/5 border-white/60 "
-          : "bg-white/15 border-white/40 "
+          ? "bg-white/5 border-white/60 text-black"
+          : "bg-white/15 border-white/60 text-white "
           }`}>
           <div className="flex-grow">
             <h2 className="font-semibold pt-0 p-1 pl-0">
@@ -333,10 +333,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
       {showSettings && (
         <div className="fixed top-1/2 left-1/2 z-50 w-[400px] max-w-full p-0 transform -translate-x-1/2 -translate-y-1/2">
-          <div className="relative bg-gradient-to-br from-white/30 via-black-100/20 to-white/10 backdrop-blur-xl border-1 border-white/60 rounded-3xl shadow-2xl px-8 pt-8 pb-6 flex flex-col items-center">
+          <div className={`relative bg-gradient-to-br from-white/30 via-black-100/20 to-white/10 backdrop-blur-xl border-1 border-white/60 rounded-3xl shadow-2xl px-8 pt-8 pb-6 flex flex-col items-center ${lightMode ? "text-black" : "text-white"}`}>
             <button
               onClick={() => setShowSettings(false)}
-              className="absolute top-4 right-4 bg-white/15 border-white/40 text-white hover:bg-white/25 transition-colors rounded-full w-10 h-10 flex items-center justify-center shadow-lg"
+              className="absolute top-4 right-4 bg-white/15 border-white/60  hover:bg-white/25 transition-colors rounded-full w-10 h-10 flex items-center justify-center shadow-lg"
               aria-label="Close"
             >
               <span className="text-2xl font-bold leading-none">×</span>
@@ -356,13 +356,13 @@ const AddOutlet: React.FC<OverlayProps> = ({
               </button>
             </div>
             <div className="flex flex-col items-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-white/15 border-white/40  flex items-center justify-center shadow-lg mb-2">
-                <span className="text-white text-2xl font-bold">AG</span>
+              <div className="w-16 h-16 rounded-full bg-white/15 border-white/60  flex items-center justify-center shadow-lg mb-2">
+                <span className=" text-2xl font-bold">AG</span>
               </div>
-              <div className="text-lg font-semibold text-neutral-100">
+              <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
                 [Insert User Name Here]
               </div>
-              <div className="text-sm text-neutral-400">
+              <div className={`text-sm ${lightMode ? "text-black/40" : "text-neutral-400"}`}>
                 [Insert User Email Here]
               </div>
             </div>
