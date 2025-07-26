@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextResponse } from "next/server";
 import { readOutlets } from "../readOutlets";
 // This file is used to fetch outlet data from the backend and format it for the frontend
@@ -7,9 +8,12 @@ export async function GET() {
   try {
     const outlets = await readOutlets();
     const formatted = outlets?.map((outlet: any) => ({
-      ...outlet,
-      lat: outlet.latitude,
-      lng: outlet.longitude,
+      id: outlet.id,
+      latitude: outlet.latitude,
+      longitude: outlet.longitude,
+      chargerType: outlet.chargerType,
+      description: outlet.description,
+      locationName: outlet.locationName,
     }));
     return NextResponse.json(formatted);
   } catch (error) {

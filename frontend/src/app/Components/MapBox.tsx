@@ -5,32 +5,36 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { FeatureCollection, Point, Feature } from "geojson";
 import { debounce, Bounds, PinData, isPointInBounds } from "./utils";
-import pinsData from "./pins.json";
+import pinsData from "./pins.json";            // fallback sample pins – replaced when Firestore loads
+import { isOnLand } from "../utils/addOutlet";
 
-// Helper: Convert pinsData to GeoJSON FeatureCollection
+import type { Feature, FeatureCollection, Point } from "geojson";
+import type { PinData } from "./types"; // adjust path if necessary
+
+// Convert plain pins to a GeoJSON FeatureCollection
 const pinsToGeoJSON = (pins: PinData[]): FeatureCollection<Point> => ({
   type: "FeatureCollection",
   features: pins.map<Feature<Point>>((pin) => ({
     type: "Feature",
-    geometry: {
-      type: "Point",
-      coordinates: [pin.lng, pin.lat],
-    },
-    properties: {}, 
+    geometry: { type: "Point", coordinates: [pin.lng, pin.lat] },
+    properties: {},
   })),
 });
 
 const HEATMAP_SOURCE_ID = "pins-heatmap-source";
-const HEATMAP_LAYER_ID = "pins-heatmap-layer";
-const HEATMAP_MAX_ZOOM = 11; // Show heatmap at zoom <= 10, heatmap fades out fully before zoom 11
+const HEATMAP_LAYER_ID  = "pins-heatmap-layer";
+const HEATMAP_MAX_ZOOM  = 11; // heatmap visible up to zoom 10
 
-type MapBoxProps = {
+interface MapBoxProps {
   width?: string;
   height?: string;
-  onPinDrop?: (lat: number, lng:number) => void;
-};
+  onPinDrop?: (lat: number, lng: number) => void;
+  lightMode?: boolean;
+  onMapLoad?: () => void;
+  flyTo?: { lng: number; lat: number } | null;
+}
 
-const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) => {
+const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo }: MapBoxProps) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -38,15 +42,44 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
   // Store current bounds and visible pins
   const [currentBounds, setCurrentBounds] = useState<Bounds | null>(null);
   const [visiblePins, setVisiblePins] = useState<PinData[]>([]);
-  const [ outlets, setOutlets ] = useState<PinData[]>([]); 
+  // All pins available to render (starts with sample data, replaced by Firestore)
+  const [allPins, setAllPins] = useState<PinData[]>(pinsData);
+
+
+  // Fetch outlets data from the backend and map to PinData shape
+  // Effect to handle flying to searched location
+  useEffect(() => {
+    if (flyTo && mapRef.current) {
+      mapRef.current.flyTo({
+        center: [flyTo.lng, flyTo.lat],
+        zoom: 14,
+        essential: true
+      });
+    }
+  }, [flyTo]);
 
   // Fetch outlets data from the backend
   useEffect(() => {
     fetch("/api/outlets")
-      .then(res => res.json())
+      .then((res) => res.json())
       .then((data) => {
-            setOutlets(data);
-            console.log("Fetched outlets:", data);
+        if (!Array.isArray(data)) return;
+
+        const mapped: PinData[] = data
+          .filter((d: any) => typeof d.latitude === "number" && typeof d.longitude === "number")
+          .map((d: any, idx: number) => ({
+            id: d.id ?? String(idx),
+            lat: d.latitude,
+            lng: d.longitude,
+            title: d.locationName ?? "Outlet",
+            description: d.description ?? "",
+            category: d.chargerType ?? "",
+          }));
+
+        if (mapped.length) {
+          setAllPins(mapped);
+        }
+        console.log("Fetched outlets:", mapped);
       })
       .catch(console.error);
   }, []);
@@ -66,8 +99,8 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
 
   // Function to filter pins based on bounds
   const filterPinsByBounds = useCallback((bounds: Bounds): PinData[] => {
-    return pinsData.filter(pin => isPointInBounds(pin, bounds));
-  }, []);
+    return allPins.filter((pin) => isPointInBounds(pin, bounds));
+  }, [allPins]);
 
   // Function to clear all markers
   const clearAllMarkers = useCallback(() => {
@@ -81,16 +114,27 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
 
     clearAllMarkers();
 
-    pins.forEach(pin => {
-      const marker = new mapboxgl.Marker()
+    pins.forEach((pin) => {
+      const el = document.createElement("div");
+      el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+      el.style.cursor = "pointer";
+
+      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
+        `<div>
+          <h3 style=\"margin:0;font-weight:600;\">${pin.title}</h3>
+          ${pin.description ? `<p style=\"margin:4px 0;\">${pin.description}</p>` : ""}
+          ${pin.category ? `<p style=\"margin:0;font-size:12px;\">Type: ${pin.category}</p>` : ""}
+        </div>`
+      );
+
+      const marker = new mapboxgl.Marker(el)
         .setLngLat([pin.lng, pin.lat])
+        .setPopup(popup)
         .addTo(mapRef.current!);
 
-      // Add click event to show pin info
-      marker.getElement().addEventListener("click", function (ev) {
-        ev.stopPropagation(); // Prevent map click event
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
         console.log("Pin clicked:", pin);
-        // You can add a popup or tooltip here
       });
 
       markersRef.current.push(marker);
@@ -224,10 +268,21 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
       // Add click event to drop a pin and log coordinates
       mapRef.current.on("click", (e: mapboxgl.MapMouseEvent) => {
         const { lng, lat } = e.lngLat;
+        const land =  isOnLand(lat, lng);
+        if (!land) {
+          console.log("Dropped point is in water — ignoring.");
+          return; //  prevent pin drop
+        }
+
+        const el = document.createElement("div");
+        el.innerHTML =  `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+        el.style.cursor = "pointer";
+
         // Create a marker
-        const marker = new mapboxgl.Marker()
+        const marker = new mapboxgl.Marker(el)
           .setLngLat([lng, lat])
           .addTo(mapRef.current!);
+          
         // Add to marker refs
         markersRef.current.push(marker);
         // Add click event to remove marker
@@ -249,9 +304,25 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
     return () => {
       // Remove all markers
       clearAllMarkers();
-      mapRef.current?.remove();
+      try {
+        mapRef.current?.remove();
+      } catch (err) {
+        // Swallow Mapbox GL indoor manager bug in dev Strict Mode
+        console.warn('Mapbox remove error (ignored):', err);
+      }
+      mapRef.current = null; // ensure we can recreate the map on remount (e.g. in React Strict Mode)
     };
   }, [debouncedUpdatePins, getBounds, filterPinsByBounds, renderPins, clearAllMarkers]);
+  
+  useEffect(() => {
+      if (!mapRef.current) return;
+
+      const newStyle = lightMode
+      ? "mapbox://styles/hannahwiens/cmcjq7lyu003l01p6a93lhg38"
+      : "mapbox://styles/hannahwiens/cmcj9t5wf000v01p6chg0e07a"; 
+
+      mapRef.current.setStyle(newStyle)
+    })
 
   return (
     <>
@@ -260,7 +331,23 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop}: MapBoxProps) =>
         ref={mapContainerRef}
         className="map-container"
       />
+    <div className="fixed top-22 left-10 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg p-4 text-black">
+      <p className="font-semibold text-sm">Viewport Info</p>
+      <p className="text-xs">Visible Pins: {visiblePins.length}</p>
+      <p className="text-xs">Total Pins: {allPins.length}</p>
+      {currentBounds && (
+        <>
+          <p className="text-xs">
+            SW: [{currentBounds.sw[0].toFixed(3)}, {currentBounds.sw[1].toFixed(3)}]
+          </p>
+          <p className="text-xs">
+            NE: [{currentBounds.ne[0].toFixed(3)}, {currentBounds.ne[1].toFixed(3)}]
+          </p>
+        </>
+      )}
+    </div>
     </>
   );
 };
 export default MapBox;
+
