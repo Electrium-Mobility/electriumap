@@ -1,4 +1,3 @@
-// Fixed MapBox.tsx component
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
@@ -65,7 +64,9 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
 
   // Function to filter pins based on bounds
   const filterPinsByBounds = useCallback((bounds: Bounds): GeoOutlet[] => {
-    return allPins.filter((pin) => isPointInBounds(pin, bounds));
+    return allPins.filter((pin) =>
+      isPointInBounds({ lng: pin.longitude, lat: pin.latitude }, bounds)
+    );
   }, [allPins]);
 
   // Function to clear all markers
@@ -153,6 +154,8 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
         
         const filteredPins = filterPinsByBounds(bounds);
         setVisiblePins(filteredPins);
+        renderPins(visiblePins);
+
         
         // Update heatmap data
         if (mapRef.current?.getSource(HEATMAP_SOURCE_ID)) {
@@ -162,7 +165,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
 
         // Only render pins if we're at a zoom level where they should be visible
         if (mapRef.current && mapRef.current.getZoom() >= HEATMAP_MAX_ZOOM) {
-          renderPins(filteredPins);
+          renderPins(visiblePins);
         }
 
         console.log("Fetched outlets:", mapped.length, "outlets loaded");
@@ -278,17 +281,8 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
             "visibility",
             showHeatmap ? "visible" : "none"
           );
-        }
+        }})
 
-        // manage marker visibility
-        if (showHeatmap) {
-          // Hide all pins when showing heatmap
-          clearAllMarkers();
-        } else if (showPins) {
-          // Show pins when not showing heatmap
-          renderPins(visiblePins);
-        }
-      });
 
       // Add click event to drop a pin and log coordinates
       mapRef.current.on("click", (e: mapboxgl.MapMouseEvent) => {

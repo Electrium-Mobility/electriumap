@@ -1,4 +1,3 @@
-// Fixed readOutlets.ts
 import { db } from "../firebase/firebase";
 import { collection, DocumentData, QueryDocumentSnapshot, limit as firestoreLimit, query, orderBy, startAt, endAt, getDocs } from "firebase/firestore";
 import { GeoOutlet } from "../models";
