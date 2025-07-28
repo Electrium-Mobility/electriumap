@@ -3,13 +3,11 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { FeatureCollection, Point, Feature } from "geojson";
-import { debounce, Bounds, PinData, isPointInBounds } from "./utils";
+import type { Feature, FeatureCollection, Point } from "geojson";
+import { debounce, Bounds, isPointInBounds } from "./utils";
 import pinsData from "./pins.json";            // fallback sample pins – replaced when Firestore loads
 import { isOnLand } from "../utils/addOutlet";
-
-import type { Feature, FeatureCollection, Point } from "geojson";
-import type { PinData } from "./types"; // adjust path if necessary
+import type { PinData } from "./types.ts";
 
 // Convert plain pins to a GeoJSON FeatureCollection
 const pinsToGeoJSON = (pins: PinData[]): FeatureCollection<Point> => ({
@@ -23,7 +21,8 @@ const pinsToGeoJSON = (pins: PinData[]): FeatureCollection<Point> => ({
 
 const HEATMAP_SOURCE_ID = "pins-heatmap-source";
 const HEATMAP_LAYER_ID  = "pins-heatmap-layer";
-const HEATMAP_MAX_ZOOM  = 11; // heatmap visible up to zoom 10
+const HEATMAP_MAX_ZOOM  = 11; // heatmap visible up to zoom 10
+const MIN_PIN_ZOOM = 14; // minimum zoom level required for pin placement
 
 interface MapBoxProps {
   width?: string;
@@ -268,14 +267,26 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
       // Add click event to drop a pin and log coordinates
       mapRef.current.on("click", (e: mapboxgl.MapMouseEvent) => {
         const { lng, lat } = e.lngLat;
-        const land =  isOnLand(lat, lng);
+        const currentZoom = mapRef.current?.getZoom() || 0;
+
+        // If zoom level is too low, fly to location at minimum zoom
+        if (currentZoom < MIN_PIN_ZOOM) {
+          mapRef.current?.flyTo({
+            center: [lng, lat],
+            zoom: MIN_PIN_ZOOM,
+            essential: true
+          });
+          return; // Prevent pin drop until properly zoomed
+        }
+
+        const land = isOnLand(lat, lng);
         if (!land) {
           console.log("Dropped point is in water — ignoring.");
-          return; //  prevent pin drop
+          return; // prevent pin drop
         }
 
         const el = document.createElement("div");
-        el.innerHTML =  `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+        el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
         el.style.cursor = "pointer";
 
         // Create a marker
