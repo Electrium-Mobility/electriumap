@@ -18,12 +18,13 @@ export default function Home() {
   return (
     <div className="relative w-full h-screen">
       <MapBox 
-        onPinDrop={(lat, lng) => {
-          setCoords({ lat, lng });
-          setShowPinOverlay(true);
-        }}
-        lightMode={lightMode}
-      />
+  onPinDrop={(lat, lng) => {
+    setCoords({ lat, lng });
+    setShowPinOverlay(true);
+  }}
+  lightMode={lightMode}
+  flyTo={flyToLocation}  
+/>
       <Overlay 
         showPinOverlay={showPinOverlay}
         coords={coords}
