@@ -139,14 +139,6 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
       el.style.cursor = "pointer";
       
       const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(finalHtml);
-      
-          <h3 style=\"margin:0;font-weight:600;\">${pin.title}</h3>
-          ${desc ? `<p style=\"margin:4px 0;\">${desc}</p>` : ""}
-          ${cat ? `<p style=\"margin:0;font-size:12px;\">Type: ${cat}</p>` : ""}
-        </div>`;
-      })();
-
-      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(finalHtml);
 
       // Use custom element for the marker
       const marker = new mapboxgl.Marker(el)
