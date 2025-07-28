@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { auth } from "../firebase/firebase";
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { setIsAuthenticated } from '../globals';
 
 type LoginPageProps = { 
     username: string; 
@@ -45,7 +46,8 @@ const LoginPage: React.FC = () => {
             // attempt sign in with Firebase
             await signInWithEmailAndPassword(auth, username, pwd);
             alert('Submitted successfully.')
-            // after user successfully logins, change route to map page 
+            // after user successfully logins, change route to main map page 
+            setIsAuthenticated(true); // update global authenticated variable to enable future conditional UI behaviours
             router.push('/');
         } catch (error: any) {
             setErrorMsg(error.message); // or display a custom message
