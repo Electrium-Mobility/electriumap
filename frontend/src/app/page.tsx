@@ -23,6 +23,7 @@ export default function Home() {
           setShowPinOverlay(true);
         }}
         lightMode={lightMode}
+        flyTo={flyToLocation}
       />
       <Overlay 
         showPinOverlay={showPinOverlay}
