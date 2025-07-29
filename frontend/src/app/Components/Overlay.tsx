@@ -3,7 +3,7 @@
 import React, {useState, useEffect} from 'react';
 import { addOutletFrontend } from "../utils/addOutlet";
 import { isOnLand } from "../utils/addOutlet";
-import { LucideZap, LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload } from 'lucide-react';
+import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -156,24 +156,51 @@ const AddOutlet: React.FC<OverlayProps> = ({
         )}
       </div>
 
+        {/* dark/light mode switch */}
+        <div className="flex items-center gap-6"> 
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
+            ${lightMode
+            ? "bg-white/5 border-white/60 text-black"
+            : "bg-white/15 border-white/60 text-white "
+            }`}>
+              {/* sliding indictor for which mode is currently on */}
+              <div
+                className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${
+                  lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-600/70'
+                }`}
+              />
+
+              <button
+                onClick={() => setLightMode(true)}
+                className="z-10 w-1/2 h-full flex items-center justify-center"
+              >
+                <SunMedium  className="w-8 h-8"/>
+              </button>
+
+              <button
+                onClick={() => setLightMode(false)}
+                className="z-10 w-1/2 h-full flex items-center justify-center"
+              >
+                <Moon className="w-7 h-7" />
+              </button>
+
+            </div>
+        </div> 
+        
+
         <div className="flex items-center gap-6">
           <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-full shadow-md 
           ${lightMode
           ? "bg-white/5 border-white/60 text-black"
           : "bg-white/15 border-white/60 text-white "
           }`}>
-            <button className="flex flex-col items-center justify-center w-20 h-14">
-              <LucideZap className="w-6 h-6 " />
-              <span className="text-[10px] mt-1 whitespace-nowrap">Outlets Near Me</span>
-            </button>
-
           <button className="flex flex-col items-center justify-center  w-14 h-14">
-            <LucideBookmark className="w-6 h-6 " />
+            <LucideBookmark className="w-6 h-6 "/>
             <span className="text-[10px] mt-1 whitespace-nowrap">Saved</span>
           </button>
 
           <button className="flex flex-col items-center justify-center  w-14 h-14">
-            <LucideClock className="w-6 h-6 " />
+            <LucideClock className="w-6 h-6 "/>
             <span className="text-[10px] mt-1 whitespace-nowrap">Recents</span>
           </button>
 
@@ -379,20 +406,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
             >
               <span className="text-2xl font-bold leading-none">×</span>
             </button>
-            <div className="fixed top-3 left-3">
-              <button
-                onClick={() => setLightMode(!lightMode)}
-                className={`w-16 h-8 rounded-full p-1 transition-colors duration-300 ${
-                  lightMode ? 'bg-gray-100/80' : 'bg-gray-700'
-                }`}
-              >
-                <div
-                  className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
-                lightMode ? 'translate-x-8' : 'translate-x-0'
-              }`}
-                />
-              </button>
-            </div>
             <div className="flex flex-col items-center mb-6">
               <div className="w-16 h-16 rounded-full bg-white/15 border-white/60  flex items-center justify-center shadow-lg mb-2">
                 <span className=" text-2xl font-bold">AG</span>
