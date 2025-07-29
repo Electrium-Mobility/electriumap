@@ -75,7 +75,6 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
     markersRef.current = [];
   }, []);
 
-  // Function to render pins
   const renderPins = useCallback((pins: GeoOutlet[]) => {
     if (!mapRef.current) return;
 
@@ -88,14 +87,14 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
 
       const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
         `<div>
-          <h3 style="margin: 0 0 8px 0; font-weight: bold;">${pin.locationName || 'Outlet'}</h3>
-          ${pin.description ? `<p style="margin:4px 0;">${pin.description}</p>` : ""}
-          ${pin.chargerType ? `<p style="margin:4px 0;"><strong>Type:</strong> ${pin.chargerType}</p>` : ""}
+          <h3 style=\"margin:0;font-weight:600;\">${pin.title}</h3>
+          ${pin.description ? `<p style=\"margin:4px 0;\">${pin.description}</p>` : ""}
+          ${pin.category ? `<p style=\"margin:0;font-size:12px;\">Type: ${pin.category}</p>` : ""}
         </div>`
       );
 
       const marker = new mapboxgl.Marker(el)
-        .setLngLat([pin.longitude, pin.latitude]) // Fixed: use longitude/latitude
+        .setLngLat([pin.longitude, pin.latitude])
         .setPopup(popup)
         .addTo(mapRef.current!);
 
@@ -149,14 +148,11 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
             chargerType: d.chargerType ?? "",
           }));
 
-        setAllPins(mapped);
-        setCurrentBounds(bounds);
-        
-        const filteredPins = filterPinsByBounds(bounds);
-        setVisiblePins(filteredPins);
-        renderPins(visiblePins);
 
-        
+        setVisiblePins(mapped);
+        renderPins(mapped);
+
+
         // Update heatmap data
         if (mapRef.current?.getSource(HEATMAP_SOURCE_ID)) {
           (mapRef.current.getSource(HEATMAP_SOURCE_ID) as mapboxgl.GeoJSONSource)
@@ -165,7 +161,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
 
         // Only render pins if we're at a zoom level where they should be visible
         if (mapRef.current && mapRef.current.getZoom() >= HEATMAP_MAX_ZOOM) {
-          renderPins(visiblePins);
+          renderPins(mapped);
         }
 
         console.log("Fetched outlets:", mapped.length, "outlets loaded");
@@ -200,7 +196,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
         container: mapContainerRef.current,
         center: [-74.5, 40],
         zoom: 9,
-        style: lightMode 
+        style: lightMode
           ? "mapbox://styles/hannahwiens/cmcjq7lyu003l01p6a93lhg38"
           : "mapbox://styles/hannahwiens/cmcj9t5wf000v01p6chg0e07a",
       });
@@ -208,7 +204,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
       // Add heatmap source and layer
       mapRef.current.on("load", () => {
         if (!mapRef.current) return;
-        
+
         // Add GeoJSON source for pins
         if (!mapRef.current.getSource(HEATMAP_SOURCE_ID)) {
           mapRef.current.addSource(HEATMAP_SOURCE_ID, {
@@ -216,7 +212,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
             data: pinsToGeoJSON(allPins),
           });
         }
-        
+
         // Add heatmap layer
         if (!mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
           mapRef.current.addLayer({
@@ -267,12 +263,12 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
       mapRef.current.on("moveend", debouncedUpdatePinsFirebase);
       mapRef.current.on("zoomend", debouncedUpdatePinsFirebase);
 
-      // Toggle heatmap/marker visibility on zoom
+       // Toggle heatmap/marker visibility on zoom
       mapRef.current.on("zoom", () => {
         if (!mapRef.current) return;
         const zoom = mapRef.current.getZoom();
-        const showHeatmap = zoom <= HEATMAP_MAX_ZOOM; // fade heatmap out gradually 
-        const showPins = zoom >= HEATMAP_MAX_ZOOM; // show pins starting at zoom 11
+        const showHeatmap = zoom < 11; // fade heatmap out gradually 
+        const showPins = zoom >= HEATMAP_MAX_ZOOM; // show pins staring at zoom 10
 
         // Toggle heatmap layer visibility
         if (mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
@@ -281,8 +277,26 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
             "visibility",
             showHeatmap ? "visible" : "none"
           );
-        }})
+        }
 
+        // manage marker visibility
+        if (showHeatmap) {
+          // Hide all pins
+          clearAllMarkers();
+        } else {
+          // Hide heatmap (already done above), show pins
+          renderPins(visiblePins);
+        }
+      });
+
+      // Initial pin rendering
+      const initialBounds = getBounds();
+      if (initialBounds) {
+        const initialPins = filterPinsByBounds(initialBounds);
+        setCurrentBounds(initialBounds);
+        setVisiblePins(initialPins);
+        renderPins(initialPins);
+      }
 
       // Add click event to drop a pin and log coordinates
       mapRef.current.on("click", (e: mapboxgl.MapMouseEvent) => {
@@ -314,6 +328,8 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
         // Log coordinates
         console.log("Dropped pin at:", { lng, lat });
 
+        //Shows white overlay when pin is dropped
+        //setPinOverlay(true);
         onPinDrop?.(lat, lng);
       });
     }
@@ -329,9 +345,22 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
       }
       mapRef.current = null; // ensure we can recreate the map on remount (e.g. in React Strict Mode)
     };
-  }, []); // Remove dependencies to prevent recreation
+  }, []);
 
-  // Handle style changes
+  // Fetch outlets data from the backend and map to PinData shape
+  // Effect to handle flying to searched location
+  useEffect(() => {
+    if (flyTo && mapRef.current) {
+      mapRef.current.flyTo({
+        center: [flyTo.lng, flyTo.lat],
+        zoom: 14,
+        essential: true
+
+
+      });
+    }
+  }, [flyTo]);
+
   useEffect(() => {
     if (!mapRef.current || currentStyleMode === lightMode) return;
 
@@ -350,7 +379,6 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
     const onStyleLoad = () => {
       if (!mapRef.current) return;
 
-      // Restore map position
       mapRef.current.jumpTo({
         center: currentCenter,
         zoom: currentZoom,
@@ -358,48 +386,11 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
         pitch: currentPitch
       });
 
-      // Re-add heatmap source and layer after style change
-      if (!mapRef.current.getSource(HEATMAP_SOURCE_ID)) {
-        mapRef.current.addSource(HEATMAP_SOURCE_ID, {
-          type: "geojson",
-          data: pinsToGeoJSON(allPins),
-        });
-      }
-      
-      if (!mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
-        mapRef.current.addLayer({
-          id: HEATMAP_LAYER_ID,
-          type: "heatmap",
-          source: HEATMAP_SOURCE_ID,
-          maxzoom: HEATMAP_MAX_ZOOM,
-          paint: {
-            "heatmap-weight": 1,
-            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
-            "heatmap-color": [
-              "interpolate",
-              ["linear"],
-              ["heatmap-density"],
-              0, "rgba(33,102,172,0)",
-              0.2, "rgb(103,169,207)",
-              0.4, "rgb(209,229,240)",
-              0.6, "rgb(253,219,199)",
-              0.8, "rgb(239,138,98)",
-              1, "rgb(178,24,43)"
-            ],
-            "heatmap-radius": ["interpolate", ["linear"], ["zoom"],
-              0, 2,
-              4, 8,
-              8, 15],
-            "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 9, 1, 11, 0]
-          },
-        });
-      }
-
       mapRef.current.off('styledata', onStyleLoad);
     };
 
     mapRef.current.on('styledata', onStyleLoad);
-  }, [lightMode, currentStyleMode, allPins]);
+  }, [lightMode, currentStyleMode]);
 
   return (
     <>
@@ -426,5 +417,4 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
     </>
   );
 };
-
 export default MapBox;

@@ -10,6 +10,8 @@ export interface Outlet {
 
 //interface for outlet with geospatial data
 export interface GeoOutlet extends Outlet {
+  title?: string;
+  category?: string;
   id?: string;
   geohash?: string;
   createdAt?: any;
