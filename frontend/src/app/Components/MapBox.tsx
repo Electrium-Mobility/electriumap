@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { debounce, Bounds, isPointInBounds } from "./utils";
-import pinsData from "./pins.json";            // fallback sample pins – replaced when Firestore loads
+import pinsData from "./pins.json"; // fallback sample pins – replaced when Firestore loads
 import { isOnLand } from "../utils/addOutlet";
 import type { GeoOutlet } from "../models/index";
 
@@ -20,7 +20,7 @@ const pinsToGeoJSON = (pins: GeoOutlet[]): FeatureCollection<Point> => ({
       id: pin.id,
       description: pin.description,
       locationName: pin.locationName,
-      chargerType: pin.chargerType
+      chargerType: pin.chargerType,
     },
   })),
 });
@@ -38,7 +38,13 @@ interface MapBoxProps {
   flyTo?: { lng: number; lat: number } | null;
 }
 
-const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo }: MapBoxProps) => {
+const MapBox = ({
+  width = "100vw",
+  height = "100vh",
+  onPinDrop,
+  lightMode,
+  flyTo,
+}: MapBoxProps) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -63,49 +69,65 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
   }, []);
 
   // Function to filter pins based on bounds
-  const filterPinsByBounds = useCallback((bounds: Bounds): GeoOutlet[] => {
-    return allPins.filter((pin) =>
-      isPointInBounds({ lng: pin.longitude, lat: pin.latitude }, bounds)
-    );
-  }, [allPins]);
+  const filterPinsByBounds = useCallback(
+    (bounds: Bounds): GeoOutlet[] => {
+      return allPins.filter((pin) =>
+        isPointInBounds({ lng: pin.longitude, lat: pin.latitude }, bounds)
+      );
+    },
+    [allPins]
+  );
 
   // Function to clear all markers
   const clearAllMarkers = useCallback(() => {
-    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
   }, []);
 
-  const renderPins = useCallback((pins: GeoOutlet[]) => {
-    if (!mapRef.current) return;
+  const renderPins = useCallback(
+    (pins: GeoOutlet[]) => {
+      if (!mapRef.current) return;
 
-    clearAllMarkers();
+      clearAllMarkers();
 
-    pins.forEach((pin) => {
-      const el = document.createElement("div");
-      el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
-      el.style.cursor = "pointer";
+      pins.forEach((pin) => {
+        const el = document.createElement("div");
+        el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+        el.style.cursor = "pointer";
 
-      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
-        `<div>
-          <h3 style=\"margin:0;font-weight:600;\">${pin.title}</h3>
-          ${pin.description ? `<p style=\"margin:4px 0;\">${pin.description}</p>` : ""}
-          ${pin.category ? `<p style=\"margin:0;font-size:12px;\">Type: ${pin.category}</p>` : ""}
+        const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(
+          `<div>
+          <h3 style="margin: 0 0 8px 0; font-weight: bold;">${
+            pin.locationName || "Outlet"
+          }</h3>
+          ${
+            pin.description
+              ? `<p style="margin:4px 0;">${pin.description}</p>`
+              : ""
+          }
+          ${
+            pin.chargerType
+              ? `<p style="margin:4px 0;"><strong>Type:</strong> ${pin.chargerType}</p>`
+              : ""
+          }
         </div>`
-      );
+        );
 
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([pin.longitude, pin.latitude])
-        .setPopup(popup)
-        .addTo(mapRef.current!);
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([pin.longitude, pin.latitude])
+          .setPopup(popup)
+          .addTo(mapRef.current!);
 
-      el.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        console.log("Pin clicked:", pin);
+        el.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          console.log("Pin clicked:", pin);
+        });
+
+        markersRef.current.push(marker);
       });
-
-      markersRef.current.push(marker);
-    });
-  }, [clearAllMarkers]);
+    },
+    [clearAllMarkers]
+  );
 
   const debouncedUpdatePinsFirebase = useCallback(
     debounce(async () => {
@@ -117,13 +139,17 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
         southWestLng: bounds.sw[0].toString(),
         northEastLat: bounds.ne[1].toString(),
         northEastLng: bounds.ne[0].toString(),
-        type: 'bounds'
+        type: "bounds",
       });
 
       try {
         const response = await fetch(`/api/outlets?${params.toString()}`);
         if (!response.ok) {
-          console.error("Failed to fetch outlets:", response.status, response.statusText);
+          console.error(
+            "Failed to fetch outlets:",
+            response.status,
+            response.statusText
+          );
           return;
         }
 
@@ -136,7 +162,10 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
 
         // Map the API response to GeoOutlet format
         const mapped: GeoOutlet[] = result
-          .filter((d: any) => typeof d.latitude === "number" && typeof d.longitude === "number")
+          .filter(
+            (d: any) =>
+              typeof d.latitude === "number" && typeof d.longitude === "number"
+          )
           .map((d: any) => ({
             id: d.id ?? String(Math.random()),
             latitude: d.latitude,
@@ -148,20 +177,24 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
             chargerType: d.chargerType ?? "",
           }));
 
-
+        setAllPins(mapped);
         setVisiblePins(mapped);
-        renderPins(mapped);
-
 
         // Update heatmap data
         if (mapRef.current?.getSource(HEATMAP_SOURCE_ID)) {
-          (mapRef.current.getSource(HEATMAP_SOURCE_ID) as mapboxgl.GeoJSONSource)
-            .setData(pinsToGeoJSON(mapped));
+          (
+            mapRef.current.getSource(
+              HEATMAP_SOURCE_ID
+            ) as mapboxgl.GeoJSONSource
+          ).setData(pinsToGeoJSON(mapped));
         }
 
         // Only render pins if we're at a zoom level where they should be visible
         if (mapRef.current && mapRef.current.getZoom() >= HEATMAP_MAX_ZOOM) {
           renderPins(mapped);
+        } else {
+          // Clear any existing pins if we're showing heatmap
+          clearAllMarkers();
         }
 
         console.log("Fetched outlets:", mapped.length, "outlets loaded");
@@ -178,7 +211,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
       mapRef.current.flyTo({
         center: [flyTo.lng, flyTo.lat],
         zoom: 14,
-        essential: true
+        essential: true,
       });
     }
   }, [flyTo]);
@@ -223,30 +256,59 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
             paint: {
               // Heatmap color and intensity config (tweak as needed)
               "heatmap-weight": 1,
-              "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
+              "heatmap-intensity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                0,
+                1,
+                9,
+                3,
+              ],
               "heatmap-color": [
                 "interpolate",
                 ["linear"],
                 ["heatmap-density"],
-                0, "rgba(33,102,172,0)",
-                0.2, "rgb(103,169,207)",
-                0.4, "rgb(209,229,240)",
-                0.6, "rgb(253,219,199)",
-                0.8, "rgb(239,138,98)",
-                1, "rgb(178,24,43)"
+                0,
+                "rgba(33,102,172,0)",
+                0.2,
+                "rgb(103,169,207)",
+                0.4,
+                "rgb(209,229,240)",
+                0.6,
+                "rgb(253,219,199)",
+                0.8,
+                "rgb(239,138,98)",
+                1,
+                "rgb(178,24,43)",
               ],
-              // adjust radius of heatmap locations 
-              "heatmap-radius": ["interpolate", ["linear"], ["zoom"],
-                0, 2,
-                4, 8,
-                8, 15],
-              // fade heatmap between zoom 9 and 11 before rendering pins 
-              "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 9, 1, 11, 0]
+              // adjust radius of heatmap locations
+              "heatmap-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                0,
+                2,
+                4,
+                8,
+                8,
+                15,
+              ],
+              // fade heatmap between zoom 9 and 11 before rendering pins
+              "heatmap-opacity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                9,
+                1,
+                11,
+                0,
+              ],
             },
           });
         }
 
-        // Set initial visibility of heatmap 
+        // Set initial visibility of heatmap
         if (mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
           mapRef.current.setLayoutProperty(
             HEATMAP_LAYER_ID,
@@ -263,12 +325,12 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
       mapRef.current.on("moveend", debouncedUpdatePinsFirebase);
       mapRef.current.on("zoomend", debouncedUpdatePinsFirebase);
 
-       // Toggle heatmap/marker visibility on zoom
+      // Toggle heatmap/marker visibility on zoom
       mapRef.current.on("zoom", () => {
         if (!mapRef.current) return;
         const zoom = mapRef.current.getZoom();
-        const showHeatmap = zoom < 11; // fade heatmap out gradually 
-        const showPins = zoom >= HEATMAP_MAX_ZOOM; // show pins staring at zoom 10
+        const showHeatmap = zoom < HEATMAP_MAX_ZOOM; // show heatmap below zoom 11
+        const showPins = zoom >= HEATMAP_MAX_ZOOM; // show pins at zoom 11 and above
 
         // Toggle heatmap layer visibility
         if (mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
@@ -280,23 +342,14 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
         }
 
         // manage marker visibility
-        if (showHeatmap) {
-          // Hide all pins
-          clearAllMarkers();
-        } else {
-          // Hide heatmap (already done above), show pins
+        if (showPins && visiblePins.length > 0) {
+          // Show pins when zoomed in
           renderPins(visiblePins);
+        } else {
+          // Hide pins when showing heatmap
+          clearAllMarkers();
         }
       });
-
-      // Initial pin rendering
-      const initialBounds = getBounds();
-      if (initialBounds) {
-        const initialPins = filterPinsByBounds(initialBounds);
-        setCurrentBounds(initialBounds);
-        setVisiblePins(initialPins);
-        renderPins(initialPins);
-      }
 
       // Add click event to drop a pin and log coordinates
       mapRef.current.on("click", (e: mapboxgl.MapMouseEvent) => {
@@ -341,7 +394,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
         mapRef.current?.remove();
       } catch (err) {
         // Swallow Mapbox GL indoor manager bug in dev Strict Mode
-        console.warn('Mapbox remove error (ignored):', err);
+        console.warn("Mapbox remove error (ignored):", err);
       }
       mapRef.current = null; // ensure we can recreate the map on remount (e.g. in React Strict Mode)
     };
@@ -354,9 +407,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
       mapRef.current.flyTo({
         center: [flyTo.lng, flyTo.lat],
         zoom: 14,
-        essential: true
-
-
+        essential: true,
       });
     }
   }, [flyTo]);
@@ -383,13 +434,13 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
         center: currentCenter,
         zoom: currentZoom,
         bearing: currentBearing,
-        pitch: currentPitch
+        pitch: currentPitch,
       });
 
-      mapRef.current.off('styledata', onStyleLoad);
+      mapRef.current.off("styledata", onStyleLoad);
     };
 
-    mapRef.current.on('styledata', onStyleLoad);
+    mapRef.current.on("styledata", onStyleLoad);
   }, [lightMode, currentStyleMode]);
 
   return (
@@ -406,10 +457,12 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, lightMode, flyTo
         {currentBounds && (
           <>
             <p className="text-xs">
-              SW: [{currentBounds.sw[0].toFixed(3)}, {currentBounds.sw[1].toFixed(3)}]
+              SW: [{currentBounds.sw[0].toFixed(3)},{" "}
+              {currentBounds.sw[1].toFixed(3)}]
             </p>
             <p className="text-xs">
-              NE: [{currentBounds.ne[0].toFixed(3)}, {currentBounds.ne[1].toFixed(3)}]
+              NE: [{currentBounds.ne[0].toFixed(3)},{" "}
+              {currentBounds.ne[1].toFixed(3)}]
             </p>
           </>
         )}
