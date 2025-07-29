@@ -3,7 +3,7 @@
 import React, {useState, useEffect} from 'react';
 import { addOutletFrontend } from "../utils/addOutlet";
 import { isOnLand } from "../utils/addOutlet";
-import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon } from 'lucide-react';
+import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -163,7 +163,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
             ? "bg-white/5 border-white/60 text-black"
             : "bg-white/15 border-white/60 text-white "
             }`}>
-              {/* sliding indictor for which mode is currently on */}
+              {/* sliding indictor for which mode user is currently on */}
               <div
                 className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${
                   lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-600/70'
@@ -186,10 +186,22 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
             </div>
         </div> 
-        
+
+
+        <div className="flex items-center gap-6"> 
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
+            ${lightMode
+            ? "bg-white/5 border-white/60 text-black"
+            : "bg-white/15 border-white/60 text-white "
+            }`}>
+              <button className="flex items-center gap-3 text-base">
+                <span>Filter</span> <ChevronDown className="w-4 h-4 bold"/> 
+              </button>
+            </div>
+        </div> 
 
         <div className="flex items-center gap-6">
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-full shadow-md 
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
           ${lightMode
           ? "bg-white/5 border-white/60 text-black"
           : "bg-white/15 border-white/60 text-white "
@@ -214,7 +226,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </span>
           </button>
         </div>
-          <div className={`flex items-center justify-center h-14 aspect-square rounded-full backdrop-blur-sm border-1  shadow-md font-semibold text-sm w-14 cursor-pointer
+          <div className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border-1  shadow-md font-semibold text-sm w-14 cursor-pointer
             ${lightMode
           ? "bg-white/5 border-white/60 text-black"
           : "bg-white/15 border-white/60 text-white"
