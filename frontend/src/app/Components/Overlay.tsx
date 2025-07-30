@@ -3,7 +3,7 @@
 import React, {useState, useEffect} from 'react';
 import { addOutletFrontend } from "../utils/addOutlet";
 import { isOnLand } from "../utils/addOutlet";
-import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown } from 'lucide-react';
+import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -40,6 +40,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState<Array<{place_name: string, center: [number, number]}>>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showProfile, setProfile ] = useState("")
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -433,13 +434,33 @@ const AddOutlet: React.FC<OverlayProps> = ({
             >
               <span className="text-2xl font-bold leading-none">×</span>
             </button>
+
             <div className="flex flex-col items-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-white/15 border-white/60  flex items-center justify-center shadow-lg mb-2">
-                <span className=" text-2xl font-bold">AG</span>
-              </div>
+              {/* wrap user's profile and upload profile image buttons to same tag */}
+              <div className="flex flex-col items-center mb-6">
+                <div className="relative">
+                  {/* display user's profile circle */}
+                  <div className="w-16 h-16 rounded-full bg-white/15 border-white/60  flex items-center justify-center shadow-lg mb-2">
+                    <span className=" text-2xl font-bold">AG</span>
+                  </div>
+
+                  {/* upload user's profile button  */}
+                  <button 
+                    onClick={() => { 
+                      setProfile("testing"); 
+                      console.log('add profile button clicked');
+                    }} 
+                    className="absolute -bottom-0 -right-0 z-10 flex items-center justify-center h-5 w-5 rounded-full bg-lime-600 text-white shadow-md"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div> 
+              </div> 
+
               <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
                 {userName}
               </div>
+
               <div className={`text-sm ${lightMode ? "text-black/40" : "text-neutral-400"}`}>
                 {userEmail}
               </div>
