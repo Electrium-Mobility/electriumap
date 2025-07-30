@@ -122,6 +122,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
     return (
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
+
+        {/* search bar section */}
         <div className={`flex items-center px-4 h-full backdrop-blur-sm border-1 font-semibold rounded-full shadow-lg w-[360px]
           ${lightMode
           ? "bg-white/5 border-white/60 text-black"
@@ -136,7 +138,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
           />
           <LucideSearch className={`w-5 h-5 font-semibold`} />
           
-        {/* Search Results Dropdown */}
+        {/* search results dropdown */}
         {showSearchResults && searchResults.length > 0 && (
           <div className={`absolute top-full left-0 w-full mt-2 bg-white/10 font-semibold rounded-lg shadow-lg max-h-60 overflow-y-auto border-1 backdrop-blur-sm
             ${lightMode
@@ -156,39 +158,34 @@ const AddOutlet: React.FC<OverlayProps> = ({
         )}
       </div>
 
-        {/* dark/light mode switch */}
-        <div className="flex items-center gap-6"> 
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
-            ${lightMode
-            ? "bg-white/5 border-white/60 text-black"
-            : "bg-white/15 border-white/60 text-white "
-            }`}>
-              {/* sliding indictor for which mode user is currently on */}
-              <div
-                className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${
-                  lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-600/70'
-                }`}
-              />
+      {/* dark/light mode switch */}
+      <div className="flex items-center gap-6"> 
+        <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
+          ${lightMode
+          ? "bg-white/5 border-white/60 text-black"
+          : "bg-white/15 border-white/60 text-white "
+          }`}>
+            {/* sliding indictor for which mode user is currently on */}
+            <div
+              className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${
+                lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-600/70'
+              }`}
+            />
+            <button
+              onClick={() => setLightMode(true)}
+              className="z-10 w-1/2 h-full flex items-center justify-center"
+            >
+              <SunMedium  className="w-8 h-8"/>
+            </button>
+            <button
+              onClick={() => setLightMode(false)}
+              className="z-10 w-1/2 h-full flex items-center justify-center"
+            >
+              <Moon className="w-7 h-7" />
+            </button>
+          </div>
 
-              <button
-                onClick={() => setLightMode(true)}
-                className="z-10 w-1/2 h-full flex items-center justify-center"
-              >
-                <SunMedium  className="w-8 h-8"/>
-              </button>
-
-              <button
-                onClick={() => setLightMode(false)}
-                className="z-10 w-1/2 h-full flex items-center justify-center"
-              >
-                <Moon className="w-7 h-7" />
-              </button>
-
-            </div>
-        </div> 
-
-
-        <div className="flex items-center gap-6"> 
+          {/* filter button section */}
           <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
             ${lightMode
             ? "bg-white/5 border-white/60 text-black"
@@ -197,44 +194,62 @@ const AddOutlet: React.FC<OverlayProps> = ({
               <button className="flex items-center gap-3 text-base">
                 <span>Filter</span> <ChevronDown className="w-4 h-4 bold"/> 
               </button>
-            </div>
-        </div> 
-
-        <div className="flex items-center gap-6">
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
-          ${lightMode
-          ? "bg-white/5 border-white/60 text-black"
-          : "bg-white/15 border-white/60 text-white "
-          }`}>
-          <button className="flex flex-col items-center justify-center  w-14 h-14">
-            <LucideBookmark className="w-6 h-6 "/>
-            <span className="text-[10px] mt-1 whitespace-nowrap">Saved</span>
-          </button>
-
-          <button className="flex flex-col items-center justify-center  w-14 h-14">
-            <LucideClock className="w-6 h-6 "/>
-            <span className="text-[10px] mt-1 whitespace-nowrap">Recents</span>
-          </button>
-
-          <button
-            onClick={() => setShowAddOutlet((prev) => !prev)}
-            className="flex flex-col items-center justify-center text-lime-600 w-16 h-14"
-          >
-            <LucidePlus className="w-7 h-7 text-lime-600" />
-            <span className="text-[10px] mt-0 whitespace-nowrap">
-              Add Outlet
-            </span>
-          </button>
-        </div>
-          <div className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border-1  shadow-md font-semibold text-sm w-14 cursor-pointer
-            ${lightMode
-          ? "bg-white/5 border-white/60 text-black"
-          : "bg-white/15 border-white/60 text-white"
-          }`}
-          onClick={() => setShowSettings(true)}
-          title="Settings">
-            AG
           </div>
+       
+          {/* tool bar section */}
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
+            ${lightMode
+            ? "bg-white/5 border-white/60 text-black"
+            : "bg-white/15 border-white/60 text-white "
+            }`}>
+            <button className="flex flex-col items-center justify-center  w-14 h-14">
+              <LucideBookmark className="w-6 h-6 "/>
+              <span className="text-[10px] mt-1 whitespace-nowrap">Saved</span>
+            </button>
+
+            <button className="flex flex-col items-center justify-center  w-14 h-14">
+              <LucideClock className="w-6 h-6 "/>
+              <span className="text-[10px] mt-1 whitespace-nowrap">Recents</span>
+            </button>
+
+            <button
+              onClick={() => setShowAddOutlet((prev) => !prev)}
+              className="flex flex-col items-center justify-center text-lime-600 w-16 h-14"
+            >
+              <LucidePlus className="w-7 h-7 text-lime-600" />
+              <span className="text-[10px] mt-0 whitespace-nowrap">
+                Add Outlet
+              </span>
+            </button>
+          </div>
+
+          {/* display user's profile when authenticated (logged in), else display Sign In button when logged out */}
+          {getIsAuthenticated() ? ( 
+            <div className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border-1  shadow-md font-semibold text-sm w-14 cursor-pointer
+              ${lightMode
+            ? "bg-white/5 border-white/60 text-black"
+            : "bg-white/15 border-white/60 text-white"
+            }`}
+              onClick={() => setShowSettings(true)}
+              title="Settings">
+                AG
+            </div>
+          ) : ( 
+            // displaying Sign In button at top right corner (logged out)
+            <div
+              className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md bg-lime-700
+                  ? "bg-white/5 border-white/60 text-black"
+                  : "bg-white/15 border-white/60 text-white"
+                }`}> 
+              <button 
+                onClick={() => setIsAuthenticated(true)} // log user back in 
+                className="flex items-center gap-3 text-base"
+              >
+                <span>Sign In</span> 
+              </button> 
+            </div> 
+          )}
+
         </div>
 
         {showAddOutlet && (
@@ -444,7 +459,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   signOut(auth)
                     .then(() => {
                       console.log("User signed out");
-                      setIsAuthenticated(false);
+                      setIsAuthenticated(false); // logouts user, triggering the Sign In button to appear
                       console.log("isAuthenticated set to false");
                     })
                     .catch((error) => {
