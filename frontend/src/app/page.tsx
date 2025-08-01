@@ -11,7 +11,6 @@ export default function Home() {
   //displays last coordinates on pin drop overlay
   const [coords, setCoords] = useState<{lng: number; lat: number} | null>(null);
   const [flyToLocation, setFlyToLocation] = useState<{lng: number; lat: number} | null>(null);
-
   const handleSearchSelect = (lng: number, lat: number) => {
     setFlyToLocation({ lng, lat });
   };
@@ -35,6 +34,9 @@ export default function Home() {
           setPurgeTempSignal(Date.now());
           setCoords(null);
           setSelectedPin(pin);
+        }}
+        onCurrentLocation={(lat, lng) => {
+          setCoords({ lat, lng});
         }}
         lightMode={lightMode}
         purgeTempPinsSignal={purgeTempSignal}
