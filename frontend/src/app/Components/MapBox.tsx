@@ -8,6 +8,7 @@ import pinsData from "./pins.json";            // fallback sample pins – repla
 import { isOnLand } from "../utils/addOutlet";
 
 import type { Feature, FeatureCollection, Point } from "geojson";
+import { LucideLocateFixed } from "lucide-react";
 
 // Convert plain pins to a GeoJSON FeatureCollection
 const pinsToGeoJSON = (pins: PinData[]): FeatureCollection<Point> => ({
@@ -34,9 +35,10 @@ interface MapBoxProps {
   flyTo?: { lng: number; lat: number } | null;
   /** Signal to purge temporary pins (increments every cancel) */
   purgeTempPinsSignal?: number;
+  onCurrentLocation?: (lat: number, lng: number) => void;
 }
 
-const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal }: MapBoxProps) => {
+const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation }: MapBoxProps) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -48,6 +50,39 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
   const [allPins, setAllPins] = useState<PinData[]>(
     pinsData.map((p: any) => ({ ...p, fromDb: false }))
   );
+  //error message when failing to get current users position
+  const [errorMessage, setErrorMessage] = useState('');
+  //gets current location for user centering
+  const handleGeoLocate = () => {
+    setErrorMessage('');
+    
+    if(!navigator.geolocation) {
+      setErrorMessage('Get current location not supported.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { longitude, latitude } = position.coords;
+        if (!mapRef.current) {
+          setErrorMessage('Map is not loaded yet.');
+          return;
+        }
+
+        mapRef.current.flyTo({
+          center: [ longitude, latitude ],
+          zoom: 14,
+        });
+        onCurrentLocation?.(latitude, longitude);
+      },
+      (error) => {
+        setErrorMessage('Unable to retrieve your location.');
+      },
+      {
+        enableHighAccuracy: true,
+      }
+    );
+  };
 
   // Remove any temporary pins that were added by a map click but later cancelled
   useEffect(() => {
@@ -82,7 +117,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
       });
     }
   }, [flyTo]);
-
+  
   // Fetch outlets data from the backend
   useEffect(() => {
     fetch("/api/outlets")
@@ -407,6 +442,35 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
         ref={mapContainerRef}
         className="map-container"
       />
+
+      <button
+        className={`fixed top-4 left-100 z-[9999] backdrop-blur-sm border rounded-full shadow-md p-4
+          ${lightMode ? "text-black bg-white/5 border-white/60" : "text-white bg-white/15 border-white/60"}`}
+        onClick={handleGeoLocate}
+        title="Find my location"
+      >
+        <LucideLocateFixed className="w-5 h-5 font-semibold" />
+      </button>
+
+      {errorMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: '#ff4d4f',
+            color: 'white',
+            padding: '10px 16px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            zIndex: 10000,
+          }}
+        >
+          {errorMessage}
+        </div>
+      )}
+            
     <div className="fixed top-22 left-10 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg p-4 text-black">
       <p className="font-semibold text-sm">Viewport Info</p>
       <p className="text-xs">Visible Pins: {visiblePins.length}</p>
