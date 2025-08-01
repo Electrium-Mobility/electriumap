@@ -173,7 +173,7 @@ const firebaseConfig = {
   storageBucket: "electriumap.firebasestorage.app",
   messagingSenderId: "369697728783",
   appId: "1:369697728783:web:2e4be6df906e1f66c2f67a",
-  measurementId: "G-FSV8JQKCLN",
+  measurementId: "G-FSV8JQKCLN"
 };
 
 const app = initializeApp(firebaseConfig);
