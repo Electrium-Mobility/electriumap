@@ -4,6 +4,10 @@ import React, {useState, useEffect} from 'react';
 import { addOutletFrontend } from "../utils/addOutlet";
 import { isOnLand } from "../utils/addOutlet";
 import { LucideZap, LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload } from 'lucide-react';
+import { auth, db } from "../firebase/firebase";
+import { signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { setIsAuthenticated, getIsAuthenticated } from '../globals';
 
 interface OverlayProps {
   showPinOverlay: boolean;
@@ -36,6 +40,40 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState<Array<{place_name: string, center: [number, number]}>>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
+
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        if (getIsAuthenticated()) {
+          const user = auth.currentUser;
+          if (user) {
+            const userDocRef = doc(db, "Users", user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              const firstName = userData.firstName || "Anonymous";
+              const lastName = userData.lastName || "";
+              setUserName(`${firstName} ${lastName}`.trim());
+              setUserEmail(userData.email || "No Email Provided");
+            } else {
+              console.error("User document does not exist");
+            }
+          }
+        } else {
+          setUserName("");
+          setUserEmail("");
+        }
+      } catch (error) {
+        console.error("Error fetching user data from Firestore:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   //if coordinates exist, will fill them in for address
   useEffect(() => {
@@ -282,8 +320,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
             <div className="flex justify-end w-full">
 
                 <button
-                  onClick={() => {
-                    if (address != "" && outletCount != 0){
+                  onClick={async () => {
+                    if (address !== "" && outletCount !== 0) {
                       try {
                         await addOutletFrontend({
                           userName: "TestUser", 
@@ -292,13 +330,13 @@ const AddOutlet: React.FC<OverlayProps> = ({
                           chargerType: powerType || selectedPort,
                           description: `Condition: ${selectedCondition}. ${extraDetails}`,
                         });
-                    
+                
                         setShowAddOutlet(false);
                       } catch (err) {
                         console.error("Error submitting outlet:", err);
                       }
-                    }}
-                  }
+                    }
+                  }}
                   className="text-md font-semibold bg-lime-700 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5">
                     Submit
               </button>
@@ -360,10 +398,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 <span className=" text-2xl font-bold">AG</span>
               </div>
               <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
-                [Insert User Name Here]
+                {userName}
               </div>
               <div className={`text-sm ${lightMode ? "text-black/40" : "text-neutral-400"}`}>
-                [Insert User Email Here]
+                {userEmail}
               </div>
             </div>
 
@@ -376,11 +414,23 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 <LucidePlus className="w-5 h-5 text-lime-600" />
                 Change Password
               </button>
-              <button className={`flex items-center gap-3 text-md font-semibold hover:bg-red-900 transition-colors rounded-xl text-red-500 px-5 py-3 w-full shadow border border-white/10
-              ${lightMode
-                ? "bg-neutral-200"
-                : "bg-neutral-800"
-              }`}>
+              <button 
+                onClick={() => {
+                  signOut(auth)
+                    .then(() => {
+                      console.log("User signed out");
+                      setIsAuthenticated(false);
+                      console.log("isAuthenticated set to false");
+                    })
+                    .catch((error) => {
+                      console.error("Sign-out error:", error);
+                    });
+                }}
+                className={`flex items-center gap-3 text-md font-semibold hover:bg-red-900 transition-colors rounded-xl text-red-500 px-5 py-3 w-full shadow border border-white/10
+                ${lightMode
+                  ? "bg-neutral-200"
+                  : "bg-neutral-800"
+                }`}>
                 <LucideUpload className="w-5 h-5 text-red-500" />
                 Logout
               </button>

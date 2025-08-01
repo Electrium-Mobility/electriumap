@@ -8,6 +8,7 @@ import { db } from "../../firebase/firebase";
 import { doc, setDoc, collection } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useUserData } from "../../create-account/UserDataContext";
+import { setIsAuthenticated } from '../../globals';
 
 function SettingUpPage(){
   const router = useRouter();
@@ -47,6 +48,8 @@ function SettingUpPage(){
 
           console.log("Account and profile created!");
           router.push("/create-account/welcome");
+          setIsAuthenticated(true); // update global authenticated variable to enable future conditional UI behaviours
+          console.log("isAuthenticated set to true");
         } catch (err) {
           console.error(err);
           // You can add error handling state here to show messages in UI if needed

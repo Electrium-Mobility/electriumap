@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { auth } from "../firebase/firebase";
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { setIsAuthenticated } from '../globals';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase/firebase'; // adjust the import based on your file structure
 
 type LoginPageProps = { 
     username: string; 
@@ -48,6 +50,7 @@ const LoginPage: React.FC = () => {
             alert('Submitted successfully.')
             // after user successfully logins, change route to main map page 
             setIsAuthenticated(true); // update global authenticated variable to enable future conditional UI behaviours
+            console.log("isAuthenticated set to true");
             router.push('/');
         } catch (error: any) {
             setErrorMsg(error.message); // or display a custom message
@@ -55,11 +58,31 @@ const LoginPage: React.FC = () => {
     };  
 
     const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-        await signInWithPopup(auth, provider);
-        alert('Submitted successfully.')
-        router.push('/');
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            // Check if the user document already exists
+            const userDocRef = doc(db, "Users", user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (!userDoc.exists()) {
+                // Auto-capitalize first and last name
+                const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+                // Save user info to Firestore under "Users" collection, using uid as document ID
+                await setDoc(userDocRef, {
+                    firstName: capitalize(user.displayName?.split(" ")[0] || ""),
+                    lastName: capitalize(user.displayName?.split(" ")[1] || ""),
+                    email: user.email,
+                });
+            }
+
+            alert('Submitted successfully.');
+            setIsAuthenticated(true);
+            console.log("isAuthenticated set to true");
+            router.push('/');
         } catch (error: any) {
             setErrorMsg(error.message);
         }
@@ -139,5 +162,5 @@ const LoginPage: React.FC = () => {
         );  
     }
 
- export default LoginPage; 
+ export default LoginPage;
 
