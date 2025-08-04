@@ -1,7 +1,8 @@
 "use client";
 
 import React, {useState, useEffect} from 'react';
-import { addOutletFrontend } from "../utils/addOutlet";
+import { PinData } from "./utils";
+import { addOutletFrontend, addOutlet } from "../utils/addOutlet";
 import { isOnLand } from "../utils/addOutlet";
 import { LucideZap, LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
@@ -12,10 +13,13 @@ import { setIsAuthenticated, getIsAuthenticated } from '../globals';
 interface OverlayProps {
   showPinOverlay: boolean;
   coords: { lat: number; lng: number } | null;
+  selectedPin?: PinData | null;
   onClose: () => void;
   lightMode: boolean;
   setLightMode: (value: boolean) => void;
   onSearchSelect?: (lng: number, lat: number) => void;
+  /** Called when the user cancels adding a new outlet so the temporary pin can be removed */
+  onCancelTempPin?: () => void;
 }
 
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
@@ -24,10 +28,12 @@ const conditionOptions = ["New", "Worn", "Slightly Damaged", "Damaged"];
 const AddOutlet: React.FC<OverlayProps> = ({
   showPinOverlay,
   coords,
+  selectedPin,
   onClose, 
   lightMode, 
   setLightMode,
   onSearchSelect,
+  onCancelTempPin,
 }) => {
   const [showAddOutlet, setShowAddOutlet] = useState(false);
   const [address, setAddress] = useState("");
@@ -75,12 +81,32 @@ const AddOutlet: React.FC<OverlayProps> = ({
     fetchUserData();
   }, []);
 
-  //if coordinates exist, will fill them in for address
+  // If new coordinates are provided (e.g. map click), pre-fill address and automatically open the
+  // "Add Outlet" form so the user can immediately submit a new outlet.
   useEffect(() => {
-    if (coords) {
-      setAddress(`${coords?.lng.toFixed(5)} ${coords?.lat.toFixed(5)}`);
+    if (!coords) return;
+
+    // Pre-fill address field with the clicked coordinates
+    setAddress(`${coords.lng.toFixed(5)} ${coords.lat.toFixed(5)}`);
+
+    // Automatically open the Add Outlet popup when the map is clicked (but only if we are *not*
+    // currently showing a read-only pin details card).
+    if (!selectedPin) {
+      setShowAddOutlet(true);
     }
-  }, [coords]);
+  }, [coords, selectedPin]);
+
+  // If a pin on the map is selected, pre-fill form fields for read-only display
+  useEffect(() => {
+    if (selectedPin) {
+      // Switch to read-only pin-details card when a marker is selected.
+      setShowAddOutlet(false);
+      setAddress(selectedPin.title || "");
+      setPowerType(selectedPin.category || "");
+      setExtraDetails(selectedPin.description || "");
+      // Could set outlet count, port and condition if that data exists
+    }
+  }, [selectedPin]);
 
 
   const handleSearch = async (value: string) => {
@@ -317,32 +343,88 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 </h2>
               </div>
             </div>
-            <div className="flex justify-end w-full">
+            <div className="flex justify-between w-full">
 
-                <button
-                  onClick={async () => {
-                    if (address !== "" && outletCount !== 0) {
-                      try {
-                        await addOutletFrontend({
-                          userName: "TestUser", 
-                          userId: "user123",     
-                          locationName: address, 
+              <button
+                onClick={() => {
+                  // Close the Add-Outlet popup without saving
+                  setShowAddOutlet(false);
+                  onCancelTempPin?.();
+                  onClose();
+                }}
+                className="text-md font-semibold bg-red-600 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={async () => {
+                  if (address !== "" && outletCount !== 0) {
+                    try {
+                      if (coords) {
+                        await addOutlet({
+                          latitude: coords.lat,
+                          longitude: coords.lng,
+                          userName: userName || "Anonymous",
+                          userId: userEmail || "unknown", // or auth.currentUser?.uid
+                          locationName: address,
                           chargerType: powerType || selectedPort,
                           description: `Condition: ${selectedCondition}. ${extraDetails}`,
                         });
-                
-                        setShowAddOutlet(false);
-                      } catch (err) {
-                        console.error("Error submitting outlet:", err);
+                      } else {
+                        await addOutletFrontend({
+                          userName: userName || "Anonymous",
+                          userId: userEmail || "unknown",
+                          locationName: address,
+                          chargerType: powerType || selectedPort,
+                          description: `Condition: ${selectedCondition}. ${extraDetails}`,
+                        });
                       }
+                      setShowAddOutlet(false);
+                    } catch (err) {
+                      console.error("Error submitting outlet:", err);
                     }
-                  }}
-                  className="text-md font-semibold bg-lime-700 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5">
-                    Submit
+                  }
+                }}
+                className="text-md font-semibold bg-lime-700 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5"
+              >
+                Submit
               </button>
             </div>
           </div>
         )}
+      {!showAddOutlet && selectedPin && (
+        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1  text-lg   rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
+          ${lightMode
+          ? "bg-white/5 border-white/60 text-black"
+          : "bg-white/15 border-white/60 text-white "
+          }`}>
+          <div className="flex-grow">
+            <h2 className="font-semibold text-lg pb-1 pt-0 p-1 pl-0">
+              {address}
+            </h2>
+            {powerType && (
+              <p className="pt-0 p-1 pl-0">
+                Power Type: {powerType}
+              </p>
+            )}
+            {extraDetails && (
+              <p className="pt-0 p-1 pl-0">
+                {extraDetails}
+              </p>
+            )}
+          </div>
+          <div className="flex justify-end w-full">
+            <button
+              onClick={onClose}
+              className="text-md font-semibold bg-lime-700 rounded-4xl mt-3 relative z-60 pl-5 pr-5 p-1"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
       {!showAddOutlet && showPinOverlay && (
         <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1  text-lg   rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
           ${lightMode
