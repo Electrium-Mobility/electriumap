@@ -8,6 +8,7 @@ import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { setIsAuthenticated, getIsAuthenticated } from '../globals';
+import { useRouter } from 'next/navigation';
 
 interface OverlayProps {
   showPinOverlay: boolean;
@@ -44,6 +45,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -243,7 +246,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   : "bg-white/15 border-white/60 text-white"
                 }`}> 
               <button 
-                onClick={() => setIsAuthenticated(true)} // log user back in 
+                onClick={() => router.push('/login')} // routes to login page
                 className="flex items-center gap-3 text-base"
               >
                 <span>Sign In</span> 
@@ -481,6 +484,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                     .then(() => {
                       console.log("User signed out");
                       setIsAuthenticated(false); // logouts user, triggering the Sign In button to appear
+                      setShowSettings(false);
                       console.log("isAuthenticated set to false");
                     })
                     .catch((error) => {
