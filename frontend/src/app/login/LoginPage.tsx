@@ -90,6 +90,7 @@ const LoginPage: React.FC = () => {
 
     return(
         <div className="bg-sign-in grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+            
             <div className="flex items-center justify-center h-screen gap-2">
                 <Image src={"/images/electrium.png"} width={160} height={110} className="absolute top-[50px]" alt="Electrium logo" />
                 <h1 className="text-4xl font-bold text-white m-0 absolute top-[120px]">Electriumap</h1>   
@@ -149,15 +150,16 @@ const LoginPage: React.FC = () => {
 
             {/* different open authorization buttons for login*/}
             <div className="w-[400px] flex flex-col gap-2 mt-5"> 
-                <AuthButton src="/images/google_logo.png" alt="Google" text="Continue with Google" onClick={handleGoogleSignIn} />
-                <AuthButton src="/images/facebook_logo.png" alt="Facebook" text="Continue with Facebook" />
-                <AuthButton src="/images/apple_logo.png" alt="Apple" text="Continue with Apple" />
+                <AuthButton src="/images/google_logo.png" alt="Google" text="Continue with Google" onClick={handleGoogleSignIn} />  
+            </div> 
+
+            <div className="flex items-center justify-center w-full mt-4"> 
+                <p className="font-semibold " style={{color:'#2E7D32'}}> Don't have an account? {" "}
+                    <Link href="/create-account">Sign up</Link> 
+                </p>
             </div> 
 
             </form> 
-            <p className="font-semibold" style={{color:'#2E7D32'}}> Don't have an account? {" "}
-                <Link href="/create-account">Sign up</Link> 
-            </p>
         </div>
         );  
     }
