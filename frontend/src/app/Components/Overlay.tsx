@@ -3,7 +3,7 @@
 import React, {useState, useEffect} from 'react';
 import { addOutletFrontend } from "../utils/addOutlet";
 import { isOnLand } from "../utils/addOutlet";
-import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus } from 'lucide-react';
+import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus, Bike, PlugZap, User, ArrowRight } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -172,7 +172,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
             {/* sliding indictor for which mode user is currently on */}
             <div
               className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${
-                lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-600/70'
+                lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-900/70'
               }`}
             />
             <button
@@ -438,46 +438,152 @@ const AddOutlet: React.FC<OverlayProps> = ({
               <span className="text-2xl font-bold leading-none">×</span>
             </button>
 
-            <div className="flex flex-col items-center mb-6">
-              {/* wrap user's profile and upload profile image buttons to same tag */}
-              <div className="flex flex-col items-center mb-6">
-                <div className="relative">
-                  {/* display user's profile circle */}
-                  <div className="w-16 h-16 rounded-full bg-white/15 border-white/60  flex items-center justify-center shadow-lg mb-2">
-                    <span className=" text-2xl font-bold">AG</span>
-                  </div>
+            {/* display user's profile picture*/}
+            <div className="flex items-start mb-6 w-full">
+              <div className="relative">
+                {/* display user's profile circle */}
+                <div className="w-16 h-16 rounded-full bg-white/15 border-white/60  flex items-center justify-center shadow-lg mb-2">
+                  <span className=" text-2xl font-bold">AG</span>
+                </div>
 
-                  {/* upload user's profile button  */}
-                  <button 
-                    onClick={() => { 
-                      setProfile("testing"); 
-                      console.log('add profile button clicked');
-                    }} 
-                    className="absolute -bottom-0 -right-0 z-10 flex items-center justify-center h-5 w-5 rounded-full bg-lime-600 text-white shadow-md"
-                  >
-                    <Plus className="w-3 h-3" />
-                  </button>
-                </div> 
+                {/* upload user's profile button  */}
+                <button 
+                  onClick={() => { 
+                    setProfile("testing"); 
+                    console.log('add profile button clicked');
+                  }} 
+                  className="absolute -bottom-0 -right-0 z-10 flex items-center justify-center h-5 w-5 rounded-full bg-lime-600 text-white shadow-md"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
               </div> 
 
-              <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
-                {userName}
-              </div>
-
-              <div className={`text-sm ${lightMode ? "text-black/40" : "text-neutral-400"}`}>
-                {userEmail}
-              </div>
+              {/* display user's name and email */} 
+              <div className="ml-4 flex flex-col w-full min-w-0"> 
+                <div className={`text-lg font-semibold  ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                  {userName} Testing username
+                </div>
+                <div className={`text-sm ${lightMode ? "text-black/40" : "text-neutral-400"}`}>
+                  {userEmail} Testing email
+                </div>
+              </div> 
             </div>
 
-            <div className="w-full flex flex-col gap-4">
-              <button className={`flex items-center gap-3 text-md font-semibold hover:bg-lime-900 transition-colors rounded-xl text-lime-600 px-5 py-3 w-full shadow border border-white/10
-              ${lightMode
-                ? "bg-neutral-200"
-                : "bg-neutral-800"
-              }`}>
-                <LucidePlus className="w-5 h-5 text-lime-600" />
-                Change Password
+            {/* user's vehicles */}
+            <div className="w-full flex flex-col gap-2"> 
+              <div className="flex items-center gap-2"> 
+                <Bike className={`${lightMode ? "text-black" : "text-neutral-100"}`} />
+                <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                  My Vehicles
+                </div>
+              </div> 
+              
+              <div className="rounded-xl backdrop-blur-md " > 
+                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
+                  ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
+                >
+                  <span>Vehicle 1</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
+                  ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
+                >
+                  <span>Vehicle 2</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div> 
+            </div> 
+
+          
+            {/* user's shared outlets */}
+            <div className="w-full flex flex-col gap-2 pt-3"> 
+              <div className="flex items-center gap-2"> 
+                <PlugZap className={`${lightMode ? "text-black" : "text-neutral-100"}`} />
+                <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                  My Shared Outlets
+                </div>
+              </div> 
+              
+              <div className="rounded-xl backdrop-blur-md"> 
+                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
+                  ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
+                >
+                  <span>Outlet 1</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
+                  ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
+                >
+                  <span>Outlet 2</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
+                  ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
+                >
+                  <span>Outlet 3</span>
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div>  
+            </div> 
+
+            {/* user's account setting - logout, change password, delete account */}
+            <div className="w-full flex flex-col pt-3 pb-1"> 
+              <div className="flex items-center gap-2"> 
+                <User className={`${lightMode ? "text-black" : "text-neutral-100"}`} />
+                <div className={`text-lg font-semibold  ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                  Account
+                </div>
+              </div> 
+                
+              {/* change password */}
+              <div className="rounded-xl backdrop-blur-md">
+                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
+                  ${lightMode ? "hover:bg-lime-600/40" : "hover:bg-lime-900"}`}
+                >
+                  Change Password
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+
+                <button 
+                  onClick={() => {
+                    signOut(auth)
+                      .then(() => {
+                        console.log("User signed out");
+                        setIsAuthenticated(false); // logouts user, triggering the Sign In button to appear
+                        setShowSettings(false);
+                        console.log("isAuthenticated set to false");
+                      })
+                      .catch((error) => {
+                        console.error("Sign-out error:", error);
+                      });
+                  }}
+                  className={`flex items-center justify-between w-full px-4 py-2 rounded-md
+                    ${lightMode ? "hover:bg-lime-600/40": "hover:bg-lime-900"}`} 
+                >
+                  Logout
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+
+                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
+                  ${lightMode ? "hover:bg-red-600/40": "hover:bg-red-900"}`} 
+                >
+                  Delete Account
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div> 
+            </div> 
+
+            {/* old code */}
+            {/* <div className="w-full flex flex-col gap-2"> 
+              <button className={`flex items-center justify-between text-md hover:bg-lime-900 transition-colors rounded-xl px-5 py-2 w-full shadow border border-white/10
+                ${lightMode
+                  ? "bg-neutral-200"
+                  : "bg-neutral-800"
+                }`}>
+                  Change Password
+                <ArrowRight className="w-5 h-5" />
               </button>
+
               <button 
                 onClick={() => {
                   signOut(auth)
@@ -491,15 +597,24 @@ const AddOutlet: React.FC<OverlayProps> = ({
                       console.error("Sign-out error:", error);
                     });
                 }}
-                className={`flex items-center gap-3 text-md font-semibold hover:bg-red-900 transition-colors rounded-xl text-red-500 px-5 py-3 w-full shadow border border-white/10
+                className={`flex items-center justify-between text-md hover:bg-lime-900 transition-colors rounded-xl px-5 py-2 w-full shadow border border-white/10
+                  ${lightMode
+                    ? "bg-neutral-200"
+                    : "bg-neutral-800"
+                  }`}>
+                  Logout
+                  <ArrowRight className="w-5 h-5" />
+              </button>
+              
+              <button className={`flex items-center justify-between text-md hover:bg-red-900 transition-colors rounded-xl px-5 py-2 w-full shadow border border-white/10
                 ${lightMode
                   ? "bg-neutral-200"
                   : "bg-neutral-800"
                 }`}>
-                <LucideUpload className="w-5 h-5 text-red-500" />
-                Logout
+                  Delete Account
+                  <ArrowRight className="w-5 h-5" />
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
       )}
