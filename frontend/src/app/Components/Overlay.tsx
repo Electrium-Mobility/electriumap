@@ -4,7 +4,7 @@ import React, {useState, useEffect} from 'react';
 import { PinData } from "./utils";
 import { addOutletFrontend, addOutlet } from "../utils/addOutlet";
 import { isOnLand } from "../utils/addOutlet";
-import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus, Bike, PlugZap, User, ArrowRight } from 'lucide-react';
+import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus, Bike, PlugZap, User, ArrowRight, LucideLocateFixed } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, getDocs, collection, updateDoc } from "firebase/firestore";
@@ -23,6 +23,7 @@ interface OverlayProps {
   onSearchSelect?: (lng: number, lat: number) => void;
   /** Called when the user cancels adding a new outlet so the temporary pin can be removed */
   onCancelTempPin?: () => void;
+  onGeoLocateClick: () => void;
 }
 
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
@@ -37,6 +38,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
   setLightMode,
   onSearchSelect,
   onCancelTempPin,
+  onGeoLocateClick,
 }) => {
   const [showAddOutlet, setShowAddOutlet] = useState(false);
   const [address, setAddress] = useState("");
@@ -399,14 +401,23 @@ const AddOutlet: React.FC<OverlayProps> = ({
               <h2 className="font-semibold text-lg pb-1 pt-0 p-1 pl-0">
                 Address <span className="text-red-500">*</span>
               </h2>
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
+              <div className="flex items-center">
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
                 readOnly={isExisting}
                 disabled={isExisting}
-                className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1 pb-1">
-              </input>
+                  className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1"
+                />
+                <button
+                  onClick={onGeoLocateClick}
+                  title="Find my location"
+                  className="p-1 pr-0 hover:opacity-75 transition"
+                >
+                  <LucideLocateFixed className="w-6.5 h-6.5" />
+                </button>
+              </div>
               <div className="flex items-center space-x-1 p-2 pl-0 pb-1">
                 <h2 className="font-semibold text-lg  p-1 pb-1 pt-2 pr-1 pl-0">
                   Number of Outlets <span className="text-red-500">*</span>
