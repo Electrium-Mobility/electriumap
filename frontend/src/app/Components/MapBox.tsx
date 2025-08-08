@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useImperativeHandle } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { debounce, Bounds, PinData, isPointInBounds } from "./utils";
@@ -25,6 +25,7 @@ const HEATMAP_LAYER_ID  = "pins-heatmap-layer";
 const HEATMAP_MAX_ZOOM  = 11; // heatmap visible up to zoom 10
 
 interface MapBoxProps {
+  ref?: boolean;
   width?: string;
   height?: string;
   onPinDrop?: (lat: number, lng: number) => void;
@@ -38,7 +39,7 @@ interface MapBoxProps {
   onCurrentLocation?: (lat: number, lng: number) => void;
 }
 
-const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation }: MapBoxProps) => {
+const MapBox = ({ ref, width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation }: MapBoxProps) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -52,36 +53,74 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
   );
   //error message when failing to get current users position
   const [errorMessage, setErrorMessage] = useState('');
-  //gets current location for user centering
-  const handleGeoLocate = () => {
-    setErrorMessage('');
-    
-    if(!navigator.geolocation) {
-      setErrorMessage('Get current location not supported.');
+  const [mapLoaded, setMapLoaded] = useState(false);
+  
+  //Drops pin at specified latitude and longtitude
+  const dropPinAt = (lat: number, lng: number) => {
+    const land = isOnLand(lat, lng);
+    if (!land) {
+      console.log("Dropped point is in water — ignoring.");
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { longitude, latitude } = position.coords;
-        if (!mapRef.current) {
-          setErrorMessage('Map is not loaded yet.');
-          return;
-        }
+    const el = document.createElement("div");
+    el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+    el.style.cursor = "pointer";
 
-        mapRef.current.flyTo({
-          center: [ longitude, latitude ],
-          zoom: 14,
-        });
-        onCurrentLocation?.(latitude, longitude);
-      },
-      (error) => {
-        setErrorMessage('Unable to retrieve your location.');
-      },
-      {
-        enableHighAccuracy: true,
+    const marker = new mapboxgl.Marker(el)
+      .setLngLat([lng, lat])
+      .addTo(mapRef.current!);
+
+    markersRef.current.push(marker);
+
+    marker.getElement().addEventListener("click", function (ev) {
+      ev.stopPropagation(); // Prevent map click event
+      marker.remove();
+      markersRef.current = markersRef.current.filter((m) => m !== marker);
+    });
+
+    console.log("Dropped pin at:", { lng, lat });
+    onPinDrop?.(lat, lng);
+  };
+
+  //gets current location for user centering
+  useImperativeHandle(ref, () => ({
+    handleGeoLocate,
+  }));
+    const handleGeoLocate = () => {
+      setErrorMessage('');
+      
+      if(!navigator.geolocation) {
+        setErrorMessage('Get current location not supported.');
+        return;
       }
-    );
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { longitude, latitude } = position.coords;
+          if (!mapRef.current) {
+            setErrorMessage('Map is not loaded yet.');
+            return;
+          }
+
+          mapRef.current.flyTo({
+            center: [ longitude, latitude ],
+            zoom: 15,
+          });
+          
+          onCurrentLocation?.(latitude, longitude);
+          //waits until zoom is finished before dropping pin
+          mapRef.current.once("idle", () => {
+            dropPinAt(latitude, longitude);
+          });
+        },
+        (error) => {
+          setErrorMessage('Unable to retrieve your location.');
+        },
+        {
+          enableHighAccuracy: true,
+        }
+      );
   };
 
   // Remove any temporary pins that were added by a map click but later cancelled
@@ -251,6 +290,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
       // Add heatmap source and layer
       mapRef.current.on("load", () => {
         if (!mapRef.current) return;
+        setMapLoaded(true);
         // Add GeoJSON source for pins
         if (!mapRef.current.getSource(HEATMAP_SOURCE_ID)) {
           mapRef.current.addSource(HEATMAP_SOURCE_ID, {
@@ -442,15 +482,6 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
         ref={mapContainerRef}
         className="map-container"
       />
-
-      <button
-        className={`fixed top-4 left-100 z-[9999] backdrop-blur-sm border rounded-full shadow-md p-4
-          ${lightMode ? "text-black bg-white/5 border-white/60" : "text-white bg-white/15 border-white/60"}`}
-        onClick={handleGeoLocate}
-        title="Find my location"
-      >
-        <LucideLocateFixed className="w-5 h-5 font-semibold" />
-      </button>
 
       {errorMessage && (
         <div

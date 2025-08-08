@@ -1,6 +1,6 @@
 'use client';
 
-import { useState} from 'react';
+import { useRef, useState} from 'react';
 import MapBox from './Components/MapBox';
 import { PinData } from './Components/utils';
 import Overlay from './Components/Overlay';
@@ -11,7 +11,9 @@ export default function Home() {
   //displays last coordinates on pin drop overlay
   const [coords, setCoords] = useState<{lng: number; lat: number} | null>(null);
   const [flyToLocation, setFlyToLocation] = useState<{lng: number; lat: number} | null>(null);
-  const handleSearchSelect = (lng: number, lat: number) => {
+  const [lightMode, setLightMode] = useState(false);
+  const mapRef = useRef<{ handleGeoLocate: () => void}>(null);
+    const handleSearchSelect = (lng: number, lat: number) => {
     setFlyToLocation({ lng, lat });
   };
     const [selectedPin, setSelectedPin] = useState<PinData | null>(null);
@@ -21,6 +23,7 @@ export default function Home() {
   return (
     <div className="relative w-full h-screen">
       <MapBox 
+        ref={mapRef}
         onPinDrop={(lat, lng) => {
           setCoords({ lat, lng });
           // Clear any previously selected pin so we open the Add-Outlet popup instead of the
@@ -37,6 +40,7 @@ export default function Home() {
         }}
         onCurrentLocation={(lat, lng) => {
           setCoords({ lat, lng});
+          setShowPinOverlay(true);
         }}
         lightMode={lightMode}
         purgeTempPinsSignal={purgeTempSignal}
@@ -53,6 +57,7 @@ export default function Home() {
         lightMode={lightMode}
         setLightMode={setLightMode}
         onCancelTempPin={() => setPurgeTempSignal(Date.now())}
+        onGeoLocateClick={() => mapRef.current?.handleGeoLocate()}
       />
     </div>
   );
