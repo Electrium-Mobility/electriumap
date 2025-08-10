@@ -77,34 +77,94 @@ interface FrontendOutletInput {
 // Geocoding helper
 async function getLatLngFromAddress(address: string): Promise<{ lat: number; lng: number }> {
   const encoded = encodeURIComponent(address);
-  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}`;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=1`;
 
-  const response = await fetch(url);
-  const data = await response.json();
+  try {
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error("Geocoding service is currently unavailable.");
+    }
+    
+    const data = await response.json();
 
-  if (!data || data.length === 0) {
-    throw new Error("Unable to geocode address.");
+    if (!data || data.length === 0) {
+      throw new Error("Address not found. Please enter a valid address (e.g., '123 Main St, City, State' or 'Central Park, New York').");
+    }
+
+    const result = data[0];
+    
+    // Check if the result has proper coordinates
+    if (!result.lat || !result.lon || isNaN(parseFloat(result.lat)) || isNaN(parseFloat(result.lon))) {
+      throw new Error("Invalid address coordinates returned. Please try a more specific address.");
+    }
+
+    return {
+      lat: parseFloat(result.lat),
+      lng: parseFloat(result.lon),
+    };
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error("Failed to validate address. Please check your internet connection and try again.");
   }
+}
+export async function getAddressFromCoordinates(lat: number, lng: number): Promise<string> {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
 
-  return {
-    lat: parseFloat(data[0].lat),
-    lng: parseFloat(data[0].lon),
-  };
+  try {
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error("Reverse geocoding service unavailable");
+    }
+    
+    const data = await response.json();
+
+    if (!data || !data.display_name) {
+      return `${lng.toFixed(5)}, ${lat.toFixed(5)}`; // fallback to coordinates
+    }
+
+    return data.display_name;
+  } catch (error) {
+    console.error('Reverse geocoding failed:', error);
+    return `${lng.toFixed(5)}, ${lat.toFixed(5)}`; // fallback to coordinates
+  }
 }
 
 // Frontend wrapper function
 export async function addOutletFrontend(input: FrontendOutletInput): Promise<void> {
   try {
-
     const locationName = input.locationName.trim();
     const chargerType = input.chargerType.trim();
     const userName = input.userName.trim();
     const userId = input.userId.trim();
     const description = input.description.trim();
 
-    // --- Basic Validation ---
-    if (!locationName || locationName.length < 5) {
-      throw new Error("Please enter a valid address (5+ characters).");
+    // --- Enhanced Address Validation ---
+    if (!locationName || locationName.length < 3) {
+      throw new Error("Please enter a valid address (at least 3 characters).");
+    }
+
+    // Check for obviously invalid addresses
+    if (/^[0-9\s\-\.]+$/.test(locationName)) {
+      throw new Error("Please enter a complete address, not just coordinates or numbers.");
+    }
+
+    // Check for common invalid patterns
+    const invalidPatterns = [
+      /^test$/i,
+      /^abc+$/i,
+      /^123+$/i,
+      /^[a-z]$/i, // single letter
+      /^\s*$/, // only whitespace
+      /^\.+$/, // only dots
+      /^-+$/, // only dashes
+    ];
+
+    if (invalidPatterns.some(pattern => pattern.test(locationName))) {
+      throw new Error("Please enter a real address (e.g., '123 Main St, City' or 'Times Square, NYC').");
     }
 
     if (!chargerType || chargerType.length < 2) {
@@ -118,12 +178,24 @@ export async function addOutletFrontend(input: FrontendOutletInput): Promise<voi
     if (!userId || userId.length < 3) {
       throw new Error("Invalid user ID.");
     }
-    if(!description){
-      throw new Error("No Description.");
+
+    if (!description || description.trim().length === 0) {
+      throw new Error("Please provide a description.");
     }
 
-    const { lat, lng } = await getLatLngFromAddress(input.locationName);
+    // --- Geocoding with enhanced error handling ---
+    let lat: number, lng: number;
+    
+    try {
+      const coords = await getLatLngFromAddress(locationName);
+      lat = coords.lat;
+      lng = coords.lng;
+    } catch (geocodingError) {
+      // Re-throw geocoding errors with user-friendly messages
+      throw geocodingError;
+    }
 
+    // Validate coordinate ranges
     if (
       isNaN(lat) ||
       isNaN(lng) ||
@@ -132,11 +204,12 @@ export async function addOutletFrontend(input: FrontendOutletInput): Promise<voi
       lng < -180 ||
       lng > 180
     ) {
-      throw new Error("Geocoding returned invalid coordinates.");
+      throw new Error("Invalid location coordinates. Please enter a valid address.");
     }
-    
+
+    // Check if location is on land
     if (!isOnLand(lat, lng)) {
-      throw new Error("The selected location is not on land.");
+      throw new Error("The location appears to be in water. Please enter an address on land.");
     }
 
     await addOutlet({
