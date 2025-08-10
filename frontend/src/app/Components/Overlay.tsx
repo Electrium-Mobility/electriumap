@@ -1,7 +1,7 @@
 "use client";
 
 import React, {useState, useEffect} from 'react';
-import { addOutletFrontend } from "../utils/addOutlet";
+import { addOutletFrontend, getAddressFromCoordinates  } from "../utils/addOutlet";
 import { isOnLand } from "../utils/addOutlet";
 import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
@@ -42,12 +42,17 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [searchResults, setSearchResults] = useState<Array<{place_name: string, center: [number, number]}>>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [showProfile, setProfile ] = useState("")
+  const [pinAddress, setPinAddress] = useState("");
+
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
 
   const router = useRouter();
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showErrorPopup, setShowErrorPopup] = useState(false);
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -81,10 +86,36 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
   //if coordinates exist, will fill them in for address
   useEffect(() => {
-    if (coords) {
-      setAddress(`${coords?.lng.toFixed(5)} ${coords?.lat.toFixed(5)}`);
-    }
+    const updateAddressFromCoords = async () => {
+      if (coords) {
+        try {
+          const address = await getAddressFromCoordinates(coords.lat, coords.lng);
+          setAddress(address);
+        } catch (error) {
+          console.error('Failed to get address from coordinates:', error);
+          // Fallback to coordinate format
+          setAddress(`${coords.lng.toFixed(5)}, ${coords.lat.toFixed(5)}`);
+        }
+      }
+    };
+  
+    updateAddressFromCoords();
   }, [coords]);
+  useEffect(() => {
+    const updatePinAddress = async () => {
+      if (coords && showPinOverlay) {
+        try {
+          const address = await getAddressFromCoordinates(coords.lat, coords.lng);
+          setPinAddress(address);
+        } catch (error) {
+          console.error('Failed to get address for pin:', error);
+          setPinAddress(`${coords.lng.toFixed(5)}, ${coords.lat.toFixed(5)}`);
+        }
+      }
+    };
+  
+    updatePinAddress();
+  }, [coords, showPinOverlay]);
 
 
   const handleSearch = async (value: string) => {
@@ -377,27 +408,76 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </div>
             <div className="flex justify-end w-full">
 
-                <button
-                  onClick={async () => {
-                    if (address !== "" && outletCount !== 0) {
-                      try {
-                        await addOutletFrontend({
-                          userName: "TestUser", 
-                          userId: "user123",     
-                          locationName: address, 
-                          chargerType: powerType || selectedPort,
-                          description: `Condition: ${selectedCondition}. ${extraDetails}`,
-                        });
+            <button
+              onClick={async () => {
+                // Enhanced client-side validation
+                const trimmedAddress = address.trim();
                 
-                        setShowAddOutlet(false);
-                      } catch (err) {
-                        console.error("Error submitting outlet:", err);
-                      }
-                    }
-                  }}
-                  className="text-md font-semibold bg-lime-700 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5">
-                    Submit
-              </button>
+                if (!trimmedAddress || trimmedAddress.length < 3) {
+                  setErrorMessage("Please enter a valid address (at least 3 characters).");
+                  setShowErrorPopup(true);
+                  return;
+                }
+                
+                if (outletCount <= 0) {
+                  setErrorMessage("Number of outlets must be greater than 0.");
+                  setShowErrorPopup(true);
+                  return;
+                }
+              
+                // Check for obviously invalid addresses before submitting
+                if (/^[0-9\s\-\.]+$/.test(trimmedAddress)) {
+                  setErrorMessage("Please enter a complete address, not just coordinates or numbers.");
+                  setShowErrorPopup(true);
+                  return;
+                }
+              
+                setIsLoading(true);
+                setErrorMessage("");
+                setShowErrorPopup(false);
+                
+                try {
+                  await addOutletFrontend({
+                    userName: userName || "TestUser", 
+                    userId: auth.currentUser?.uid || "user123",     
+                    locationName: trimmedAddress, 
+                    chargerType: powerType || selectedPort,
+                    description: `Condition: ${selectedCondition}. ${extraDetails}`,
+                  });
+              
+                  setShowAddOutlet(false);
+                  // Reset form
+                  setAddress("");
+                  setOutletCount(1);
+                  setPowerType("");
+                  setSelectedPort("Triple Peg");
+                  setSelectedCondition("New");
+                  setExtraDetails("");
+                } catch (err: any) {
+                  console.error("Error submitting outlet:", err);
+                  setErrorMessage(err.message || "An error occurred while submitting the outlet.");
+                  setShowErrorPopup(true);
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              
+              disabled={isLoading}
+              className={`text-md font-semibold rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5 flex items-center justify-center min-w-[80px] ${
+                isLoading 
+                  ? "bg-lime-600 cursor-not-allowed" 
+                  : "bg-lime-700 hover:bg-lime-600"
+              }`}
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Loading...
+                </>
+              ) : (
+                "Submit"
+              )}
+            </button>
             </div>
           </div>
         )}
@@ -411,6 +491,15 @@ const AddOutlet: React.FC<OverlayProps> = ({
             <h2 className="font-semibold pt-0 p-1 pl-0">
               You dropped a pin!
             </h2>
+            <div className="mt-3">
+              <h3 className="font-semibold text-base pb-1">
+                Address
+              </h3>
+              <div className="bg-white/35 rounded-md shadow-lg p-2 text-sm break-words">
+                {pinAddress || "Loading address..."}
+              </div>
+            </div>
+            
             <p className="pt-0 p-1 pl-0">
               Longitude: {coords?.lng.toFixed(5)}
             </p>
@@ -503,6 +592,45 @@ const AddOutlet: React.FC<OverlayProps> = ({
           </div>
         </div>
       )}
+      {showErrorPopup && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className={`relative max-w-md w-full p-6 rounded-2xl shadow-2xl border-1 backdrop-blur-sm ${
+            lightMode
+              ? "bg-white/90 border-red-300 text-black"
+              : "bg-red-900/20 border-red-500/60 text-white"
+          }`}>
+            <button
+              onClick={() => setShowErrorPopup(false)}
+              className="absolute top-3 right-3 text-red-500 hover:text-red-700 text-xl font-bold w-6 h-6 flex items-center justify-center"
+            >
+              ×
+            </button>
+            
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center mt-0.5">
+                <span className="text-white text-sm font-bold">!</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg mb-2 text-red-600">
+                  Validation Error
+                </h3>
+                <p className={`text-sm leading-relaxed ${
+                  lightMode ? "text-gray-700" : "text-gray-200"
+                }`}>
+                  {errorMessage}
+                </p>
+                <button
+                  onClick={() => setShowErrorPopup(false)}
+                  className="mt-4 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
     </div>
   );
 };
