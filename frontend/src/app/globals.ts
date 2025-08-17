@@ -9,7 +9,7 @@ export function getGlobalFirstName() {
 }
 
 // status flag to check if user is authenticated via Firebase 
-let isAuthenticated: boolean = true; 
+let isAuthenticated: boolean = false; 
 export function setIsAuthenticated(status: boolean){ 
   return isAuthenticated = status 
 }

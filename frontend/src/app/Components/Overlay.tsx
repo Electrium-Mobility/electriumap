@@ -6,7 +6,7 @@ import { isOnLand } from "../utils/addOutlet";
 import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus, Bike, PlugZap, User, ArrowRight } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection } from "firebase/firestore";
 import { setIsAuthenticated, getIsAuthenticated } from '../globals';
 import { useRouter } from 'next/navigation';
 
@@ -45,6 +45,9 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [vehicles, setVehicles] = useState<Array<{id: string, title: string, type: string}>>([]);
+  const [userOutlets, setUserOutlets] = useState<Array<{id: string, locationName: string}>>([]);
+
 
   const router = useRouter();
 
@@ -54,6 +57,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
         if (getIsAuthenticated()) {
           const user = auth.currentUser;
           if (user) {
+            // Fetch user profile data
             const userDocRef = doc(db, "Users", user.uid);
             const userDoc = await getDoc(userDocRef);
 
@@ -63,16 +67,46 @@ const AddOutlet: React.FC<OverlayProps> = ({
               const lastName = userData.lastName || "";
               setUserName(`${firstName} ${lastName}`.trim());
               setUserEmail(userData.email || "No Email Provided");
-            } else {
-              console.error("User document does not exist");
+
+              // Fetch vehicles
+              const vehiclesRef = collection(db, "Users", user.uid, "Vehicles");
+              const vehiclesSnap = await getDocs(vehiclesRef);
+              const vehiclesData = vehiclesSnap.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              })) as Array<{id: string, title: string, type: string}>;
+              setVehicles(vehiclesData);
+
+              // Fetch user's outlet references
+              const userOutletsRef = collection(db, "Users", user.uid, "Outlets");
+              const userOutletsSnap = await getDocs(userOutletsRef);
+              
+              // Fetch the actual outlet documents
+              const outletPromises = userOutletsSnap.docs.map(async (docSnap) => {
+                const outletRef = doc(db, "Outlets", docSnap.id);
+                const outletSnap = await getDoc(outletRef);
+                if (outletSnap.exists()) {
+                  return {
+                    id: outletSnap.id,
+                    locationName: outletSnap.data().locationName || "Unknown Location",
+                    ...outletSnap.data()
+                  };
+                }
+                return null;
+              });
+
+              const outlets = (await Promise.all(outletPromises)).filter(outlet => outlet !== null);
+              setUserOutlets(outlets);
             }
           }
         } else {
           setUserName("");
           setUserEmail("");
+          setVehicles([]); // Clear vehicles when logged out
+          setUserOutlets([]); // Clear outlets when logged out
         }
       } catch (error) {
-        console.error("Error fetching user data from Firestore:", error);
+        console.error("Error fetching user data:", error);
       }
     };
 
@@ -236,7 +270,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
             }`}
               onClick={() => setShowSettings(true)}
               title="Settings">
-                AG
+                {userName ? `${userName.split(' ')[0][0]}${userName.split(' ')[1]?.[0] || ''}` : ''}
             </div>
           ) : ( 
             // displaying Sign In button at top right corner (logged out)
@@ -443,7 +477,9 @@ const AddOutlet: React.FC<OverlayProps> = ({
               <div className="relative">
                 {/* display user's profile circle */}
                 <div className="w-16 h-16 rounded-full bg-white/15 border-white/60  flex items-center justify-center shadow-lg mb-2">
-                  <span className=" text-2xl font-bold">AG</span>
+                  <span className=" text-2xl font-bold">
+                    {userName ? `${userName.split(' ')[0][0]}${userName.split(' ')[1]?.[0] || ''}` : ''}
+                  </span>
                 </div>
 
                 {/* upload user's profile button  */}
@@ -461,10 +497,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
               {/* display user's name and email */} 
               <div className="ml-4 flex flex-col w-full min-w-0"> 
                 <div className={`text-lg font-semibold  ${lightMode ? "text-black" : "text-neutral-100"}`}>
-                  {userName} Testing username
+                  {userName || ''}
                 </div>
                 <div className={`text-sm ${lightMode ? "text-black/40" : "text-neutral-400"}`}>
-                  {userEmail} Testing email
+                  {userEmail || ''}
                 </div>
               </div> 
             </div>
@@ -478,25 +514,57 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 </div>
               </div> 
               
-              <div className="rounded-xl backdrop-blur-md " > 
-                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
-                  ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
-                >
-                  <span>Vehicle 1</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
-                  ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
-                >
-                  <span>Vehicle 2</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-              </div> 
-            </div> 
-
-          
+              <div className="rounded-xl backdrop-blur-md max-h-[96px] overflow-y-auto"> 
+                {vehicles.length > 0 ? (
+                  vehicles.map((vehicle) => (
+                    <button 
+                      key={vehicle.id}
+                      className={`flex items-center justify-between w-full px-4 py-2 rounded-md h-12
+                        ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
+                    >
+                      <span>{vehicle.title}</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  ))
+                ) : (
+                  <div className={`px-4 py-2 ${lightMode ? "text-black/40" : "text-neutral-100"}`}>
+                    No vehicles added yet
+                  </div>
+                )}
+              </div>
+            </div>
+            
             {/* user's shared outlets */}
             <div className="w-full flex flex-col gap-2 pt-3"> 
+              <div className="flex items-center gap-2"> 
+                <PlugZap className={`${lightMode ? "text-black" : "text-neutral-100"}`} />
+                <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                  My Shared Outlets
+                </div>
+              </div> 
+              
+              <div className="rounded-xl backdrop-blur-md max-h-[96px] overflow-y-auto"> 
+                {userOutlets.length > 0 ? (
+                  userOutlets.map((outlet) => (
+                    <button 
+                      key={outlet.id}
+                      className={`flex items-center justify-between w-full px-4 py-2 rounded-md h-12
+                        ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
+                    >
+                      <span className="truncate max-w-[280px]" title={outlet.locationName}>
+                        {outlet.locationName}
+                      </span>
+                      <ArrowRight className="w-5 h-5 flex-shrink-0" />
+                    </button>
+                  ))
+                ) : (
+                  <div className={`px-4 py-2 ${lightMode ? "text-black/40" : "text-neutral-100"}`}>
+                    No outlets shared yet
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* <div className="w-full flex flex-col gap-2 pt-3"> 
               <div className="flex items-center gap-2"> 
                 <PlugZap className={`${lightMode ? "text-black" : "text-neutral-100"}`} />
                 <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
@@ -524,7 +592,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>  
-            </div> 
+            </div>  */}
 
             {/* user's account setting - logout, change password, delete account */}
             <div className="w-full flex flex-col pt-3 pb-1"> 
