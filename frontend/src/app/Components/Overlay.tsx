@@ -9,6 +9,7 @@ import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { setIsAuthenticated, getIsAuthenticated } from '../globals';
+import { useRouter } from 'next/navigation';
 
 interface OverlayProps {
   showPinOverlay: boolean;
@@ -49,6 +50,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+
+  const router = useRouter();
 
   // Treat presence of selectedPin as "existing outlet view" mode
   const isExisting = Boolean(selectedPin);
