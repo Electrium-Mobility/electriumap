@@ -50,6 +50,9 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
 
+  // Treat presence of selectedPin as "existing outlet view" mode
+  const isExisting = Boolean(selectedPin);
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -99,8 +102,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
   // If a pin on the map is selected, pre-fill form fields for read-only display
   useEffect(() => {
     if (selectedPin) {
-      // Switch to read-only pin-details card when a marker is selected.
-      setShowAddOutlet(false);
+      // Switch to the Add-Outlet form, but in existing-pin mode (no submit)
+      setShowAddOutlet(true);
       setAddress(selectedPin.title || "");
       setPowerType(selectedPin.category || "");
       setExtraDetails(selectedPin.description || "");
@@ -238,6 +241,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
+                readOnly={isExisting}
+                disabled={isExisting}
                 className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1 pb-1">
               </input>
               <div className="flex items-center space-x-1 p-2 pl-0 pb-1">
@@ -247,6 +252,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 <div className="flex items-center bg-white/35 rounded-md px-0 py-0">
                   <button
                     onClick={() => setOutletCount((prev) => Math.max(prev - 1, 0))}
+                    disabled={isExisting}
                     className="text-lg px-1"
                   >
                     &lt;
@@ -254,6 +260,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   <span className="text-lg font-semibold px-1">{outletCount}</span>
                   <button
                     onClick={() => setOutletCount((prev) => prev + 1)}
+                    disabled={isExisting}
                     className="text-lg px-1"
                   >
                     &gt;
@@ -267,6 +274,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 type="text"
                 value={powerType}
                 onChange={(e) => setPowerType(e.target.value)}
+                readOnly={isExisting}
+                disabled={isExisting}
                 className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1">
               </input>
               <div className="flex w-full">
@@ -278,7 +287,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                     <div
                       key={option}
                       className="flex items-center mb-0.5 cursor-pointer text-md"
-                      onClick={() => setSelectedPort(option)}
+                      onClick={() => { if (!isExisting) setSelectedPort(option); }}
                     >
                       <div
                         className={`w-5 h-5 mr-2 flex items-center justify-center rounded-md ${
@@ -301,7 +310,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                     <div
                       key={option}
                       className="flex items-center mb-0.5 cursor-pointer text-md"
-                      onClick={() => setSelectedCondition(option)}
+                      onClick={() => { if (!isExisting) setSelectedCondition(option); }}
                     >
                       <div
                         className={`w-5 h-5 mr-2 flex items-center justify-center rounded-sm ${
@@ -325,6 +334,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 type="text"
                 value={extraDetails}
                 onChange={(e) => setExtraDetails(e.target.value)}
+                readOnly={isExisting}
+                disabled={isExisting}
                 className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1">
               </input>
             </div>
@@ -349,14 +360,17 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 onClick={() => {
                   // Close the Add-Outlet popup without saving
                   setShowAddOutlet(false);
-                  onCancelTempPin?.();
+                  if (!isExisting) {
+                    onCancelTempPin?.();
+                  }
                   onClose();
                 }}
                 className="text-md font-semibold bg-red-600 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5"
               >
-                Cancel
+                {isExisting ? "Close" : "Cancel"}
               </button>
 
+              { !isExisting && (
               <button
                 onClick={async () => {
                   if (address !== "" && outletCount !== 0) {
@@ -390,39 +404,13 @@ const AddOutlet: React.FC<OverlayProps> = ({
               >
                 Submit
               </button>
+              )}
             </div>
           </div>
         )}
-      {!showAddOutlet && selectedPin && (
-        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1  text-lg   rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
-          ${lightMode
-          ? "bg-white/5 border-white/60 text-black"
-          : "bg-white/15 border-white/60 text-white "
-          }`}>
-          <div className="flex-grow">
-            <h2 className="font-semibold text-lg pb-1 pt-0 p-1 pl-0">
-              {address}
-            </h2>
-            {powerType && (
-              <p className="pt-0 p-1 pl-0">
-                Power Type: {powerType}
-              </p>
-            )}
-            {extraDetails && (
-              <p className="pt-0 p-1 pl-0">
-                {extraDetails}
-              </p>
-            )}
-          </div>
-          <div className="flex justify-end w-full">
-            <button
-              onClick={onClose}
-              className="text-md font-semibold bg-lime-700 rounded-4xl mt-3 relative z-60 pl-5 pr-5 p-1"
-            >
-              Close
-            </button>
-          </div>
-        </div>
+      {/* Remove the old read-only selectedPin card; the same form is used for existing pins */}
+      {false && !showAddOutlet && selectedPin && (
+        <div></div>
       )}
 
       {!showAddOutlet && showPinOverlay && (
