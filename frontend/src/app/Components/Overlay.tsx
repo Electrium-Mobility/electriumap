@@ -1,7 +1,8 @@
 "use client";
 
 import React, {useState, useEffect} from 'react';
-import { addOutletFrontend } from "../utils/addOutlet";
+import { PinData } from "./utils";
+import { addOutletFrontend, addOutlet } from "../utils/addOutlet";
 import { isOnLand } from "../utils/addOutlet";
 import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
@@ -13,10 +14,13 @@ import { useRouter } from 'next/navigation';
 interface OverlayProps {
   showPinOverlay: boolean;
   coords: { lat: number; lng: number } | null;
+  selectedPin?: PinData | null;
   onClose: () => void;
   lightMode: boolean;
   setLightMode: (value: boolean) => void;
   onSearchSelect?: (lng: number, lat: number) => void;
+  /** Called when the user cancels adding a new outlet so the temporary pin can be removed */
+  onCancelTempPin?: () => void;
 }
 
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
@@ -25,10 +29,12 @@ const conditionOptions = ["New", "Worn", "Slightly Damaged", "Damaged"];
 const AddOutlet: React.FC<OverlayProps> = ({
   showPinOverlay,
   coords,
+  selectedPin,
   onClose, 
   lightMode, 
   setLightMode,
   onSearchSelect,
+  onCancelTempPin,
 }) => {
   const [showAddOutlet, setShowAddOutlet] = useState(false);
   const [address, setAddress] = useState("");
@@ -47,6 +53,9 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [userEmail, setUserEmail] = useState("");
 
   const router = useRouter();
+  
+  // Treat presence of selectedPin as "existing outlet view" mode
+  const isExisting = Boolean(selectedPin);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -79,12 +88,32 @@ const AddOutlet: React.FC<OverlayProps> = ({
     fetchUserData();
   }, []);
 
-  //if coordinates exist, will fill them in for address
+  // If new coordinates are provided (e.g. map click), pre-fill address and automatically open the
+  // "Add Outlet" form so the user can immediately submit a new outlet.
   useEffect(() => {
-    if (coords) {
-      setAddress(`${coords?.lng.toFixed(5)} ${coords?.lat.toFixed(5)}`);
+    if (!coords) return;
+
+    // Pre-fill address field with the clicked coordinates
+    setAddress(`${coords.lng.toFixed(5)} ${coords.lat.toFixed(5)}`);
+
+    // Automatically open the Add Outlet popup when the map is clicked (but only if we are *not*
+    // currently showing a read-only pin details card).
+    if (!selectedPin) {
+      setShowAddOutlet(true);
     }
-  }, [coords]);
+  }, [coords, selectedPin]);
+
+  // If a pin on the map is selected, pre-fill form fields for read-only display
+  useEffect(() => {
+    if (selectedPin) {
+      // Switch to the Add-Outlet form, but in existing-pin mode (no submit)
+      setShowAddOutlet(true);
+      setAddress(selectedPin.title || "");
+      setPowerType(selectedPin.category || "");
+      setExtraDetails(selectedPin.description || "");
+      // Could set outlet count, port and condition if that data exists
+    }
+  }, [selectedPin]);
 
 
   const handleSearch = async (value: string) => {
@@ -270,6 +299,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
+                readOnly={isExisting}
+                disabled={isExisting}
                 className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1 pb-1">
               </input>
               <div className="flex items-center space-x-1 p-2 pl-0 pb-1">
@@ -279,6 +310,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 <div className="flex items-center bg-white/35 rounded-md px-0 py-0">
                   <button
                     onClick={() => setOutletCount((prev) => Math.max(prev - 1, 0))}
+                    disabled={isExisting}
                     className="text-lg px-1"
                   >
                     &lt;
@@ -286,6 +318,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   <span className="text-lg font-semibold px-1">{outletCount}</span>
                   <button
                     onClick={() => setOutletCount((prev) => prev + 1)}
+                    disabled={isExisting}
                     className="text-lg px-1"
                   >
                     &gt;
@@ -299,6 +332,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 type="text"
                 value={powerType}
                 onChange={(e) => setPowerType(e.target.value)}
+                readOnly={isExisting}
+                disabled={isExisting}
                 className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1">
               </input>
               <div className="flex w-full">
@@ -310,7 +345,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                     <div
                       key={option}
                       className="flex items-center mb-0.5 cursor-pointer text-md"
-                      onClick={() => setSelectedPort(option)}
+                      onClick={() => { if (!isExisting) setSelectedPort(option); }}
                     >
                       <div
                         className={`w-5 h-5 mr-2 flex items-center justify-center rounded-md ${
@@ -333,7 +368,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                     <div
                       key={option}
                       className="flex items-center mb-0.5 cursor-pointer text-md"
-                      onClick={() => setSelectedCondition(option)}
+                      onClick={() => { if (!isExisting) setSelectedCondition(option); }}
                     >
                       <div
                         className={`w-5 h-5 mr-2 flex items-center justify-center rounded-sm ${
@@ -357,6 +392,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 type="text"
                 value={extraDetails}
                 onChange={(e) => setExtraDetails(e.target.value)}
+                readOnly={isExisting}
+                disabled={isExisting}
                 className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1">
               </input>
             </div>
@@ -375,32 +412,65 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 </h2>
               </div>
             </div>
-            <div className="flex justify-end w-full">
+            <div className="flex justify-between w-full">
 
-                <button
-                  onClick={async () => {
-                    if (address !== "" && outletCount !== 0) {
-                      try {
-                        await addOutletFrontend({
-                          userName: "TestUser", 
-                          userId: "user123",     
-                          locationName: address, 
+              <button
+                onClick={() => {
+                  // Close the Add-Outlet popup without saving
+                  setShowAddOutlet(false);
+                  if (!isExisting) {
+                    onCancelTempPin?.();
+                  }
+                  onClose();
+                }}
+                className="text-md font-semibold bg-red-600 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5"
+              >
+                {isExisting ? "Close" : "Cancel"}
+              </button>
+
+              { !isExisting && (
+              <button
+                onClick={async () => {
+                  if (address !== "" && outletCount !== 0) {
+                    try {
+                      if (coords) {
+                        await addOutlet({
+                          latitude: coords.lat,
+                          longitude: coords.lng,
+                          userName: userName || "Anonymous",
+                          userId: userEmail || "unknown", // or auth.currentUser?.uid
+                          locationName: address,
                           chargerType: powerType || selectedPort,
                           description: `Condition: ${selectedCondition}. ${extraDetails}`,
                         });
-                
-                        setShowAddOutlet(false);
-                      } catch (err) {
-                        console.error("Error submitting outlet:", err);
+                      } else {
+                        await addOutletFrontend({
+                          userName: userName || "Anonymous",
+                          userId: userEmail || "unknown",
+                          locationName: address,
+                          chargerType: powerType || selectedPort,
+                          description: `Condition: ${selectedCondition}. ${extraDetails}`,
+                        });
                       }
+                      setShowAddOutlet(false);
+                    } catch (err) {
+                      console.error("Error submitting outlet:", err);
                     }
-                  }}
-                  className="text-md font-semibold bg-lime-700 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5">
-                    Submit
+                  }
+                }}
+                className="text-md font-semibold bg-lime-700 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5"
+              >
+                Submit
               </button>
+              )}
             </div>
           </div>
         )}
+      {/* Remove the old read-only selectedPin card; the same form is used for existing pins */}
+      {false && !showAddOutlet && selectedPin && (
+        <div></div>
+      )}
+
       {!showAddOutlet && showPinOverlay && (
         <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1  text-lg   rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
           ${lightMode
