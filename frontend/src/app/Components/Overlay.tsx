@@ -4,12 +4,14 @@ import React, {useState, useEffect} from 'react';
 import { PinData } from "./utils";
 import { addOutletFrontend, addOutlet } from "../utils/addOutlet";
 import { isOnLand } from "../utils/addOutlet";
-import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus } from 'lucide-react';
+import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus, Bike, PlugZap, User, ArrowRight } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, updateDoc } from "firebase/firestore";
 import { setIsAuthenticated, getIsAuthenticated } from '../globals';
 import { useRouter } from 'next/navigation';
+import Image from "next/image";
+import { useUserData } from '../create-account/UserDataContext';
 
 interface OverlayProps {
   showPinOverlay: boolean;
@@ -47,10 +49,16 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState<Array<{place_name: string, center: [number, number]}>>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [showProfile, setProfile ] = useState("")
+  const [showProfile, setProfile ] = useState("");
+  const { setUserData } = useUserData();
+
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [vehicles, setVehicles] = useState<Array<{id: string, title: string, type: string}>>([]);
+  const [userOutlets, setUserOutlets] = useState<Array<{id: string, locationName: string}>>([]);
+  const [profileImageUrl, setProfileImageUrl] = useState("");
+  const [isUpdatingProfileImage, setIsUpdatingProfileImage] = useState(false);
 
   const router = useRouter();
   
@@ -63,6 +71,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
         if (getIsAuthenticated()) {
           const user = auth.currentUser;
           if (user) {
+            // Fetch user profile data
             const userDocRef = doc(db, "Users", user.uid);
             const userDoc = await getDoc(userDocRef);
 
@@ -72,16 +81,67 @@ const AddOutlet: React.FC<OverlayProps> = ({
               const lastName = userData.lastName || "";
               setUserName(`${firstName} ${lastName}`.trim());
               setUserEmail(userData.email || "No Email Provided");
-            } else {
-              console.error("User document does not exist");
+              setProfileImageUrl("");
+
+              if (userData.profileImage) {
+                try {
+                  // Check if the data is already a valid data URL
+                  if (userData.profileImage.startsWith('data:image')) {
+                    setProfileImageUrl(userData.profileImage);
+                    console.log("Using existing data URL");
+                  } else {
+                    // Add data URL prefix if missing
+                    const imageData = `data:image/jpeg;base64,${userData.profileImage}`;
+                    setProfileImageUrl(imageData);
+                    console.log("Added data URL prefix");
+                  }
+                  console.log("Profile image length:", userData.profileImage.length);
+                } catch (imageError) {
+                  console.error("Error processing profile image:", imageError);
+                }
+              } else {
+                console.log("No profile image found in user data");
+              }
+
+              // Fetch vehicles
+              const vehiclesRef = collection(db, "Users", user.uid, "Vehicles");
+              const vehiclesSnap = await getDocs(vehiclesRef);
+              const vehiclesData = vehiclesSnap.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              })) as Array<{id: string, title: string, type: string}>;
+              setVehicles(vehiclesData);
+
+              // Fetch user's outlet references
+              const userOutletsRef = collection(db, "Users", user.uid, "Outlets");
+              const userOutletsSnap = await getDocs(userOutletsRef);
+              
+              // Fetch the actual outlet documents
+              const outletPromises = userOutletsSnap.docs.map(async (docSnap) => {
+                const outletRef = doc(db, "Outlets", docSnap.id);
+                const outletSnap = await getDoc(outletRef);
+                if (outletSnap.exists()) {
+                  return {
+                    id: outletSnap.id,
+                    locationName: outletSnap.data().locationName || "Unknown Location",
+                    ...outletSnap.data()
+                  };
+                }
+                return null;
+              });
+
+              const outlets = (await Promise.all(outletPromises)).filter(outlet => outlet !== null);
+              setUserOutlets(outlets);
             }
           }
         } else {
           setUserName("");
           setUserEmail("");
+          setVehicles([]); // Clear vehicles when logged out
+          setUserOutlets([]); // Clear outlets when logged out
         }
       } catch (error) {
-        console.error("Error fetching user data from Firestore:", error);
+        console.error("Error fetching user data:", error);
       }
     };
 
@@ -115,6 +175,36 @@ const AddOutlet: React.FC<OverlayProps> = ({
     }
   }, [selectedPin]);
 
+  const handleProfileImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUpdatingProfileImage(true);
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64String = e.target?.result as string;
+        
+        // Update Firestore
+        const user = auth.currentUser;
+        if (user) {
+          const userDocRef = doc(db, "Users", user.uid);
+          await updateDoc(userDocRef, {
+            profileImage: base64String
+          });
+          
+          // Update local state
+          setProfileImageUrl(base64String);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error updating profile image:", error);
+    } finally {
+      setIsUpdatingProfileImage(false);
+    }
+  };
 
   const handleSearch = async (value: string) => {
     if (!value.trim()) {
@@ -201,7 +291,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
             {/* sliding indictor for which mode user is currently on */}
             <div
               className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${
-                lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-600/70'
+                lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-900/70'
               }`}
             />
             <button
@@ -258,14 +348,28 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
           {/* display user's profile when authenticated (logged in), else display Sign In button when logged out */}
           {getIsAuthenticated() ? ( 
-            <div className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border-1  shadow-md font-semibold text-sm w-14 cursor-pointer
-              ${lightMode
-            ? "bg-white/5 border-white/60 text-black"
-            : "bg-white/15 border-white/60 text-white"
-            }`}
+            <div 
+              className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border-1 shadow-md font-semibold text-sm w-14 cursor-pointer overflow-hidden
+                ${lightMode ? "bg-white/5 border-white/60" : "bg-white/15 border-white/60"}`}
               onClick={() => setShowSettings(true)}
-              title="Settings">
-                AG
+              title="Settings"
+            >
+              {profileImageUrl ? (
+                <Image 
+                  src={profileImageUrl}
+                  alt="Profile"
+                  width={56}
+                  height={56}
+                  className="object-cover w-full h-full"
+                  unoptimized={true} 
+                  priority={true}    
+                  loading="eager"    
+                />
+              ) : (
+                <span className={`${lightMode ? "text-black" : "text-white"}`}>
+                  {userName ? `${userName.split(' ')[0][0]}${userName.split(' ')[1]?.[0] || ''}` : ''}
+                </span>
+              )}
             </div>
           ) : ( 
             // displaying Sign In button at top right corner (logged out)
@@ -508,68 +612,191 @@ const AddOutlet: React.FC<OverlayProps> = ({
               <span className="text-2xl font-bold leading-none">×</span>
             </button>
 
-            <div className="flex flex-col items-center mb-6">
-              {/* wrap user's profile and upload profile image buttons to same tag */}
-              <div className="flex flex-col items-center mb-6">
-                <div className="relative">
-                  {/* display user's profile circle */}
-                  <div className="w-16 h-16 rounded-full bg-white/15 border-white/60  flex items-center justify-center shadow-lg mb-2">
-                    <span className=" text-2xl font-bold">AG</span>
-                  </div>
+            {/* display user's profile picture*/}
+            <div className="flex items-start mb-6 w-full">
+              <div className="relative">
+                {/* display user's profile circle */}
+                <div className="w-16 h-16 rounded-full bg-white/15 border-white/60 flex items-center justify-center shadow-lg mb-2">
+                  {profileImageUrl ? (
+                    <Image 
+                      src={profileImageUrl}
+                      alt="Profile"
+                      width={64}
+                      height={64}
+                      className="object-cover w-full h-full rounded-full"
+                      unoptimized={true} 
+                      priority={true}    
+                      loading="eager"    
+                    />
+                  ) : (
+                    <span className="text-2xl font-bold">
+                      {userName ? `${userName.split(' ')[0][0]}${userName.split(' ')[1]?.[0] || ''}` : ''}
+                    </span>
+                  )}
+                </div>
 
-                  {/* upload user's profile button  */}
-                  <button 
-                    onClick={() => { 
-                      setProfile("testing"); 
-                      console.log('add profile button clicked');
-                    }} 
-                    className="absolute -bottom-0 -right-0 z-10 flex items-center justify-center h-5 w-5 rounded-full bg-lime-600 text-white shadow-md"
-                  >
-                    <Plus className="w-3 h-3" />
-                  </button>
-                </div> 
+                {/* upload user's profile button  */}
+                <label 
+                  className="absolute bottom-1 -right-0 z-10 flex items-center justify-center h-5 w-5 rounded-full bg-lime-600 text-white shadow-md cursor-pointer hover:bg-lime-700"
+                  title="Change profile picture"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfileImageChange}
+                    className="hidden"
+                    disabled={isUpdatingProfileImage}
+                  />
+                  <Plus className="w-3 h-3" />
+                </label>
+                {/* <button 
+                  onClick={() => { 
+                    setProfile("testing"); 
+                    console.log('add profile button clicked');
+                  }} 
+                  className="absolute -bottom-0 -right-0 z-10 flex items-center justify-center h-5 w-5 rounded-full bg-lime-600 text-white shadow-md"
+                >
+                  <Plus className="w-3 h-3" />
+                </button> */}
               </div> 
 
-              <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
-                {userName}
-              </div>
+              {/* display user's name and email */} 
+              <div className="ml-4 flex flex-col w-full min-w-0"> 
+                <div className={`text-lg font-semibold  ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                  {userName || ''}
+                </div>
+                <div className={`text-sm ${lightMode ? "text-black/40" : "text-neutral-400"}`}>
+                  {userEmail || ''}
+                </div>
+              </div> 
+            </div>
 
-              <div className={`text-sm ${lightMode ? "text-black/40" : "text-neutral-400"}`}>
-                {userEmail}
+            {/* user's vehicles */}
+            <div className="w-full flex flex-col gap-2"> 
+              <div className="flex items-center gap-2"> 
+                <Bike className={`${lightMode ? "text-black" : "text-neutral-100"}`} />
+                <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                  My Vehicles
+                </div>
+              </div> 
+              
+              <div className="rounded-xl backdrop-blur-md max-h-[96px] overflow-y-auto"> 
+                {vehicles.length > 0 ? (
+                  vehicles.map((vehicle) => (
+                    <button 
+                      key={vehicle.id}
+                      className={`flex items-center justify-between w-full px-4 py-2 rounded-md h-12
+                        ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
+                    >
+                      <span>{vehicle.title}</span>
+                      <ArrowRight className="w-5 h-5" />
+                    </button>
+                  ))
+                ) : (
+                  <div className={`px-4 py-2 ${lightMode ? "text-black/40" : "text-neutral-100"}`}>
+                    No vehicles added yet
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* user's shared outlets */}
+            <div className="w-full flex flex-col gap-2 pt-3"> 
+              <div className="flex items-center gap-2"> 
+                <PlugZap className={`${lightMode ? "text-black" : "text-neutral-100"}`} />
+                <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                  My Shared Outlets
+                </div>
+              </div> 
+              
+              <div className="rounded-xl backdrop-blur-md max-h-[96px] overflow-y-auto"> 
+                {userOutlets.length > 0 ? (
+                  userOutlets.map((outlet) => (
+                    <button 
+                      key={outlet.id}
+                      className={`flex items-center justify-between w-full px-4 py-2 rounded-md h-12
+                        ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
+                    >
+                      <span className="truncate max-w-[280px]" title={outlet.locationName}>
+                        {outlet.locationName}
+                      </span>
+                      <ArrowRight className="w-5 h-5 flex-shrink-0" />
+                    </button>
+                  ))
+                ) : (
+                  <div className={`px-4 py-2 ${lightMode ? "text-black/40" : "text-neutral-100"}`}>
+                    No outlets shared yet
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="w-full flex flex-col gap-4">
-              <button className={`flex items-center gap-3 text-md font-semibold hover:bg-lime-900 transition-colors rounded-xl text-lime-600 px-5 py-3 w-full shadow border border-white/10
-              ${lightMode
-                ? "bg-neutral-200"
-                : "bg-neutral-800"
-              }`}>
-                <LucidePlus className="w-5 h-5 text-lime-600" />
-                Change Password
-              </button>
-              <button 
-                onClick={() => {
-                  signOut(auth)
-                    .then(() => {
-                      console.log("User signed out");
-                      setIsAuthenticated(false); // logouts user, triggering the Sign In button to appear
-                      setShowSettings(false);
-                      console.log("isAuthenticated set to false");
-                    })
-                    .catch((error) => {
-                      console.error("Sign-out error:", error);
-                    });
-                }}
-                className={`flex items-center gap-3 text-md font-semibold hover:bg-red-900 transition-colors rounded-xl text-red-500 px-5 py-3 w-full shadow border border-white/10
-                ${lightMode
-                  ? "bg-neutral-200"
-                  : "bg-neutral-800"
-                }`}>
-                <LucideUpload className="w-5 h-5 text-red-500" />
-                Logout
-              </button>
-            </div>
+            {/* user's account setting - logout, change password, delete account */}
+            <div className="w-full flex flex-col pt-3 pb-1"> 
+              <div className="flex items-center gap-2"> 
+                <User className={`${lightMode ? "text-black" : "text-neutral-100"}`} />
+                <div className={`text-lg font-semibold  ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                  Account
+                </div>
+              </div> 
+                
+              {/* change password */}
+              <div className="rounded-xl backdrop-blur-md">
+                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
+                  ${lightMode ? "hover:bg-lime-600/40" : "hover:bg-lime-900"}`}
+                >
+                  Change Password
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+
+                <button 
+                  onClick={() => {
+                    signOut(auth)
+                      .then(() => {
+                        console.log("User signed out");
+                        setIsAuthenticated(false); // logouts user, triggering the Sign In button to appear
+                        setShowSettings(false);
+                        console.log("isAuthenticated set to false");
+                        // Clear user data context
+                        setUserData({
+                          email: '',
+                          password: '',
+                          firstName: '',
+                          lastName: '',
+                          profileImage: null,
+                          profileImagePreview: '',
+                          vehicle: {
+                            title: '',
+                            type: ''
+                          }
+                        });
+                        // Clear local states
+                        setUserName('');
+                        setUserEmail('');
+                        setVehicles([]);
+                        setUserOutlets([]);
+                        setProfileImageUrl('');
+                        console.log("User data cleared");
+                      })
+                      .catch((error) => {
+                        console.error("Sign-out error:", error);
+                      });
+                  }}
+                  className={`flex items-center justify-between w-full px-4 py-2 rounded-md
+                    ${lightMode ? "hover:bg-lime-600/40": "hover:bg-lime-900"}`} 
+                >
+                  Logout
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+
+                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
+                  ${lightMode ? "hover:bg-red-600/40": "hover:bg-red-900"}`} 
+                >
+                  Delete Account
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              </div> 
+            </div> 
           </div>
         </div>
       )}
@@ -578,4 +805,3 @@ const AddOutlet: React.FC<OverlayProps> = ({
 };
 
 export default AddOutlet;
-
