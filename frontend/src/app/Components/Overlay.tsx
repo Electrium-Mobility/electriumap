@@ -10,6 +10,7 @@ import { doc, getDoc, getDocs, collection, updateDoc } from "firebase/firestore"
 import { setIsAuthenticated, getIsAuthenticated } from '../globals';
 import { useRouter } from 'next/navigation';
 import Image from "next/image";
+import { useUserData } from '../create-account/UserDataContext';
 
 interface OverlayProps {
   showPinOverlay: boolean;
@@ -42,7 +43,9 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState<Array<{place_name: string, center: [number, number]}>>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [showProfile, setProfile ] = useState("")
+  const [showProfile, setProfile ] = useState("");
+  const { setUserData } = useUserData();
+
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -684,6 +687,26 @@ const AddOutlet: React.FC<OverlayProps> = ({
                         setIsAuthenticated(false); // logouts user, triggering the Sign In button to appear
                         setShowSettings(false);
                         console.log("isAuthenticated set to false");
+                        // Clear user data context
+                        setUserData({
+                          email: '',
+                          password: '',
+                          firstName: '',
+                          lastName: '',
+                          profileImage: null,
+                          profileImagePreview: '',
+                          vehicle: {
+                            title: '',
+                            type: ''
+                          }
+                        });
+                        // Clear local states
+                        setUserName('');
+                        setUserEmail('');
+                        setVehicles([]);
+                        setUserOutlets([]);
+                        setProfileImageUrl('');
+                        console.log("User data cleared");
                       })
                       .catch((error) => {
                         console.error("Sign-out error:", error);

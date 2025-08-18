@@ -11,7 +11,7 @@ type UserData = {
   firstName: string;
   lastName: string;
   vehicle: { title: string; type: string };
-  profileImage?: File;
+  profileImage?: File | null;
   profileImagePreview?: string;
 };
 

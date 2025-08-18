@@ -61,13 +61,16 @@ function SettingUpPage(){
             profileImage: profileImageData, // Store base64 string directly
           });
 
-          // Save vehicle data as a subcollection under the "Users" document
-          if (userData.vehicle) {
-            const vehicleDocRef = doc(collection(db, "Users", user.uid, "Vehicles")); // Auto-generate document ID
+          // Save vehicle data as a subcollection only if valid vehicle data exists
+          if (userData.vehicle && userData.vehicle.title && userData.vehicle.type) {
+            console.log("Creating vehicle document with data:", userData.vehicle);
+            const vehicleDocRef = doc(collection(db, "Users", user.uid, "Vehicles"));
             await setDoc(vehicleDocRef, {
-              title: userData.vehicle.title, // Assuming userData.vehicle contains a title field
-              type: userData.vehicle.type,   // Assuming userData.vehicle contains a type field
+              title: userData.vehicle.title,
+              type: userData.vehicle.type,
             });
+          } else {
+            console.log("No valid vehicle data provided, skipping vehicle creation");
           }
 
           console.log("Account and profile created!");
