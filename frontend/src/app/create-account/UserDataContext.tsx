@@ -11,6 +11,8 @@ type UserData = {
   firstName: string;
   lastName: string;
   vehicle: { title: string; type: string };
+  profileImage?: File;
+  profileImagePreview?: string;
 };
 
 const defaultUserData: UserData = {
@@ -19,6 +21,8 @@ const defaultUserData: UserData = {
   firstName: "",
   lastName: "",
   vehicle: { title: "", type: "" },
+  profileImage: undefined,
+  profileImagePreview: undefined
 };
 
 const UserDataContext = createContext<{

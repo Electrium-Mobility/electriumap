@@ -6,9 +6,10 @@ import { isOnLand } from "../utils/addOutlet";
 import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus, Bike, PlugZap, User, ArrowRight } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
-import { doc, getDoc, getDocs, collection } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, updateDoc } from "firebase/firestore";
 import { setIsAuthenticated, getIsAuthenticated } from '../globals';
 import { useRouter } from 'next/navigation';
+import Image from "next/image";
 
 interface OverlayProps {
   showPinOverlay: boolean;
@@ -47,7 +48,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [userEmail, setUserEmail] = useState("");
   const [vehicles, setVehicles] = useState<Array<{id: string, title: string, type: string}>>([]);
   const [userOutlets, setUserOutlets] = useState<Array<{id: string, locationName: string}>>([]);
-
+  const [profileImageUrl, setProfileImageUrl] = useState("");
+  const [isUpdatingProfileImage, setIsUpdatingProfileImage] = useState(false);
 
   const router = useRouter();
 
@@ -67,6 +69,27 @@ const AddOutlet: React.FC<OverlayProps> = ({
               const lastName = userData.lastName || "";
               setUserName(`${firstName} ${lastName}`.trim());
               setUserEmail(userData.email || "No Email Provided");
+              setProfileImageUrl("");
+
+              if (userData.profileImage) {
+                try {
+                  // Check if the data is already a valid data URL
+                  if (userData.profileImage.startsWith('data:image')) {
+                    setProfileImageUrl(userData.profileImage);
+                    console.log("Using existing data URL");
+                  } else {
+                    // Add data URL prefix if missing
+                    const imageData = `data:image/jpeg;base64,${userData.profileImage}`;
+                    setProfileImageUrl(imageData);
+                    console.log("Added data URL prefix");
+                  }
+                  console.log("Profile image length:", userData.profileImage.length);
+                } catch (imageError) {
+                  console.error("Error processing profile image:", imageError);
+                }
+              } else {
+                console.log("No profile image found in user data");
+              }
 
               // Fetch vehicles
               const vehiclesRef = collection(db, "Users", user.uid, "Vehicles");
@@ -120,6 +143,36 @@ const AddOutlet: React.FC<OverlayProps> = ({
     }
   }, [coords]);
 
+  const handleProfileImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUpdatingProfileImage(true);
+    try {
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64String = e.target?.result as string;
+        
+        // Update Firestore
+        const user = auth.currentUser;
+        if (user) {
+          const userDocRef = doc(db, "Users", user.uid);
+          await updateDoc(userDocRef, {
+            profileImage: base64String
+          });
+          
+          // Update local state
+          setProfileImageUrl(base64String);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Error updating profile image:", error);
+    } finally {
+      setIsUpdatingProfileImage(false);
+    }
+  };
 
   const handleSearch = async (value: string) => {
     if (!value.trim()) {
@@ -263,14 +316,28 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
           {/* display user's profile when authenticated (logged in), else display Sign In button when logged out */}
           {getIsAuthenticated() ? ( 
-            <div className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border-1  shadow-md font-semibold text-sm w-14 cursor-pointer
-              ${lightMode
-            ? "bg-white/5 border-white/60 text-black"
-            : "bg-white/15 border-white/60 text-white"
-            }`}
+            <div 
+              className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border-1 shadow-md font-semibold text-sm w-14 cursor-pointer overflow-hidden
+                ${lightMode ? "bg-white/5 border-white/60" : "bg-white/15 border-white/60"}`}
               onClick={() => setShowSettings(true)}
-              title="Settings">
-                {userName ? `${userName.split(' ')[0][0]}${userName.split(' ')[1]?.[0] || ''}` : ''}
+              title="Settings"
+            >
+              {profileImageUrl ? (
+                <Image 
+                  src={profileImageUrl}
+                  alt="Profile"
+                  width={56}
+                  height={56}
+                  className="object-cover w-full h-full"
+                  unoptimized={true} 
+                  priority={true}    
+                  loading="eager"    
+                />
+              ) : (
+                <span className={`${lightMode ? "text-black" : "text-white"}`}>
+                  {userName ? `${userName.split(' ')[0][0]}${userName.split(' ')[1]?.[0] || ''}` : ''}
+                </span>
+              )}
             </div>
           ) : ( 
             // displaying Sign In button at top right corner (logged out)
@@ -476,14 +543,40 @@ const AddOutlet: React.FC<OverlayProps> = ({
             <div className="flex items-start mb-6 w-full">
               <div className="relative">
                 {/* display user's profile circle */}
-                <div className="w-16 h-16 rounded-full bg-white/15 border-white/60  flex items-center justify-center shadow-lg mb-2">
-                  <span className=" text-2xl font-bold">
-                    {userName ? `${userName.split(' ')[0][0]}${userName.split(' ')[1]?.[0] || ''}` : ''}
-                  </span>
+                <div className="w-16 h-16 rounded-full bg-white/15 border-white/60 flex items-center justify-center shadow-lg mb-2">
+                  {profileImageUrl ? (
+                    <Image 
+                      src={profileImageUrl}
+                      alt="Profile"
+                      width={64}
+                      height={64}
+                      className="object-cover w-full h-full rounded-full"
+                      unoptimized={true} 
+                      priority={true}    
+                      loading="eager"    
+                    />
+                  ) : (
+                    <span className="text-2xl font-bold">
+                      {userName ? `${userName.split(' ')[0][0]}${userName.split(' ')[1]?.[0] || ''}` : ''}
+                    </span>
+                  )}
                 </div>
 
                 {/* upload user's profile button  */}
-                <button 
+                <label 
+                  className="absolute bottom-1 -right-0 z-10 flex items-center justify-center h-5 w-5 rounded-full bg-lime-600 text-white shadow-md cursor-pointer hover:bg-lime-700"
+                  title="Change profile picture"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfileImageChange}
+                    className="hidden"
+                    disabled={isUpdatingProfileImage}
+                  />
+                  <Plus className="w-3 h-3" />
+                </label>
+                {/* <button 
                   onClick={() => { 
                     setProfile("testing"); 
                     console.log('add profile button clicked');
@@ -491,7 +584,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   className="absolute -bottom-0 -right-0 z-10 flex items-center justify-center h-5 w-5 rounded-full bg-lime-600 text-white shadow-md"
                 >
                   <Plus className="w-3 h-3" />
-                </button>
+                </button> */}
               </div> 
 
               {/* display user's name and email */} 
@@ -564,35 +657,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 )}
               </div>
             </div>
-            {/* <div className="w-full flex flex-col gap-2 pt-3"> 
-              <div className="flex items-center gap-2"> 
-                <PlugZap className={`${lightMode ? "text-black" : "text-neutral-100"}`} />
-                <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
-                  My Shared Outlets
-                </div>
-              </div> 
-              
-              <div className="rounded-xl backdrop-blur-md"> 
-                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
-                  ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
-                >
-                  <span>Outlet 1</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
-                  ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
-                >
-                  <span>Outlet 2</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
-                  ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
-                >
-                  <span>Outlet 3</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-              </div>  
-            </div>  */}
 
             {/* user's account setting - logout, change password, delete account */}
             <div className="w-full flex flex-col pt-3 pb-1"> 
@@ -640,49 +704,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 </button>
               </div> 
             </div> 
-
-            {/* old code */}
-            {/* <div className="w-full flex flex-col gap-2"> 
-              <button className={`flex items-center justify-between text-md hover:bg-lime-900 transition-colors rounded-xl px-5 py-2 w-full shadow border border-white/10
-                ${lightMode
-                  ? "bg-neutral-200"
-                  : "bg-neutral-800"
-                }`}>
-                  Change Password
-                <ArrowRight className="w-5 h-5" />
-              </button>
-
-              <button 
-                onClick={() => {
-                  signOut(auth)
-                    .then(() => {
-                      console.log("User signed out");
-                      setIsAuthenticated(false); // logouts user, triggering the Sign In button to appear
-                      setShowSettings(false);
-                      console.log("isAuthenticated set to false");
-                    })
-                    .catch((error) => {
-                      console.error("Sign-out error:", error);
-                    });
-                }}
-                className={`flex items-center justify-between text-md hover:bg-lime-900 transition-colors rounded-xl px-5 py-2 w-full shadow border border-white/10
-                  ${lightMode
-                    ? "bg-neutral-200"
-                    : "bg-neutral-800"
-                  }`}>
-                  Logout
-                  <ArrowRight className="w-5 h-5" />
-              </button>
-              
-              <button className={`flex items-center justify-between text-md hover:bg-red-900 transition-colors rounded-xl px-5 py-2 w-full shadow border border-white/10
-                ${lightMode
-                  ? "bg-neutral-200"
-                  : "bg-neutral-800"
-                }`}>
-                  Delete Account
-                  <ArrowRight className="w-5 h-5" />
-              </button>
-            </div> */}
           </div>
         </div>
       )}
@@ -691,4 +712,3 @@ const AddOutlet: React.FC<OverlayProps> = ({
 };
 
 export default AddOutlet;
-

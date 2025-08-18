@@ -9,10 +9,20 @@ import { doc, setDoc, collection } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useUserData } from "../../create-account/UserDataContext";
 import { setIsAuthenticated } from '../../globals';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 function SettingUpPage(){
   const router = useRouter();
   const { userData, setUserData } = useUserData();
+
+  const convertImageToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
 
   // 2s delay before rendering welcome page 
   useEffect(() => {
@@ -20,12 +30,25 @@ function SettingUpPage(){
       const createAccount = async () => {
         try {
           // Create user with email and password
+          console.log("Creating user account...");
           const userCredential = await createUserWithEmailAndPassword(
             auth,
             userData.email,
             userData.password
           );
           const user = userCredential.user;
+          console.log("User account created:", user.uid);
+
+          // Convert image to base64 if exists
+          let profileImageData = "";
+          if (userData.profileImage) {
+            try {
+              profileImageData = await convertImageToBase64(userData.profileImage);
+              console.log("Image converted successfully");
+            } catch (imageError) {
+              console.error("Error converting image:", imageError);
+            }
+          }
 
           // Auto-capitalize first and last name
           const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
@@ -35,6 +58,7 @@ function SettingUpPage(){
             firstName: capitalize(userData.firstName),
             lastName: capitalize(userData.lastName),
             email: user.email,
+            profileImage: profileImageData, // Store base64 string directly
           });
 
           // Save vehicle data as a subcollection under the "Users" document
