@@ -1,21 +1,26 @@
 "use client";
 
 import React, {useState, useEffect} from 'react';
-import { addOutletFrontend } from "../utils/addOutlet";
+import { PinData } from "./utils";
+import { addOutletFrontend, addOutlet } from "../utils/addOutlet";
 import { isOnLand } from "../utils/addOutlet";
-import { LucideZap, LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload } from 'lucide-react';
+import { LucideBookmark, LucideClock, LucidePlus, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { setIsAuthenticated, getIsAuthenticated } from '../globals';
+import { useRouter } from 'next/navigation';
 
 interface OverlayProps {
   showPinOverlay: boolean;
   coords: { lat: number; lng: number } | null;
+  selectedPin?: PinData | null;
   onClose: () => void;
   lightMode: boolean;
   setLightMode: (value: boolean) => void;
   onSearchSelect?: (lng: number, lat: number) => void;
+  /** Called when the user cancels adding a new outlet so the temporary pin can be removed */
+  onCancelTempPin?: () => void;
 }
 
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
@@ -24,10 +29,12 @@ const conditionOptions = ["New", "Worn", "Slightly Damaged", "Damaged"];
 const AddOutlet: React.FC<OverlayProps> = ({
   showPinOverlay,
   coords,
+  selectedPin,
   onClose, 
   lightMode, 
   setLightMode,
   onSearchSelect,
+  onCancelTempPin,
 }) => {
   const [showAddOutlet, setShowAddOutlet] = useState(false);
   const [address, setAddress] = useState("");
@@ -40,9 +47,15 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState<Array<{place_name: string, center: [number, number]}>>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showProfile, setProfile ] = useState("")
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
+
+  const router = useRouter();
+  
+  // Treat presence of selectedPin as "existing outlet view" mode
+  const isExisting = Boolean(selectedPin);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -75,12 +88,32 @@ const AddOutlet: React.FC<OverlayProps> = ({
     fetchUserData();
   }, []);
 
-  //if coordinates exist, will fill them in for address
+  // If new coordinates are provided (e.g. map click), pre-fill address and automatically open the
+  // "Add Outlet" form so the user can immediately submit a new outlet.
   useEffect(() => {
-    if (coords) {
-      setAddress(`${coords?.lng.toFixed(5)} ${coords?.lat.toFixed(5)}`);
+    if (!coords) return;
+
+    // Pre-fill address field with the clicked coordinates
+    setAddress(`${coords.lng.toFixed(5)} ${coords.lat.toFixed(5)}`);
+
+    // Automatically open the Add Outlet popup when the map is clicked (but only if we are *not*
+    // currently showing a read-only pin details card).
+    if (!selectedPin) {
+      setShowAddOutlet(true);
     }
-  }, [coords]);
+  }, [coords, selectedPin]);
+
+  // If a pin on the map is selected, pre-fill form fields for read-only display
+  useEffect(() => {
+    if (selectedPin) {
+      // Switch to the Add-Outlet form, but in existing-pin mode (no submit)
+      setShowAddOutlet(true);
+      setAddress(selectedPin.title || "");
+      setPowerType(selectedPin.category || "");
+      setExtraDetails(selectedPin.description || "");
+      // Could set outlet count, port and condition if that data exists
+    }
+  }, [selectedPin]);
 
 
   const handleSearch = async (value: string) => {
@@ -122,6 +155,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
     return (
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
+
+        {/* search bar section */}
         <div className={`flex items-center px-4 h-full backdrop-blur-sm border-1 font-semibold rounded-full shadow-lg w-[360px]
           ${lightMode
           ? "bg-white/5 border-white/60 text-black"
@@ -136,7 +171,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
           />
           <LucideSearch className={`w-5 h-5 font-semibold`} />
           
-        {/* Search Results Dropdown */}
+        {/* search results dropdown */}
         {showSearchResults && searchResults.length > 0 && (
           <div className={`absolute top-full left-0 w-full mt-2 bg-white/10 font-semibold rounded-lg shadow-lg max-h-60 overflow-y-auto border-1 backdrop-blur-sm
             ${lightMode
@@ -156,46 +191,98 @@ const AddOutlet: React.FC<OverlayProps> = ({
         )}
       </div>
 
-        <div className="flex items-center gap-6">
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-full shadow-md 
+      {/* dark/light mode switch */}
+      <div className="flex items-center gap-6"> 
+        <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
           ${lightMode
           ? "bg-white/5 border-white/60 text-black"
           : "bg-white/15 border-white/60 text-white "
           }`}>
-            <button className="flex flex-col items-center justify-center w-20 h-14">
-              <LucideZap className="w-6 h-6 " />
-              <span className="text-[10px] mt-1 whitespace-nowrap">Outlets Near Me</span>
+            {/* sliding indictor for which mode user is currently on */}
+            <div
+              className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${
+                lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-600/70'
+              }`}
+            />
+            <button
+              onClick={() => setLightMode(true)}
+              className="z-10 w-1/2 h-full flex items-center justify-center"
+            >
+              <SunMedium  className="w-8 h-8"/>
+            </button>
+            <button
+              onClick={() => setLightMode(false)}
+              className="z-10 w-1/2 h-full flex items-center justify-center"
+            >
+              <Moon className="w-7 h-7" />
+            </button>
+          </div>
+
+          {/* filter button section */}
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
+            ${lightMode
+            ? "bg-white/5 border-white/60 text-black"
+            : "bg-white/15 border-white/60 text-white "
+            }`}>
+              <button className="flex items-center gap-3 text-base">
+                <span>Filter</span> <ChevronDown className="w-4 h-4 bold"/> 
+              </button>
+          </div>
+       
+          {/* tool bar section */}
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
+            ${lightMode
+            ? "bg-white/5 border-white/60 text-black"
+            : "bg-white/15 border-white/60 text-white "
+            }`}>
+            <button className="flex flex-col items-center justify-center  w-14 h-14">
+              <LucideBookmark className="w-6 h-6 "/>
+              <span className="text-[10px] mt-1 whitespace-nowrap">Saved</span>
             </button>
 
-          <button className="flex flex-col items-center justify-center  w-14 h-14">
-            <LucideBookmark className="w-6 h-6 " />
-            <span className="text-[10px] mt-1 whitespace-nowrap">Saved</span>
-          </button>
+            <button className="flex flex-col items-center justify-center  w-14 h-14">
+              <LucideClock className="w-6 h-6 "/>
+              <span className="text-[10px] mt-1 whitespace-nowrap">Recents</span>
+            </button>
 
-          <button className="flex flex-col items-center justify-center  w-14 h-14">
-            <LucideClock className="w-6 h-6 " />
-            <span className="text-[10px] mt-1 whitespace-nowrap">Recents</span>
-          </button>
-
-          <button
-            onClick={() => setShowAddOutlet((prev) => !prev)}
-            className="flex flex-col items-center justify-center text-lime-600 w-16 h-14"
-          >
-            <LucidePlus className="w-7 h-7 text-lime-600" />
-            <span className="text-[10px] mt-0 whitespace-nowrap">
-              Add Outlet
-            </span>
-          </button>
-        </div>
-          <div className={`flex items-center justify-center h-14 aspect-square rounded-full backdrop-blur-sm border-1  shadow-md font-semibold text-sm w-14 cursor-pointer
-            ${lightMode
-          ? "bg-white/5 border-white/60 text-black"
-          : "bg-white/15 border-white/60 text-white"
-          }`}
-          onClick={() => setShowSettings(true)}
-          title="Settings">
-            AG
+            <button
+              onClick={() => setShowAddOutlet((prev) => !prev)}
+              className="flex flex-col items-center justify-center text-lime-600 w-16 h-14"
+            >
+              <LucidePlus className="w-7 h-7 text-lime-600" />
+              <span className="text-[10px] mt-0 whitespace-nowrap">
+                Add Outlet
+              </span>
+            </button>
           </div>
+
+          {/* display user's profile when authenticated (logged in), else display Sign In button when logged out */}
+          {getIsAuthenticated() ? ( 
+            <div className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border-1  shadow-md font-semibold text-sm w-14 cursor-pointer
+              ${lightMode
+            ? "bg-white/5 border-white/60 text-black"
+            : "bg-white/15 border-white/60 text-white"
+            }`}
+              onClick={() => setShowSettings(true)}
+              title="Settings">
+                AG
+            </div>
+          ) : ( 
+            // displaying Sign In button at top right corner (logged out)
+            <div
+              className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md bg-lime-700
+                  ? "bg-white/5 border-white/60 text-black"
+                  : "bg-white/15 border-white/60 text-white"
+                }`}> 
+              <button 
+                onClick={() => router.push('/login')} // routes to login page
+                className="flex items-center gap-3 text-base"
+              >
+                <span>Sign In</span> 
+              </button> 
+            </div> 
+          )}
+
         </div>
 
         {showAddOutlet && (
@@ -212,6 +299,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
+                readOnly={isExisting}
+                disabled={isExisting}
                 className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1 pb-1">
               </input>
               <div className="flex items-center space-x-1 p-2 pl-0 pb-1">
@@ -221,6 +310,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 <div className="flex items-center bg-white/35 rounded-md px-0 py-0">
                   <button
                     onClick={() => setOutletCount((prev) => Math.max(prev - 1, 0))}
+                    disabled={isExisting}
                     className="text-lg px-1"
                   >
                     &lt;
@@ -228,6 +318,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   <span className="text-lg font-semibold px-1">{outletCount}</span>
                   <button
                     onClick={() => setOutletCount((prev) => prev + 1)}
+                    disabled={isExisting}
                     className="text-lg px-1"
                   >
                     &gt;
@@ -241,6 +332,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 type="text"
                 value={powerType}
                 onChange={(e) => setPowerType(e.target.value)}
+                readOnly={isExisting}
+                disabled={isExisting}
                 className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1">
               </input>
               <div className="flex w-full">
@@ -252,7 +345,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                     <div
                       key={option}
                       className="flex items-center mb-0.5 cursor-pointer text-md"
-                      onClick={() => setSelectedPort(option)}
+                      onClick={() => { if (!isExisting) setSelectedPort(option); }}
                     >
                       <div
                         className={`w-5 h-5 mr-2 flex items-center justify-center rounded-md ${
@@ -275,7 +368,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                     <div
                       key={option}
                       className="flex items-center mb-0.5 cursor-pointer text-md"
-                      onClick={() => setSelectedCondition(option)}
+                      onClick={() => { if (!isExisting) setSelectedCondition(option); }}
                     >
                       <div
                         className={`w-5 h-5 mr-2 flex items-center justify-center rounded-sm ${
@@ -299,6 +392,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 type="text"
                 value={extraDetails}
                 onChange={(e) => setExtraDetails(e.target.value)}
+                readOnly={isExisting}
+                disabled={isExisting}
                 className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1">
               </input>
             </div>
@@ -317,32 +412,65 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 </h2>
               </div>
             </div>
-            <div className="flex justify-end w-full">
+            <div className="flex justify-between w-full">
 
-                <button
-                  onClick={async () => {
-                    if (address !== "" && outletCount !== 0) {
-                      try {
-                        await addOutletFrontend({
-                          userName: "TestUser", 
-                          userId: "user123",     
-                          locationName: address, 
+              <button
+                onClick={() => {
+                  // Close the Add-Outlet popup without saving
+                  setShowAddOutlet(false);
+                  if (!isExisting) {
+                    onCancelTempPin?.();
+                  }
+                  onClose();
+                }}
+                className="text-md font-semibold bg-red-600 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5"
+              >
+                {isExisting ? "Close" : "Cancel"}
+              </button>
+
+              { !isExisting && (
+              <button
+                onClick={async () => {
+                  if (address !== "" && outletCount !== 0) {
+                    try {
+                      if (coords) {
+                        await addOutlet({
+                          latitude: coords.lat,
+                          longitude: coords.lng,
+                          userName: userName || "Anonymous",
+                          userId: userEmail || "unknown", // or auth.currentUser?.uid
+                          locationName: address,
                           chargerType: powerType || selectedPort,
                           description: `Condition: ${selectedCondition}. ${extraDetails}`,
                         });
-                
-                        setShowAddOutlet(false);
-                      } catch (err) {
-                        console.error("Error submitting outlet:", err);
+                      } else {
+                        await addOutletFrontend({
+                          userName: userName || "Anonymous",
+                          userId: userEmail || "unknown",
+                          locationName: address,
+                          chargerType: powerType || selectedPort,
+                          description: `Condition: ${selectedCondition}. ${extraDetails}`,
+                        });
                       }
+                      setShowAddOutlet(false);
+                    } catch (err) {
+                      console.error("Error submitting outlet:", err);
                     }
-                  }}
-                  className="text-md font-semibold bg-lime-700 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5">
-                    Submit
+                  }
+                }}
+                className="text-md font-semibold bg-lime-700 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5"
+              >
+                Submit
               </button>
+              )}
             </div>
           </div>
         )}
+      {/* Remove the old read-only selectedPin card; the same form is used for existing pins */}
+      {false && !showAddOutlet && selectedPin && (
+        <div></div>
+      )}
+
       {!showAddOutlet && showPinOverlay && (
         <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1  text-lg   rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
           ${lightMode
@@ -379,27 +507,33 @@ const AddOutlet: React.FC<OverlayProps> = ({
             >
               <span className="text-2xl font-bold leading-none">×</span>
             </button>
-            <div className="fixed top-3 left-3">
-              <button
-                onClick={() => setLightMode(!lightMode)}
-                className={`w-16 h-8 rounded-full p-1 transition-colors duration-300 ${
-                  lightMode ? 'bg-gray-100/80' : 'bg-gray-700'
-                }`}
-              >
-                <div
-                  className={`w-6 h-6 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
-                lightMode ? 'translate-x-8' : 'translate-x-0'
-              }`}
-                />
-              </button>
-            </div>
+
             <div className="flex flex-col items-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-white/15 border-white/60  flex items-center justify-center shadow-lg mb-2">
-                <span className=" text-2xl font-bold">AG</span>
-              </div>
+              {/* wrap user's profile and upload profile image buttons to same tag */}
+              <div className="flex flex-col items-center mb-6">
+                <div className="relative">
+                  {/* display user's profile circle */}
+                  <div className="w-16 h-16 rounded-full bg-white/15 border-white/60  flex items-center justify-center shadow-lg mb-2">
+                    <span className=" text-2xl font-bold">AG</span>
+                  </div>
+
+                  {/* upload user's profile button  */}
+                  <button 
+                    onClick={() => { 
+                      setProfile("testing"); 
+                      console.log('add profile button clicked');
+                    }} 
+                    className="absolute -bottom-0 -right-0 z-10 flex items-center justify-center h-5 w-5 rounded-full bg-lime-600 text-white shadow-md"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div> 
+              </div> 
+
               <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
                 {userName}
               </div>
+
               <div className={`text-sm ${lightMode ? "text-black/40" : "text-neutral-400"}`}>
                 {userEmail}
               </div>
@@ -419,7 +553,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   signOut(auth)
                     .then(() => {
                       console.log("User signed out");
-                      setIsAuthenticated(false);
+                      setIsAuthenticated(false); // logouts user, triggering the Sign In button to appear
+                      setShowSettings(false);
                       console.log("isAuthenticated set to false");
                     })
                     .catch((error) => {

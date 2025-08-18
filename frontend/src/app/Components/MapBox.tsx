@@ -33,18 +33,16 @@ interface MapBoxProps {
   width?: string;
   height?: string;
   onPinDrop?: (lat: number, lng: number) => void;
+  /** Called when an existing map pin is clicked */
+  onPinClick?: (pin: GeoOutlet) => void;
   lightMode?: boolean;
   onMapLoad?: () => void;
   flyTo?: { lng: number; lat: number } | null;
+  /** Signal to purge temporary pins (increments every cancel) */
+  purgeTempPinsSignal?: number;
 }
 
-const MapBox = ({
-  width = "100vw",
-  height = "100vh",
-  onPinDrop,
-  lightMode,
-  flyTo,
-}: MapBoxProps) => {
+const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal }: MapBoxProps) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -204,6 +202,27 @@ const MapBox = ({
     }, 300),
     [getBounds, filterPinsByBounds, renderPins]
   );
+  // Remove any temporary pins that were added by a map click but later cancelled
+  useEffect(() => {
+    if (!purgeTempPinsSignal) return;
+
+    // Filter out temporary pins from state
+    setAllPins((prev) => prev.filter((p) => !p.id.startsWith("temp-")));
+
+    // Also remove associated marker elements
+    markersRef.current.forEach((marker) => {
+      const el = marker.getElement();
+      if (el?.dataset?.tempId === "true") {
+        marker.remove();
+      }
+    });
+    // Clean ref array of removed markers
+    markersRef.current = markersRef.current.filter((m) => {
+      const el = m.getElement();
+      return el?.dataset?.tempId !== "true";
+    });
+  }, [purgeTempPinsSignal]);
+
 
   // Effect to handle flying to searched location
   useEffect(() => {
@@ -360,29 +379,61 @@ const MapBox = ({
           return; //  prevent pin drop
         }
 
+        // Remove any existing temporary pins/markers before adding a new one
+        markersRef.current.forEach((marker) => {
+          const el = marker.getElement();
+          if (el?.dataset?.tempId === "true") {
+            marker.remove();
+          }
+        });
+        markersRef.current = markersRef.current.filter(
+          (m) => m.getElement()?.dataset?.tempId !== "true"
+        );
+        setAllPins((prev) => prev.filter((p) => !p.id.startsWith("temp-")));
+
+        // --- Add pin data to the in-memory pin list so it survives viewport refreshes ---
+        const tempPin: PinData = {
+          id: `temp-${Date.now()}`,
+          lat,
+          lng,
+          title: "New Outlet",
+          description: "",
+          category: "",
+          fromDb: false,
+        };
+        // Persist in component state so future render cycles include this pin
+        setAllPins((prev) => [...prev, tempPin]);
+
+        // --- Show an immediate visual marker at the clicked location ---
         const el = document.createElement("div");
         el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+        // Mark this DOM element as temporary so we can clean it up on cancel
+        el.dataset.tempId = "true";
         el.style.cursor = "pointer";
 
-        // Create a marker
         const marker = new mapboxgl.Marker(el)
           .setLngLat([lng, lat])
           .addTo(mapRef.current!);
 
         // Add to marker refs
+        // Track it so it can be removed alongside others
         markersRef.current.push(marker);
-        // Add click event to remove marker
-        marker.getElement().addEventListener("click", function (ev) {
-          ev.stopPropagation(); // Prevent map click event
+
+        // Allow users to discard the temp pin by clicking it again
+        marker.getElement().addEventListener("click", (ev) => {
+          ev.stopPropagation();
           marker.remove();
-          // Remove from marker refs
           markersRef.current = markersRef.current.filter((m) => m !== marker);
+          // Also remove from allPins so it doesn't come back when viewport changes
+          setAllPins((pins) => pins.filter((p) => p !== tempPin));
         });
         // Log coordinates
         console.log("Dropped pin at:", { lng, lat });
 
-        //Shows white overlay when pin is dropped
-        //setPinOverlay(true);
+        // Smoothly fly/zoom to the dropped location so the user can clearly see the new pin.
+        mapRef.current?.flyTo({ center: [lng, lat], zoom: 14, essential: true });
+
+        // Notify parent so the Add-Outlet popup opens with the coordinates pre-filled.
         onPinDrop?.(lat, lng);
       });
     }
@@ -470,4 +521,5 @@ const MapBox = ({
     </>
   );
 };
-export default MapBox;
+
+export default MapBox
