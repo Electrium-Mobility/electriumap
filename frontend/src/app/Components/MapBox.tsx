@@ -169,7 +169,6 @@ const MapBox = forwardRef<{ handleGeoLocate: () => void }, MapBoxProps>(
         zoom: 14,
         essential: true
       });
-
     }
   }, [flyTo, mapLoaded]);
   
@@ -366,9 +365,10 @@ const MapBox = forwardRef<{ handleGeoLocate: () => void }, MapBoxProps>(
         }
 
         if (showHeatmap) {
-          clearAllMarkers(); // only persistent pins removed
+          clearAllMarkers();
         } else {
           renderPins(visiblePins);
+          
         }
       });
 
