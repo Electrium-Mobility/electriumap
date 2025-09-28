@@ -23,11 +23,11 @@ export default function Home() {
     <div className="relative w-full h-screen">
       <MapBox
         ref={mapRef}
-        flyTo={flyToLocation} // ✅ pass flyToLocation
+        flyTo={flyToLocation}
         onPinDrop={(lat, lng) => {
           setCoords({ lat, lng });
           setSelectedPin(null);
-          setShowPinOverlay(false);
+          setShowPinOverlay(true);
         }}
         onPinClick={(pin) => {
           setPurgeTempSignal(Date.now());
