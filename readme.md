@@ -12,6 +12,8 @@
 
 ## Built By
 
+## S25 TEAM
+
 ### 🧠 Lead
 
 * Nathan Li, [@qiz-li](https://github.com/qiz-li)
@@ -38,3 +40,14 @@
 * Anastasiya Volgina, [@Anastasiya006](https://github.com/Anastasiya006)
 * Ryan Xiao, [@RyanXiaoo](https://github.com/RyanXiaoo)
 * Likhitha Koppula, [@likhithak10](https://github.com/likhithak10)
+
+## F25 TEAM
+
+### 🧠 Lead
+
+* Nur Iscan, [@nur4o4](https://github.com/nur4o4)
+
+### 🎨 Design
+
+### 💻 Fullstack team
+
