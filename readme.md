@@ -51,3 +51,4 @@
 
 ### 💻 Fullstack team
 
+* Dequan Kong, [@DequanKong](https://github.com/DequanKong)
