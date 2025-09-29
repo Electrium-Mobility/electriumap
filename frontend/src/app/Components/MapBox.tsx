@@ -159,7 +159,6 @@ const MapBox = forwardRef<{ handleGeoLocate: () => void }, MapBoxProps>(
   }, [purgeTempPinsSignal]);
 
 
-  // Fetch outlets data from the backend and map to PinData shape
   // Effect to handle flying to searched location
   useEffect(() => {
     console.log("Flying to searched location")

@@ -46,6 +46,7 @@
 ### 🧠 Lead
 
 * Nur Iscan, [@nur4o4](https://github.com/nur4o4)
+* Hannah Wiens, [@hannahwiens](https://github.com/hannahwiens)
 
 ### 🎨 Design
 
