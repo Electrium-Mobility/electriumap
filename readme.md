@@ -52,3 +52,4 @@
 ### 💻 Fullstack team
 
 * Dequan Kong, [@DequanKong](https://github.com/DequanKong)
+* Mohan Dong, [@powersagitar](https://github.com/powersagitar)
