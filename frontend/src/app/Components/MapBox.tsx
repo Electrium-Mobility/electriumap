@@ -357,8 +357,7 @@ const MapBox = forwardRef<{ handleGeoLocate: () => void }, MapBoxProps>(
       // Zoom/heatmap toggle
       map.on("zoom", () => {
         const zoom = map.getZoom();
-        const showHeatmap = zoom < 11;
-        const showPins = zoom >= HEATMAP_MAX_ZOOM;
+        const showHeatmap = zoom < HEATMAP_MAX_ZOOM;
 
         if (map.getLayer(HEATMAP_LAYER_ID)) {
           map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", showHeatmap ? "visible" : "none");
@@ -367,10 +366,14 @@ const MapBox = forwardRef<{ handleGeoLocate: () => void }, MapBoxProps>(
         if (showHeatmap) {
           clearAllMarkers();
         } else {
-          renderPins(visiblePins);
-          
+          const bounds = getBounds();
+          if (bounds) {
+            const pinsInView = filterPinsByBounds(bounds);
+            renderPins(pinsInView);
+          }
         }
-      });
+        });
+
 
       // Click to drop a temporary pin
       map.on("click", (e: mapboxgl.MapMouseEvent) => {
