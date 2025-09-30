@@ -56,3 +56,4 @@
 * Mohan Dong, [@powersagitar](https://github.com/powersagitar)
 * Ryan Nguyen, [@ryanguyen2](https://github.com/ryanguyen2)
 * Kirpa Chandok, [@krpchandok](https://github.com/krpchandok)
+* Justin Fang, [@justinfangg](https://github.com/justinfangg)
