@@ -53,3 +53,4 @@
 
 * Dequan Kong, [@DequanKong](https://github.com/DequanKong)
 * Mohan Dong, [@powersagitar](https://github.com/powersagitar)
+* Ryan Nguyen, [@ryanguyen2](https://github.com/ryanguyen2)
