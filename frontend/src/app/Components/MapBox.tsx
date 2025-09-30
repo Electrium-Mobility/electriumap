@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { forwardRef, useImperativeHandle, useRef, useEffect,  useState, useCallback} from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { debounce, Bounds, PinData, isPointInBounds } from "./utils";
@@ -34,9 +34,11 @@ interface MapBoxProps {
   flyTo?: { lng: number; lat: number } | null;
   /** Signal to purge temporary pins (increments every cancel) */
   purgeTempPinsSignal?: number;
+  onCurrentLocation?: (lat: number, lng: number) => void;
 }
 
-const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal }: MapBoxProps) => {
+const MapBox = forwardRef<{ handleGeoLocate: () => void }, MapBoxProps>(
+  ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation }, ref) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -48,6 +50,92 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
   const [allPins, setAllPins] = useState<PinData[]>(
     pinsData.map((p: any) => ({ ...p, fromDb: false }))
   );
+  //error message when failing to get current users position
+  const [errorMessage, setErrorMessage] = useState('');
+  const [mapLoaded, setMapLoaded] = useState(false);
+
+  //gets current location for user centering
+  useImperativeHandle(ref, () => ({
+    handleGeoLocate,
+  }));
+  
+  //Drops pin at current location 
+  const dropPinAt = (lat: number, lng: number) => {
+    const land = isOnLand(lng, lat);
+    if (!land) {
+      console.log("Dropped point is in water — ignoring.");
+      return;
+    }
+
+    const el = document.createElement("div");
+    el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+    el.style.cursor = "pointer";
+
+    const marker = new mapboxgl.Marker(el)
+      .setLngLat([lng, lat])
+      .addTo(mapRef.current!);
+
+    markersRef.current.push(marker);
+
+    marker.getElement().addEventListener("click", function (ev) {
+      ev.stopPropagation(); // Prevent map click event
+      marker.remove();
+      markersRef.current = markersRef.current.filter((m) => m !== marker);
+    });
+
+    console.log("Dropped pin at:", { lng, lat });
+    onPinDrop?.(lat, lng);
+  };
+
+  //flys to current location and drops pin
+  const handleGeoLocate = () => {
+    setErrorMessage('');
+    
+    if (!navigator.geolocation) {
+      setErrorMessage('Get current location not supported.');
+      return;
+    }
+    if (!mapRef.current) {
+      console.log("Map not initialized yet");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { longitude, latitude } = position.coords;
+        const fly = () => {
+          console.log(`Flying to ${longitude} and ${latitude}`);
+          if ( mapLoaded && mapRef.current) {
+            mapRef.current?.flyTo({
+              center: [longitude, latitude],
+              zoom: 15,
+              essential: true
+          });
+          }
+          
+          onCurrentLocation?.(latitude, longitude);
+
+          mapRef.current?.once("idle", () => {
+            dropPinAt(latitude, longitude);
+          });
+        };
+
+        // If style isn’t loaded yet, waits for styledata event
+        if (mapRef.current.isStyleLoaded()) {
+          fly();
+        } else {
+          console.log("Map style not loaded yet, waiting...");
+          mapRef.current.once("styledata", fly);
+        }
+      },
+      //if retrival unsuccessful, displays error
+      (error) => {
+        setErrorMessage('Unable to retrieve your location.');
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
 
   // Remove any temporary pins that were added by a map click but later cancelled
   useEffect(() => {
@@ -71,18 +159,18 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
   }, [purgeTempPinsSignal]);
 
 
-  // Fetch outlets data from the backend and map to PinData shape
   // Effect to handle flying to searched location
   useEffect(() => {
-    if (flyTo && mapRef.current) {
+    console.log("Flying to searched location")
+    if (flyTo && mapLoaded && mapRef.current) {
       mapRef.current.flyTo({
         center: [flyTo.lng, flyTo.lat],
         zoom: 14,
         essential: true
       });
     }
-  }, [flyTo]);
-
+  }, [flyTo, mapLoaded]);
+  
   // Fetch outlets data from the backend
   useEffect(() => {
     fetch("/api/outlets")
@@ -171,7 +259,7 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
         .setPopup(popup)
         .addTo(mapRef.current!);
 
-      // Optional: handle clicks on the custom element
+      //handle clicks on the custom element
       el.addEventListener("click", (ev) => {
         ev.stopPropagation();
         onPinClick?.(pin);
@@ -205,98 +293,58 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
   useEffect(() => {
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
-    if (mapContainerRef.current && !mapRef.current) {
-      mapRef.current = new mapboxgl.Map({
-        container: mapContainerRef.current,
-        center: [-74.5, 40],
-        zoom: 9,
-        style: "mapbox://styles/hannahwiens/cmcj9t5wf000v01p6chg0e07a",
-      });
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    mapRef.current = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      center: flyTo ? [flyTo.lng, flyTo.lat] : [-74.5, 40],
+      zoom: 9,
+      style: "mapbox://styles/hannahwiens/cmcj9t5wf000v01p6chg0e07a",
+    });
+
+    const map = mapRef.current;
+
+    // Track temp markers separately
+    const tempMarkersRef = { current: [] as mapboxgl.Marker[] };
+
+    map.on("load", () => {
+      setMapLoaded(true);
 
       // Add heatmap source and layer
-      mapRef.current.on("load", () => {
-        if (!mapRef.current) return;
-        // Add GeoJSON source for pins
-        if (!mapRef.current.getSource(HEATMAP_SOURCE_ID)) {
-          mapRef.current.addSource(HEATMAP_SOURCE_ID, {
-            type: "geojson",
-            data: pinsToGeoJSON(pinsData),
-          });
-        }
-        // Add heatmap layer
-        if (!mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
-          mapRef.current.addLayer({
-            id: HEATMAP_LAYER_ID,
-            type: "heatmap",
-            source: HEATMAP_SOURCE_ID,
-            maxzoom: HEATMAP_MAX_ZOOM,
-            paint: {
-              // Heatmap color and intensity config (tweak as needed)
-              "heatmap-weight": 1,
-              "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
-              "heatmap-color": [
-                "interpolate",
-                ["linear"],
-                ["heatmap-density"],
-                0, "rgba(33,102,172,0)",
-                0.2, "rgb(103,169,207)",
-                0.4, "rgb(209,229,240)",
-                0.6, "rgb(253,219,199)",
-                0.8, "rgb(239,138,98)",
-                1, "rgb(178,24,43)"
-              ],
-              // adjust radius of heatmap locations 
-              "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 
-              0, 2, 
-              4, 8,
-              8, 15],
-              // fade heatmap between zoom 9 and 11 before rendering pins 
-              "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 9, 1, 11, 0]
-            },
-          });
-        }
+      if (!map.getSource(HEATMAP_SOURCE_ID)) {
+        map.addSource(HEATMAP_SOURCE_ID, {
+          type: "geojson",
+          data: pinsToGeoJSON(pinsData),
+        });
+      }
 
-        // Set initial visibility of heatmap 
-        if (mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
-          mapRef.current.setLayoutProperty(
-            HEATMAP_LAYER_ID,
-            "visibility",
-            mapRef.current!.getZoom() <= HEATMAP_MAX_ZOOM ? "visible" : "none"
-          );
-        }
-      });
+      if (!map.getLayer(HEATMAP_LAYER_ID)) {
+        map.addLayer({
+          id: HEATMAP_LAYER_ID,
+          type: "heatmap",
+          source: HEATMAP_SOURCE_ID,
+          maxzoom: HEATMAP_MAX_ZOOM,
+          paint: {
+            "heatmap-weight": 1,
+            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
+            "heatmap-color": [
+              "interpolate",
+              ["linear"],
+              ["heatmap-density"],
+              0, "rgba(33,102,172,0)",
+              0.2, "rgb(103,169,207)",
+              0.4, "rgb(209,229,240)",
+              0.6, "rgb(253,219,199)",
+              0.8, "rgb(239,138,98)",
+              1, "rgb(178,24,43)"
+            ],
+            "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 2, 4, 8, 8, 15],
+            "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 9, 1, 11, 0]
+          },
+        });
+      }
 
-      // Add moveend and zoomend event listeners
-      mapRef.current.on("moveend", debouncedUpdatePins);
-      mapRef.current.on("zoomend", debouncedUpdatePins);
-
-      // Toggle heatmap/marker visibility on zoom
-      mapRef.current.on("zoom", () => {
-        if (!mapRef.current) return;
-        const zoom = mapRef.current.getZoom();
-        const showHeatmap = zoom <11; // fade heatmap out gradually 
-        const showPins = zoom >= HEATMAP_MAX_ZOOM; // show pins staring at zoom 10
-
-        // Toggle heatmap layer visibility
-        if (mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
-          mapRef.current.setLayoutProperty(
-            HEATMAP_LAYER_ID,
-            "visibility",
-            showHeatmap ? "visible" : "none"
-          );
-        }
-
-        // manage marker visibility
-        if (showHeatmap) {
-          // Hide all pins
-          clearAllMarkers();
-        } else {
-          // Hide heatmap (already done above), show pins
-          renderPins(visiblePins);
-        }
-      });
-
-      // Initial pin rendering
+      // Initial rendering of persistent pins
       const initialBounds = getBounds();
       if (initialBounds) {
         const initialPins = filterPinsByBounds(initialBounds);
@@ -305,33 +353,40 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
         renderPins(initialPins);
       }
 
-      // Add click event to drop a pin and log coordinates
-      mapRef.current.on("click", (e: mapboxgl.MapMouseEvent) => {
-        // If the click originated from a marker element, do nothing
-        const targetEl = (e.originalEvent as MouseEvent).target as HTMLElement | null;
-        if (targetEl && targetEl.closest('.mapboxgl-marker')) {
-          return; // let the marker handle its own click (e.g., show popup)
-        }
-        const { lng, lat } = e.lngLat;
-        const land =  isOnLand(lat, lng);
-        if (!land) {
-          console.log("Dropped point is in water — ignoring.");
-          return; //  prevent pin drop
+      // Zoom/heatmap toggle
+      map.on("zoom", () => {
+        const zoom = map.getZoom();
+        const showHeatmap = zoom < HEATMAP_MAX_ZOOM;
+
+        if (map.getLayer(HEATMAP_LAYER_ID)) {
+          map.setLayoutProperty(HEATMAP_LAYER_ID, "visibility", showHeatmap ? "visible" : "none");
         }
 
-        // Remove any existing temporary pins/markers before adding a new one
-        markersRef.current.forEach((marker) => {
-          const el = marker.getElement();
-          if (el?.dataset?.tempId === "true") {
-            marker.remove();
+        if (showHeatmap) {
+          clearAllMarkers();
+        } else {
+          const bounds = getBounds();
+          if (bounds) {
+            const pinsInView = filterPinsByBounds(bounds);
+            renderPins(pinsInView);
           }
+        }
         });
-        markersRef.current = markersRef.current.filter(
-          (m) => m.getElement()?.dataset?.tempId !== "true"
-        );
-        setAllPins((prev) => prev.filter((p) => !p.id.startsWith("temp-")));
 
-        // --- Add pin data to the in-memory pin list so it survives viewport refreshes ---
+
+      // Click to drop a temporary pin
+      map.on("click", (e: mapboxgl.MapMouseEvent) => {
+        const targetEl = (e.originalEvent as MouseEvent).target as HTMLElement | null;
+        if (targetEl && targetEl.closest(".mapboxgl-marker")) return;
+
+        const { lng, lat } = e.lngLat;
+        if (!isOnLand(lng, lat)) return;
+
+        // Remove previous temp markers
+        tempMarkersRef.current.forEach((m) => m.remove());
+        tempMarkersRef.current = [];
+
+        // Create new temp pin
         const tempPin: PinData = {
           id: `temp-${Date.now()}`,
           lat,
@@ -341,64 +396,51 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
           category: "",
           fromDb: false,
         };
-        // Persist in component state so future render cycles include this pin
-        setAllPins((prev) => [...prev, tempPin]);
+        setAllPins((prev) => [...prev.filter((p) => !p.id.startsWith("temp-")), tempPin]);
 
-        // --- Show an immediate visual marker at the clicked location ---
+        // Marker element
         const el = document.createElement("div");
         el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
-        // Mark this DOM element as temporary so we can clean it up on cancel
-        el.dataset.tempId = "true";
         el.style.cursor = "pointer";
 
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([lng, lat])
-          .addTo(mapRef.current!);
+        const marker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map);
+        tempMarkersRef.current.push(marker);
 
-        // Track it so it can be removed alongside others
-        markersRef.current.push(marker);
-
-        // Allow users to discard the temp pin by clicking it again
+        // Click to remove temp pin
         marker.getElement().addEventListener("click", (ev) => {
           ev.stopPropagation();
           marker.remove();
-          markersRef.current = markersRef.current.filter((m) => m !== marker);
-          // Also remove from allPins so it doesn't come back when viewport changes
+          tempMarkersRef.current = tempMarkersRef.current.filter((m) => m !== marker);
           setAllPins((pins) => pins.filter((p) => p !== tempPin));
         });
-        // Log coordinates
-        console.log("Dropped pin at:", { lng, lat });
 
-        // Smoothly fly/zoom to the dropped location so the user can clearly see the new pin.
-        mapRef.current?.flyTo({ center: [lng, lat], zoom: 14, essential: true });
-
-        // Notify parent so the Add-Outlet popup opens with the coordinates pre-filled.
+        map.flyTo({ center: [lng, lat], zoom: 17, essential: true });
         onPinDrop?.(lat, lng);
       });
-    }
+    });
 
     return () => {
-      // Remove all markers
       clearAllMarkers();
       try {
-        mapRef.current?.remove();
+        map.remove();
       } catch (err) {
-        // Swallow Mapbox GL indoor manager bug in dev Strict Mode
-        console.warn('Mapbox remove error (ignored):', err);
+        console.warn("Mapbox remove error (ignored):", err);
       }
-      mapRef.current = null; // ensure we can recreate the map on remount (e.g. in React Strict Mode)
+      mapRef.current = null;
     };
-  }, [debouncedUpdatePins, getBounds, filterPinsByBounds, renderPins, clearAllMarkers]);
-  
+  }, []);
+
+  //toggles map from dark to light
   useEffect(() => {
-      if (!mapRef.current) return;
+    if (!mapRef.current) return;
 
-      const newStyle = lightMode
+    const newStyle = lightMode
       ? "mapbox://styles/hannahwiens/cmcjq7lyu003l01p6a93lhg38"
-      : "mapbox://styles/hannahwiens/cmcj9t5wf000v01p6chg0e07a"; 
+      : "mapbox://styles/hannahwiens/cmcj9t5wf000v01p6chg0e07a";
 
-      mapRef.current.setStyle(newStyle)
-    })
+    mapRef.current.setStyle(newStyle);
+  }, [lightMode]);
+  
 
   return (
     <>
@@ -407,6 +449,26 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
         ref={mapContainerRef}
         className="map-container"
       />
+
+      {errorMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: '#ff4d4f',
+            color: 'white',
+            padding: '10px 16px',
+            borderRadius: '8px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+            zIndex: 10000,
+          }}
+        >
+          {errorMessage}
+        </div>
+      )}
+            
     <div className="fixed top-22 left-10 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg p-4 text-black">
       <p className="font-semibold text-sm">Viewport Info</p>
       <p className="text-xs">Visible Pins: {visiblePins.length}</p>
@@ -422,8 +484,11 @@ const MapBox = ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, ligh
         </>
       )}
     </div>
-    </>
-  );
-};
+      </>
+    );
+  }
+);
+MapBox.displayName = "MapBox";
+
 export default MapBox;
 

@@ -27,7 +27,7 @@
 ### 💻 Frontend
 
 - **Lead**: Gordon Zhang, [@gordonzhang1](https://github.com/gordonzhang1)
-- Hannah Wiens, [@FlameAndFlash](https://github.com/FlameAndFlash)
+- Hannah Wiens, [@hannahwiens](https://github.com/hannahwiens)
 - Kaibo Huang, [@Kaibo-Huang](https://github.com/Kaibo-Huang)
 - Rohan Saha, [@rohansaha27](https://github.com/rohansaha27)
 - Ashley Peng, [@a33peng](https://github.com/a33peng)
@@ -46,6 +46,7 @@
 ### 🧠 Lead
 
 * Nur Iscan, [@nur4o4](https://github.com/nur4o4)
+* Hannah Wiens, [@hannahwiens](https://github.com/hannahwiens)
 
 ### 🎨 Design
 
