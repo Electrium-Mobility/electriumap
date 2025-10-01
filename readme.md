@@ -47,6 +47,7 @@
 
 * Nur Iscan, [@nur4o4](https://github.com/nur4o4)
 * Hannah Wiens, [@hannahwiens](https://github.com/hannahwiens)
+* Rohan Saha, [@rohansaha27](https://github.com/rohansaha27)
 
 ### 🎨 Design
 
