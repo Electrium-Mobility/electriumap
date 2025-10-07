@@ -60,4 +60,5 @@
 * Justin Fang, [@justinfangg](https://github.com/justinfangg)
 * Kaibo Huang, [@Kaibo-Huang](https://github.com/Kaibo-Huang)
 * Yash Jain, [@yashjain128](https://github.com/yashjain128)
+* Chahana Reddy, [@Chahanareddy](https://github.com/Chahanareddy)
 * Krishna Mehta, [@KrishnaM0310](https://github.com/KrishnaM0310)
