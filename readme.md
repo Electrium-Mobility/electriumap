@@ -40,6 +40,7 @@
 * Anastasiya Volgina, [@Anastasiya006](https://github.com/Anastasiya006)
 * Ryan Xiao, [@RyanXiaoo](https://github.com/RyanXiaoo)
 * Likhitha Koppula, [@likhithak10](https://github.com/likhithak10)
+* Chahana Reddy, [@Chahanareddy](https://github.com/Chahanareddy)
 
 ## F25 TEAM
 
