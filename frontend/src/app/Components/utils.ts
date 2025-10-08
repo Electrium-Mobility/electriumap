@@ -22,6 +22,10 @@ export interface PinData {
   title: string;
   description: string;
   category: string;
+  /**
+   * Indicates the pin originated from Firestore.  Sample or fallback pins will leave this false/undefined.
+   */
+  fromDb?: boolean;
 }
 
 export function isPointInBounds(

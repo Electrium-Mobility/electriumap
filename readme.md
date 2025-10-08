@@ -12,6 +12,8 @@
 
 ## Built By
 
+## S25 TEAM
+
 ### 🧠 Lead
 
 * Nathan Li, [@qiz-li](https://github.com/qiz-li)
@@ -19,10 +21,13 @@
 
 ### 🎨 Design
 
+- Michelle Wang, [@michelle1271](https://github.com/michelle1271)
+- Arwa Gawish, [@arwagawish](https://github.com/arwagawish)
+
 ### 💻 Frontend
 
 - **Lead**: Gordon Zhang, [@gordonzhang1](https://github.com/gordonzhang1)
-- Hannah Wiens, [@FlameAndFlash](https://github.com/FlameAndFlash)
+- Hannah Wiens, [@hannahwiens](https://github.com/hannahwiens)
 - Kaibo Huang, [@Kaibo-Huang](https://github.com/Kaibo-Huang)
 - Rohan Saha, [@rohansaha27](https://github.com/rohansaha27)
 - Ashley Peng, [@a33peng](https://github.com/a33peng)
@@ -35,3 +40,25 @@
 * Anastasiya Volgina, [@Anastasiya006](https://github.com/Anastasiya006)
 * Ryan Xiao, [@RyanXiaoo](https://github.com/RyanXiaoo)
 * Likhitha Koppula, [@likhithak10](https://github.com/likhithak10)
+
+## F25 TEAM
+
+### 🧠 Lead
+
+* Nur Iscan, [@nur4o4](https://github.com/nur4o4)
+* Hannah Wiens, [@hannahwiens](https://github.com/hannahwiens)
+* Rohan Saha, [@rohansaha27](https://github.com/rohansaha27)
+
+### 🎨 Design
+
+### 💻 Fullstack team
+
+* Dequan Kong, [@DequanKong](https://github.com/DequanKong)
+* Mohan Dong, [@powersagitar](https://github.com/powersagitar)
+* Ryan Nguyen, [@ryanguyen2](https://github.com/ryanguyen2)
+* Kirpa Chandok, [@krpchandok](https://github.com/krpchandok)
+* Justin Fang, [@justinfangg](https://github.com/justinfangg)
+* Kaibo Huang, [@Kaibo-Huang](https://github.com/Kaibo-Huang)
+* Yash Jain, [@yashjain128](https://github.com/yashjain128)
+* Chahana Reddy, [@Chahanareddy](https://github.com/Chahanareddy)
+* Krishna Mehta, [@KrishnaM0310](https://github.com/KrishnaM0310)

@@ -4,6 +4,11 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image'; 
 import Link from 'next/link';
+import { auth } from "../firebase/firebase";
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { setIsAuthenticated } from '../globals';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase/firebase'; // adjust the import based on your file structure
 
 type LoginPageProps = { 
     username: string; 
@@ -14,10 +19,11 @@ type AuthButtonProps = {
     src: string; 
     alt: string; 
     text: string; 
+    onClick?: () => void;
 };
 
-const AuthButton: React.FC<AuthButtonProps> = ({src, alt, text}) => ( 
-    <button className="flex items-center gap-3 justify-center border border-[#848488] text-white px-2 py-1 rounded bg-[#2B2D2B] hover:bg-[#2E7D32] transition w-full mt-2"> 
+const AuthButton: React.FC<AuthButtonProps> = ({src, alt, text, onClick}) => ( 
+    <button type="button" onClick={onClick} className="flex items-center gap-3 justify-center border border-[#848488] text-white px-2 py-1 rounded bg-[#2B2D2B] hover:bg-[#2E7D32] transition w-full mt-2"> 
         <Image src={src} alt={alt} width={20} height={20} />
         <span >{text}</span>
     </button>
@@ -31,19 +37,60 @@ const LoginPage: React.FC = () => {
     const router = useRouter()
 
     // pop-up alert for form validation (username and password) 
-    const handleLogin = (event: React.FormEvent) => { 
+    const handleLogin = async (event: React.FormEvent) => { 
         event.preventDefault(); 
-        if(!username || !pwd){ 
+        if (!username || !pwd) { 
             setErrorMsg("Please enter valid username and password");
             return; 
         }
-        alert('Submitted successfully.')
-        // after user successfully logins, change route to map page 
-        router.push('/');
+
+        try {
+            // attempt sign in with Firebase
+            await signInWithEmailAndPassword(auth, username, pwd);
+            alert('Submitted successfully.')
+            // after user successfully logins, change route to main map page 
+            setIsAuthenticated(true); // update global authenticated variable to enable future conditional UI behaviours
+            console.log("isAuthenticated set to true");
+            router.push('/');
+        } catch (error: any) {
+            setErrorMsg(error.message); // or display a custom message
+        }
     };  
+
+    const handleGoogleSignIn = async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            // Check if the user document already exists
+            const userDocRef = doc(db, "Users", user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (!userDoc.exists()) {
+                // Auto-capitalize first and last name
+                const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+                // Save user info to Firestore under "Users" collection, using uid as document ID
+                await setDoc(userDocRef, {
+                    firstName: capitalize(user.displayName?.split(" ")[0] || ""),
+                    lastName: capitalize(user.displayName?.split(" ")[1] || ""),
+                    email: user.email,
+                });
+            }
+
+            alert('Submitted successfully.');
+            setIsAuthenticated(true);
+            console.log("isAuthenticated set to true");
+            router.push('/');
+        } catch (error: any) {
+            setErrorMsg(error.message);
+        }
+    };
 
     return(
         <div className="bg-sign-in grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
+            
             <div className="flex items-center justify-center h-screen gap-2">
                 <Image src={"/images/electrium.png"} width={160} height={110} className="absolute top-[50px]" alt="Electrium logo" />
                 <h1 className="text-4xl font-bold text-white m-0 absolute top-[120px]">Electriumap</h1>   
@@ -103,18 +150,19 @@ const LoginPage: React.FC = () => {
 
             {/* different open authorization buttons for login*/}
             <div className="w-[400px] flex flex-col gap-2 mt-5"> 
-                <AuthButton src="/images/google_logo.png" alt="Google" text="Continue with Google" />
-                <AuthButton src="/images/facebook_logo.png" alt="Facebook" text="Continue with Facebook" />
-                <AuthButton src="/images/apple_logo.png" alt="Apple" text="Continue with Apple" />
+                <AuthButton src="/images/google_logo.png" alt="Google" text="Continue with Google" onClick={handleGoogleSignIn} />  
+            </div> 
+
+            <div className="flex items-center justify-center w-full mt-4"> 
+                <p className="font-semibold " style={{color:'#2E7D32'}}> Don't have an account? {" "}
+                    <Link href="/create-account">Sign up</Link> 
+                </p>
             </div> 
 
             </form> 
-            <p className="font-semibold" style={{color:'#2E7D32'}}> Don't have an account? {" "}
-                <Link href="/create-account">Sign up</Link> 
-            </p>
         </div>
         );  
     }
 
- export default LoginPage; 
+ export default LoginPage;
 

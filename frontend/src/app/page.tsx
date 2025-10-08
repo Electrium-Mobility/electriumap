@@ -1,26 +1,60 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import MapBox from './Components/MapBox';
+import { PinData } from './Components/utils';
 import Overlay from './Components/Overlay';
 
 export default function Home() {
   const [showPinOverlay, setShowPinOverlay] = useState(false);
-    //displays last coordinates on pin drop overlay
-  const [coords, setCoords] = useState<{lng: number; lat: number} | null>(null);
+  const [coords, setCoords] = useState<{ lng: number; lat: number } | null>(null);
+  const [flyToLocation, setFlyToLocation] = useState<{ lng: number; lat: number } | null>(null);
+  const [lightMode, setLightMode] = useState(false);
+  const [selectedPin, setSelectedPin] = useState<PinData | null>(null);
+  const [purgeTempSignal, setPurgeTempSignal] = useState(0);
+
+  const mapRef = useRef<{ handleGeoLocate: () => void }>(null);
+
+  const handleSearchSelect = (lng: number, lat: number) => {
+    setFlyToLocation({ lng, lat });
+  };
 
   return (
     <div className="relative w-full h-screen">
-      <MapBox 
+      <MapBox
+        ref={mapRef}
+        flyTo={flyToLocation}
         onPinDrop={(lat, lng) => {
+          setCoords({ lat, lng });
+          setSelectedPin(null);
+          setShowPinOverlay(true);
+        }}
+        onPinClick={(pin) => {
+          setPurgeTempSignal(Date.now());
+          setCoords(null);
+          setSelectedPin(pin);
+        }}
+        onCurrentLocation={(lat, lng) => {
           setCoords({ lat, lng });
           setShowPinOverlay(true);
         }}
+        lightMode={lightMode}
+        purgeTempPinsSignal={purgeTempSignal}
       />
-      <Overlay 
+
+      <Overlay
         showPinOverlay={showPinOverlay}
         coords={coords}
-        onClose={() => setShowPinOverlay(false)}
+        selectedPin={selectedPin}
+        onClose={() => {
+          setShowPinOverlay(false);
+          setSelectedPin(null);
+        }}
+        onSearchSelect={handleSearchSelect}
+        lightMode={lightMode}
+        setLightMode={setLightMode}
+        onCancelTempPin={() => setPurgeTempSignal(Date.now())}
+        onGeoLocateClick={() => mapRef.current?.handleGeoLocate()}
       />
     </div>
   );

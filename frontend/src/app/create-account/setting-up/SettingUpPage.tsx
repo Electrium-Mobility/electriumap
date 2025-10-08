@@ -3,18 +3,91 @@
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation"; 
 import Image from "next/image";
+import { auth } from "../../firebase/firebase";
+import { db } from "../../firebase/firebase";
+import { doc, setDoc, collection } from "firebase/firestore";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { useUserData } from "../../create-account/UserDataContext";
+import { setIsAuthenticated } from '../../globals';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 function SettingUpPage(){
   const router = useRouter();
+  const { userData, setUserData } = useUserData();
+
+  const convertImageToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
 
   // 2s delay before rendering welcome page 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push("/create-account/welcome");
+      const createAccount = async () => {
+        try {
+          // Create user with email and password
+          console.log("Creating user account...");
+          const userCredential = await createUserWithEmailAndPassword(
+            auth,
+            userData.email,
+            userData.password
+          );
+          const user = userCredential.user;
+          console.log("User account created:", user.uid);
+
+          // Convert image to base64 if exists
+          let profileImageData = "";
+          if (userData.profileImage) {
+            try {
+              profileImageData = await convertImageToBase64(userData.profileImage);
+              console.log("Image converted successfully");
+            } catch (imageError) {
+              console.error("Error converting image:", imageError);
+            }
+          }
+
+          // Auto-capitalize first and last name
+          const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+
+          // Save user info to Firestore under "Users" collection, using uid as document ID
+          await setDoc(doc(db, "Users", user.uid), {
+            firstName: capitalize(userData.firstName),
+            lastName: capitalize(userData.lastName),
+            email: user.email,
+            profileImage: profileImageData, // Store base64 string directly
+          });
+
+          // Save vehicle data as a subcollection only if valid vehicle data exists
+          if (userData.vehicle && userData.vehicle.title && userData.vehicle.type) {
+            console.log("Creating vehicle document with data:", userData.vehicle);
+            const vehicleDocRef = doc(collection(db, "Users", user.uid, "Vehicles"));
+            await setDoc(vehicleDocRef, {
+              title: userData.vehicle.title,
+              type: userData.vehicle.type,
+            });
+          } else {
+            console.log("No valid vehicle data provided, skipping vehicle creation");
+          }
+
+          console.log("Account and profile created!");
+          router.push("/create-account/welcome");
+          setIsAuthenticated(true); // update global authenticated variable to enable future conditional UI behaviours
+          console.log("isAuthenticated set to true");
+        } catch (err) {
+          console.error(err);
+          // You can add error handling state here to show messages in UI if needed
+        }
+      };
+
+      createAccount();
     }, 2000);  
 
     return () => clearTimeout(timer); // cleanup
-  }, [router]);
+  }, [userData, router]);
 
   return (
     <div className="bg-sign-in min-h-screen flex items-center justify-center">
@@ -33,4 +106,4 @@ function SettingUpPage(){
   );
 } 
 
-export default SettingUpPage; 
+export default SettingUpPage;

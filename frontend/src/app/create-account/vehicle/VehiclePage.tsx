@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation"; 
 import Image from "next/image";
 import Link from 'next/link';
+import { useUserData } from "../../create-account/UserDataContext";
 
 function VehiclePage(){
   const [VehicleData, setVehicleData] = useState({
@@ -12,7 +13,15 @@ function VehiclePage(){
   });
   const [errorMsg, setErrorMsg] = useState(''); 
   const router = useRouter(); 
+  const { userData, setUserData } = useUserData();
 
+  useEffect(() => {
+    setVehicleData({
+      Title: userData.vehicle?.title || "",
+      Type: userData.vehicle?.type || "",
+    });
+  }, [userData]);
+  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setVehicleData((prev) => ({ ...prev, [name]: value }));
@@ -20,6 +29,15 @@ function VehiclePage(){
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    setUserData((prev) => ({
+      ...prev,
+      vehicle: {
+        title: VehicleData.Title,
+        type: VehicleData.Type,
+      },
+    }));
+
     router.push("/create-account/setting-up");
   };
 

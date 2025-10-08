@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation"; 
 import Image from "next/image";
-import { auth } from "../../../Firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import validator from "validator"; 
+import { useUserData } from "../create-account/UserDataContext";
 
 function CreateAccountPage(){
   const [formData, setFormData] = useState({
@@ -13,17 +12,31 @@ function CreateAccountPage(){
     password: "",
     repassword: "", 
   });
-  const [error, setError] = useState<string | null>(null); // Firebase error handling
+  // const [error, setError] = useState<string | null>(null); // Firebase error handling
   const [showPwd, setShowPwd] = useState(false); 
   const [showRePwd, setShowRePwd] = useState(false); 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { userData, setUserData } = useUserData();
 
   const router = useRouter(); 
+
+  useEffect(() => {
+    setFormData({
+      email: userData.email || "",
+      password: userData.password || "",
+      repassword: "",
+    });
+  }, []);
 
   // update user's input via 'value'
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setUserData((prev) => {
+      const updatedData = { ...prev, [name]: value };
+      console.log("Updated UserData:", updatedData);
+      return updatedData;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,18 +60,18 @@ function CreateAccountPage(){
       return; 
     }
 
-    setError(null); // clear previous errors
-    setErrorMsg(null); 
+    // setError(null); // clear previous errors
+    // setErrorMsg(null); 
 
-    try {
-      // attempt to create a new user with Firebase
-      await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      console.log("Account created!");
-      router.push("/login");
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message);
-    }
+    setUserData((prev) => ({
+      ...prev,
+      email: formData.email,
+      password: formData.password,
+    }));
+
+    console.log("Navigating with:", formData);
+
+    router.push("/create-account/profile");
   };
 
   return (
@@ -134,10 +147,6 @@ function CreateAccountPage(){
             </svg>
           </button>
         </div>
-        {error && (
-          <p className="text-red-500 text-sm">{error}</p>
-        )}
-
       </form>
 
       {/* green bar status */}
