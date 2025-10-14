@@ -62,6 +62,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const [isUpdatingProfileImage, setIsUpdatingProfileImage] = useState(false);
 
+  //States to check for Nearby Pins
+  const [nearbyPinsMessage, setNearbyPinsMessage] = useState<string>("");
+  const [hasNearbyPins, setHasNearbyPins] = useState<boolean | null>(null);
+
   const router = useRouter();
   
   // Treat presence of selectedPin as "existing outlet view" mode
@@ -245,6 +249,69 @@ const AddOutlet: React.FC<OverlayProps> = ({
     return () => clearTimeout(timeoutId);
   }, [searchValue]);
 
+  //Function to calculate distance of a Pin from a given position (for finding distance of Nearby Pins)
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // Function to check NearbyPins
+  const checkNearbyPins = async (latitude: number, longitude: number): Promise<void> => {
+    try {
+      // Fetching all outlets from Firestore
+      const outletsRef = collection(db, "Outlets");
+      const outletsSnap = await getDocs(outletsRef);
+      
+      const allPins: PinData[] = outletsSnap.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          lat: data.latitude || data.lat,
+          lng: data.longitude || data.lng,
+          title: data.locationName || "",
+          description: data.description || "",
+          category: data.chargerType || "",
+          fromDb: true
+        };
+      });
+      
+      const nearbyPins = allPins.filter((pin: PinData) => {
+        const distance = calculateDistance(
+          latitude,
+          longitude,
+          pin.lat,
+          pin.lng
+        );
+        return distance <= 10;
+      });
+      
+      if (nearbyPins.length === 0) {
+        setNearbyPinsMessage("No charging outlets found within 10km of this location.");
+        setHasNearbyPins(false);
+      } else {
+        setNearbyPinsMessage(`Found ${nearbyPins.length} outlet(s) within 10km.`);
+        setHasNearbyPins(true);
+      }
+    } catch (error) {
+      console.error("Error checking nearby pins:", error);
+      setNearbyPinsMessage("");
+    }
+  };
+
+  // To check for NearbyPins when coords change
+  useEffect(() => {
+    if (coords?.lat && coords?.lng && !isExisting) {
+      checkNearbyPins(coords.lat, coords.lng);
+    }
+  }, [coords]);
+
     return (
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
 
@@ -282,6 +349,24 @@ const AddOutlet: React.FC<OverlayProps> = ({
           </div>
         )}
       </div>
+
+      {/* Alert Message to show Nearby Pins */}
+      {nearbyPinsMessage && !isExisting && (
+        <div className={`mt-2 p-3 rounded-lg text-sm ${
+          hasNearbyPins 
+            ? lightMode 
+              ? "bg-green-100/50 text-green-800" 
+              : "bg-green-900/30 text-green-200"
+            : lightMode
+              ? "bg-yellow-100/50 text-yellow-800"
+              : "bg-yellow-900/30 text-yellow-200"
+        }`}>
+          <p className="font-semibold">
+            {hasNearbyPins ? "🔋 Nearby Outlets" : "⚠️ No Nearby Outlets"}
+          </p>
+          <p>{nearbyPinsMessage}</p>
+        </div>
+      )}
 
       {/* dark/light mode switch */}
       <div className="flex items-center gap-6"> 
