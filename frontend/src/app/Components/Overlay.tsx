@@ -16,6 +16,7 @@ import { useUserData } from '../create-account/UserDataContext';
 interface OverlayProps {
   showPinOverlay: boolean;
   coords: { lat: number; lng: number } | null;
+  searchCoords? : {lat : number, lng : number} | null;
   selectedPin?: PinData | null;
   onClose: () => void;
   lightMode: boolean;
@@ -32,6 +33,7 @@ const conditionOptions = ["New", "Worn", "Slightly Damaged", "Damaged"];
 const AddOutlet: React.FC<OverlayProps> = ({
   showPinOverlay,
   coords,
+  searchCoords,
   selectedPin,
   onClose, 
   lightMode, 
@@ -299,18 +301,21 @@ const AddOutlet: React.FC<OverlayProps> = ({
         setNearbyPinsMessage(`Found ${nearbyPins.length} outlet(s) within 10km.`);
         setHasNearbyPins(true);
       }
+      setTimeout(() => {setNearbyPinsMessage("")}, 7000 )
     } catch (error) {
       console.error("Error checking nearby pins:", error);
       setNearbyPinsMessage("");
     }
   };
 
-  // To check for NearbyPins when coords change
+  // To check for NeabyPins when search value changes
   useEffect(() => {
-    if (coords?.lat && coords?.lng && !isExisting) {
-      checkNearbyPins(coords.lat, coords.lng);
+    console.log(searchCoords)
+    if (searchCoords?.lat && searchCoords?.lng) {
+      checkNearbyPins(searchCoords.lat, searchCoords.lng);
+      console.log("Checking nearby pins for searched location");
     }
-  }, [coords]);
+  }, [searchCoords, isExisting]);
 
     return (
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">

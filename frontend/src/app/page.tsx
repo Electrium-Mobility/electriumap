@@ -12,10 +12,13 @@ export default function Home() {
   const [lightMode, setLightMode] = useState(false);
   const [selectedPin, setSelectedPin] = useState<PinData | null>(null);
   const [purgeTempSignal, setPurgeTempSignal] = useState(0);
+  const [searchCoords, setSearchCoords] = useState<{ lng: number; lat: number } | null>(null);
+
 
   const mapRef = useRef<{ handleGeoLocate: () => void }>(null);
 
   const handleSearchSelect = (lng: number, lat: number) => {
+    setSearchCoords({lng, lat});
     setFlyToLocation({ lng, lat });
   };
 
@@ -45,6 +48,7 @@ export default function Home() {
       <Overlay
         showPinOverlay={showPinOverlay}
         coords={coords}
+        searchCoords={searchCoords}
         selectedPin={selectedPin}
         onClose={() => {
           setShowPinOverlay(false);
