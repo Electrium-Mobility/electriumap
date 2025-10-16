@@ -39,6 +39,7 @@ export default function Home() {
         }}
         onCurrentLocation={(lat, lng) => {
           setCoords({ lat, lng });
+          setSearchCoords({lng, lat});
           setShowPinOverlay(true);
         }}
         lightMode={lightMode}
