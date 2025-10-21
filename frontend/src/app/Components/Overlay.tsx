@@ -28,6 +28,8 @@ interface OverlayProps {
   /** Called when the user cancels adding a new outlet so the temporary pin can be removed */
   onCancelTempPin?: () => void;
   onGeoLocateClick?: () => void
+  onStartFollow?: () => void;
+  onStopFollow?: () => void;
 }
 
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
@@ -43,8 +45,11 @@ const AddOutlet: React.FC<OverlayProps> = ({
   setLightMode,
   onSearchSelect,
   onCancelTempPin,
-  onGeoLocateClick
+  onGeoLocateClick,
+  onStartFollow,
+  onStopFollow
 }) => {
+  const [isLocatingToggle, setIsLocatingToggle] = useState(false);
   const [showAddOutlet, setShowAddOutlet] = useState(false);
   const [address, setAddress] = useState("");
   const [outletCount, setOutletCount] = useState(1);
@@ -338,7 +343,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
         {/* dark/light mode switch */}
         <div className="flex items-center gap-6">
-          <div className={`relative flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md 
+          <div className={`relative flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
             ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
             <div
               className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-900/70'}`}
@@ -352,7 +357,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
           </div>
 
           {/* filter button */}
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md 
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
             ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
             <button className="flex items-center gap-3 text-base">
               <span>Filter</span> <ChevronDown className="w-4 h-4 bold" />
@@ -360,7 +365,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
           </div>
 
           {/* toolbar */}
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md 
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
             ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
             <button className="flex flex-col items-center justify-center w-14 h-14">
               <LucideBookmark className="w-6 h-6" />
@@ -378,6 +383,27 @@ const AddOutlet: React.FC<OverlayProps> = ({
             >
               <LucidePlus className="w-7 h-7 text-lime-600" />
               <span className="text-[10px] whitespace-nowrap">Add Outlet</span>
+            </button>
+
+            {/* locate / follow button */}
+            <button
+              onClick={() => {
+                if (isLocatingToggle) {
+                  // stop following
+                  onStopFollow?.();
+                  setIsLocatingToggle(false);
+                } else {
+                  // trigger a locate and start following
+                  onGeoLocateClick?.();
+                  onStartFollow?.();
+                  setIsLocatingToggle(true);
+                }
+              }}
+              title={isLocatingToggle ? 'Stop tracking' : 'Show my location'}
+              className={`flex flex-col items-center justify-center w-14 h-14 ${isLocatingToggle ? 'text-lime-600' : ''}`}
+            >
+              <LucideNavigation className="w-6 h-6" />
+              <span className="text-[10px] mt-1 whitespace-nowrap">Locate</span>
             </button>
           </div>
 
@@ -690,7 +716,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </div>
           </div>
         ) : (
-          
+
           <div className={`fixed top-[95px] right-6 z-50 p-6 rounded-3xl shadow-lg w-[380px] backdrop-blur-sm border
       ${lightMode ? "bg-white/5 border-white/60 text-white" : "bg-white/15 border-white/60 text-white"}`}>
             <h2 className="text-lg font-semibold mb-2">You dropped a pin!</h2>

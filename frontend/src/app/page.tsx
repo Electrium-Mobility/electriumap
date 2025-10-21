@@ -15,7 +15,7 @@ export default function Home() {
   const [searchCoords, setSearchCoords] = useState<{ lng: number; lat: number } | null>(null);
 
 
-  const mapRef = useRef<{ handleGeoLocate: () => void }>(null);
+  const mapRef = useRef<any>(null);
 
   const handleSearchSelect = (lng: number, lat: number) => {
     setSearchCoords({lng, lat});
@@ -61,6 +61,8 @@ export default function Home() {
         setLightMode={setLightMode}
         onCancelTempPin={() => setPurgeTempSignal(Date.now())}
         onGeoLocateClick={() => mapRef.current?.handleGeoLocate()}
+        onStartFollow={() => mapRef.current?.startFollowing?.()}
+        onStopFollow={() => mapRef.current?.stopFollowing?.()}
       />
     </div>
   );
