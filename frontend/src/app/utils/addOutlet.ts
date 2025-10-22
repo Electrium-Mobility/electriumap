@@ -175,7 +175,7 @@ export async function fetchNearbyOutlets(center: [number, number], radiusInMeter
   for (const snap of snapshots) {
     for (const doc of snap.docs) {
       const location = doc.data();
-      if (location.geohash="") {
+      if (location.geohash === "") {
         console.log("Skipping document without geohash:", doc.id);
         continue;
       }
