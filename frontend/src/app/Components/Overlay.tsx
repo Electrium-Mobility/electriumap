@@ -16,6 +16,7 @@ import { useUserData } from '../create-account/UserDataContext';
 interface OverlayProps {
   showPinOverlay: boolean;
   coords: { lat: number; lng: number } | null;
+  searchCoords? : {lat : number, lng : number} | null;
   selectedPin?: PinData | null;
   onClose: () => void;
   lightMode: boolean;
@@ -32,6 +33,7 @@ const conditionOptions = ["New", "Worn", "Slightly Damaged", "Damaged"];
 const AddOutlet: React.FC<OverlayProps> = ({
   showPinOverlay,
   coords,
+  searchCoords,
   selectedPin,
   onClose, 
   lightMode, 
@@ -53,6 +55,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [showProfile, setProfile ] = useState("");
   const { setUserData } = useUserData();
+  const justSelectedRef = React.useRef(false);
 
 
   const [userName, setUserName] = useState("");
@@ -61,6 +64,11 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [userOutlets, setUserOutlets] = useState<Array<{id: string, locationName: string}>>([]);
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const [isUpdatingProfileImage, setIsUpdatingProfileImage] = useState(false);
+
+  //States to check for Nearby Pins
+  const [nearbyPinsMessage, setNearbyPinsMessage] = useState<string>("");
+  const [hasNearbyPins, setHasNearbyPins] = useState<boolean | null>(null);
+  const [isCheckingNearbyPins, setIsCheckingNearbyPins] = useState<boolean>(false);
 
   const router = useRouter();
   
@@ -231,13 +239,29 @@ const AddOutlet: React.FC<OverlayProps> = ({
   };
 
   const handleSearchResultClick = (result: {place_name: string, center: [number, number]}) => {
+    justSelectedRef.current = true;
     setSearchValue(result.place_name);
+    setSearchResults([]);
     setShowSearchResults(false);
     onSearchSelect?.(result.center[0], result.center[1]);
   };
 
+  // Handle Enter key press in search bar
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchResults.length > 0) {
+      // Select the first result when Enter is pressed
+      handleSearchResultClick(searchResults[0]);
+    }
+  };
+
   // Debounce search to avoid too many API calls
   useEffect(() => {
+    // Skip search if user just selected a result
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
+
     const timeoutId = setTimeout(() => {
       handleSearch(searchValue);
     }, 300);
@@ -245,7 +269,80 @@ const AddOutlet: React.FC<OverlayProps> = ({
     return () => clearTimeout(timeoutId);
   }, [searchValue]);
 
+  //Function to calculate distance of a Pin from a given position (for finding distance of Nearby Pins)
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // Function to check NearbyPins
+  const checkNearbyPins = async (latitude: number, longitude: number): Promise<void> => {
+    try {
+      setIsCheckingNearbyPins(true);
+      
+      // Fetching all outlets from Firestore
+      const outletsRef = collection(db, "Outlets");
+      const outletsSnap = await getDocs(outletsRef);
+      
+      const allPins: PinData[] = outletsSnap.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          lat: data.latitude || data.lat,
+          lng: data.longitude || data.lng,
+          title: data.locationName || "",
+          description: data.description || "",
+          category: data.chargerType || "",
+          fromDb: true
+        };
+      });
+      
+      // Filter nearby pins, excluding the current location itself (distance < 0.01km = ~10 meters)
+      const nearbyPins = allPins.filter((pin: PinData) => {
+        const distance = calculateDistance(
+          latitude,
+          longitude,
+          pin.lat,
+          pin.lng
+        );
+        return distance <= 10 && distance > 0.01;
+      });
+      
+      if (nearbyPins.length === 0) {
+        setNearbyPinsMessage("No charging outlets found within 10km of this location.");
+        setHasNearbyPins(false);
+      } else {
+        setNearbyPinsMessage(`Found ${nearbyPins.length} outlet(s) within 10km.`);
+        setHasNearbyPins(true);
+      }
+      setTimeout(() => {setNearbyPinsMessage("")}, 7000 )
+    } catch (error) {
+      console.error("Error checking nearby pins:", error);
+      setNearbyPinsMessage("");
+      setHasNearbyPins(null);
+    } finally {
+      setIsCheckingNearbyPins(false);
+    }
+  };
+
+  // To check for NeabyPins when search value changes
+  useEffect(() => {
+    console.log(searchCoords)
+    if (searchCoords?.lat && searchCoords?.lng) {
+      checkNearbyPins(searchCoords.lat, searchCoords.lng);
+      console.log("Checking nearby pins for searched location");
+    }
+  }, [searchCoords, isExisting]);
+
     return (
+      <>
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
 
         {/* search bar section */}
@@ -258,8 +355,9 @@ const AddOutlet: React.FC<OverlayProps> = ({
             type="text"
             placeholder="Search Electriumap"
             value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-          className={`bg-transparent outline-none  w-full text-md ${lightMode ? "placeholder-black/60" : "placeholder-white/60"}`}
+            onChange={(e) => setSearchValue(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            className={`bg-transparent outline-none  w-full text-md ${lightMode ? "placeholder-black/60" : "placeholder-white/60"}`}
           />
           <LucideSearch className={`w-5 h-5 font-semibold`} />
           
@@ -812,7 +910,41 @@ const AddOutlet: React.FC<OverlayProps> = ({
           </div>
         </div>
       )}
+
+      {/* Alert Message to show Nearby Pins - Repositioned for better visibility */}
+      {!isExisting && (nearbyPinsMessage || isCheckingNearbyPins) && (
+        <div className={`fixed top-20 left-8 z-50 backdrop-blur-md border-1 rounded-2xl shadow-xl p-4 max-w-md transition-all duration-300 ${
+          isCheckingNearbyPins
+            ? lightMode 
+              ? "bg-blue-100/80 border-blue-300 text-blue-900" 
+              : "bg-blue-900/40 border-blue-500/60 text-blue-100"
+            : hasNearbyPins 
+              ? lightMode 
+                ? "bg-green-100/80 border-green-300 text-green-900" 
+                : "bg-green-900/40 border-green-500/60 text-green-100"
+              : lightMode
+                ? "bg-yellow-100/80 border-yellow-300 text-yellow-900"
+                : "bg-yellow-900/40 border-yellow-500/60 text-yellow-100"
+        }`}>
+          {isCheckingNearbyPins ? (
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
+              <div>
+                <p className="font-semibold text-sm">Checking nearby outlets...</p>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="font-semibold text-sm mb-1">
+                {hasNearbyPins ? "🔋 Nearby Outlets Found" : "⚠️ No Nearby Outlets"}
+              </p>
+              <p className="text-sm">{nearbyPinsMessage}</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
+    </>
   );
 };
 
