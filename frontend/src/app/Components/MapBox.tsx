@@ -470,23 +470,7 @@ const MapBox = forwardRef<{
           {errorMessage}
         </div>
       )}
-            
-    <div className="fixed top-22 left-10 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg p-4 text-black">
-      <p className="font-semibold text-sm">Viewport Info</p>
-      <p className="text-xs">Visible Pins: {visiblePins.length}</p>
-      <p className="text-xs">Total Pins: {allPins.length}</p>
-      {currentBounds && (
-        <>
-          <p className="text-xs">
-            SW: [{currentBounds.sw[0].toFixed(3)}, {currentBounds.sw[1].toFixed(3)}]
-          </p>
-          <p className="text-xs">
-            NE: [{currentBounds.ne[0].toFixed(3)}, {currentBounds.ne[1].toFixed(3)}]
-          </p>
-        </>
-      )}
-    </div>
-      </>
+    </>
     );
   }
 );
