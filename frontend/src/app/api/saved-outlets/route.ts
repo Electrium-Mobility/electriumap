@@ -9,7 +9,7 @@ export async function GET() {
     //temporarily using hardcoded auth (update later)
     const uid = "test123";
 
-    const userRef = doc(db, "users", uid);
+    const userRef = doc(db, "Users", uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
@@ -23,10 +23,10 @@ export async function GET() {
       return NextResponse.json([]);
     }
 
-    //fetch outlet details stored in outlets collection
+    //fetch outlet details stored in Outlets collection
     const outletRefs = await Promise.all(
       savedOutlets.map(async (outletId: string) => {
-        const outletSnap = await getDoc(doc(db, "outlets", outletId));
+        const outletSnap = await getDoc(doc(db, "Outlets", outletId));
         return outletSnap.exists()
           ? { id: outletSnap.id, ...outletSnap.data() }
           : null;
