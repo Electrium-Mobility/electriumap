@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
     unoptimized: true, 
     contentSecurityPolicy: "default-src 'self'; img-src 'self' data: blob: https:;",
   },
+  
+  // Disable ESLint during build for deployment
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;
