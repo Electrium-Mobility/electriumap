@@ -9,7 +9,7 @@ import geometryCollection from "../landpolygon/ne_10m_land_geojson.json";
 import { FeatureCollection, Feature, Geometry, Polygon, MultiPolygon } from "geojson";
 const landPolygons: FeatureCollection<Polygon | MultiPolygon> = {
   type: "FeatureCollection",
-  features: geometryCollection.geometries.map((geometry: Geometry) => ({
+  features: geometryCollection.geometries.map((geometry: any) => ({
     type: "Feature",
     properties: {},
     geometry: geometry as Polygon | MultiPolygon,
