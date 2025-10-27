@@ -196,7 +196,7 @@ export async function addGeohashToExistingOutlets() {
   try {
     const snapshot = await getDocs(collection(db, "Outlets"));
     
-    const batch = [];
+    const batch: Promise<void>[] = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
       if (!data.geohash && data.latitude && data.longitude) {
