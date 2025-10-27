@@ -12,7 +12,7 @@ const landPolygons: FeatureCollection<Polygon | MultiPolygon> = {
   features: geometryCollection.geometries.map((geometry: Geometry) => ({
     type: "Feature",
     properties: {},
-    geometry,
+    geometry: geometry as Polygon | MultiPolygon,
   })),
 };
 
