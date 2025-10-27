@@ -167,11 +167,11 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyApxNuehMUOxEDybG45Eymv8er6bqCB6mQ",
-  authDomain: "electriumap.firebaseapp.com",
-  projectId: "electriumap",
-  storageBucket: "electriumap.firebasestorage.app",
-  messagingSenderId: "369697728783",
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
   appId: "1:369697728783:web:2e4be6df906e1f66c2f67a",
   measurementId: "G-FSV8JQKCLN"
 };
