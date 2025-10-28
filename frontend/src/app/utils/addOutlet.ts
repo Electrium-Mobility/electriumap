@@ -9,10 +9,10 @@ import geometryCollection from "../landpolygon/ne_10m_land_geojson.json";
 import { FeatureCollection, Feature, Geometry, Polygon, MultiPolygon } from "geojson";
 const landPolygons: FeatureCollection<Polygon | MultiPolygon> = {
   type: "FeatureCollection",
-  features: geometryCollection.geometries.map((geometry: Geometry) => ({
+  features: geometryCollection.geometries.map((geometry: any) => ({
     type: "Feature",
     properties: {},
-    geometry,
+    geometry: geometry as Polygon | MultiPolygon,
   })),
 };
 
@@ -175,7 +175,7 @@ export async function fetchNearbyOutlets(center: [number, number], radiusInMeter
   for (const snap of snapshots) {
     for (const doc of snap.docs) {
       const location = doc.data();
-      if (location.geohash="") {
+      if (location.geohash === "") {
         console.log("Skipping document without geohash:", doc.id);
         continue;
       }
@@ -196,7 +196,7 @@ export async function addGeohashToExistingOutlets() {
   try {
     const snapshot = await getDocs(collection(db, "Outlets"));
     
-    const batch = [];
+    const batch: Promise<void>[] = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
       if (!data.geohash && data.latitude && data.longitude) {

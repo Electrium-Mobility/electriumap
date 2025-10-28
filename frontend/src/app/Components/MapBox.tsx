@@ -37,7 +37,9 @@ interface MapBoxProps {
   onCurrentLocation?: (lat: number, lng: number) => void;
 }
 
-const MapBox = forwardRef<{ handleGeoLocate: () => void }, MapBoxProps>(
+const MapBox = forwardRef<{
+    handleGeoLocate: () => void
+ }, MapBoxProps>(
   ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation }, ref) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -56,7 +58,7 @@ const MapBox = forwardRef<{ handleGeoLocate: () => void }, MapBoxProps>(
 
   //gets current location for user centering
   useImperativeHandle(ref, () => ({
-    handleGeoLocate,
+    handleGeoLocate
   }));
   
   //Drops pin at current location 
@@ -121,11 +123,11 @@ const MapBox = forwardRef<{ handleGeoLocate: () => void }, MapBoxProps>(
         };
 
         // If style isn’t loaded yet, waits for styledata event
-        if (mapRef.current.isStyleLoaded()) {
+        if (mapRef.current?.isStyleLoaded()) {
           fly();
         } else {
           console.log("Map style not loaded yet, waiting...");
-          mapRef.current.once("styledata", fly);
+          mapRef.current?.once("styledata", fly);
         }
       },
       //if retrival unsuccessful, displays error
@@ -468,23 +470,7 @@ const MapBox = forwardRef<{ handleGeoLocate: () => void }, MapBoxProps>(
           {errorMessage}
         </div>
       )}
-            
-    <div className="fixed top-22 left-10 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg p-4 text-black">
-      <p className="font-semibold text-sm">Viewport Info</p>
-      <p className="text-xs">Visible Pins: {visiblePins.length}</p>
-      <p className="text-xs">Total Pins: {allPins.length}</p>
-      {currentBounds && (
-        <>
-          <p className="text-xs">
-            SW: [{currentBounds.sw[0].toFixed(3)}, {currentBounds.sw[1].toFixed(3)}]
-          </p>
-          <p className="text-xs">
-            NE: [{currentBounds.ne[0].toFixed(3)}, {currentBounds.ne[1].toFixed(3)}]
-          </p>
-        </>
-      )}
-    </div>
-      </>
+    </>
     );
   }
 );
