@@ -23,6 +23,8 @@ const HEATMAP_SOURCE_ID = "pins-heatmap-source";
 const HEATMAP_LAYER_ID  = "pins-heatmap-layer";
 const HEATMAP_MAX_ZOOM  = 11; // heatmap visible up to zoom 10
 
+const PINDROP_MIN_ZOOM = 14;
+
 interface MapBoxProps {
   width?: string;
   height?: string;
@@ -384,12 +386,21 @@ const MapBox = forwardRef<{
         const { lng, lat } = e.lngLat;
         if (!isOnLand(lng, lat)) return;
 
+        const zoom = map.getZoom();
+
+        map.flyTo({ center: [lng, lat], zoom: PINDROP_MIN_ZOOM, essential: true });
+
+        const dropPins = zoom > PINDROP_MIN_ZOOM;
+        console.log(dropPins);
+        if (zoom < PINDROP_MIN_ZOOM) return;
+
         // Remove previous temp markers
         tempMarkersRef.current.forEach((m) => m.remove());
         tempMarkersRef.current = [];
 
         // Create new temp pin
-        const tempPin: PinData = {
+        let tempPin: PinData;
+        tempPin = {
           id: `temp-${Date.now()}`,
           lat,
           lng,
@@ -399,15 +410,15 @@ const MapBox = forwardRef<{
           fromDb: false,
         };
         setAllPins((prev) => [...prev.filter((p) => !p.id.startsWith("temp-")), tempPin]);
-
+        
         // Marker element
         const el = document.createElement("div");
         el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
         el.style.cursor = "pointer";
-
+        
         const marker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map);
         tempMarkersRef.current.push(marker);
-
+        
         // Click to remove temp pin
         marker.getElement().addEventListener("click", (ev) => {
           ev.stopPropagation();
@@ -415,8 +426,7 @@ const MapBox = forwardRef<{
           tempMarkersRef.current = tempMarkersRef.current.filter((m) => m !== marker);
           setAllPins((pins) => pins.filter((p) => p !== tempPin));
         });
-
-        map.flyTo({ center: [lng, lat], zoom: 17, essential: true });
+          
         onPinDrop?.(lat, lng);
       });
     });
