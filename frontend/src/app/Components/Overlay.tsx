@@ -6,7 +6,7 @@ import { addOutletFrontend, addOutlet, isOnLand } from "../utils/addOutlet";
 import {
   LucideBookmark, LucideClock, LucidePlus, LucideLocateFixed, LucideSearch,
   LucideUpload, SunMedium, Moon, ChevronDown, Plus, Bike, PlugZap, User,
-  ArrowRight, MapPin, Star, LucideX, LucidePlugZap, LucideStar, LucideNavigation, LucidePlayCircle
+  ArrowRight, MapPin, LucideX, Save, LucidePlugZap, LucideStar, LucideNavigation, LucidePlayCircle
 } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
@@ -679,8 +679,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 Start
               </button>
               <button className="px-2 py-2 rounded-xl bg-[#2E7D32] hover:bg-[#457E00] text-white font-semibold inline-flex items-center gap-1.5">
-                <LucideX className="w-5 h-5" />
-                Close
+                <Save className="w-5 h-5" />
+                Save
               </button>
             </div>
           </div>
