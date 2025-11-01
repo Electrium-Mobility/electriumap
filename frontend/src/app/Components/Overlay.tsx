@@ -582,7 +582,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
         selectedPin ? (
           <div
             className={`fixed top-[95px] right-6 z-50 p-4 rounded-[22px] shadow-lg w-[325px] max-h-[calc(100vh-140px)] overflow-auto backdrop-blur-sm border
-        ${lightMode ? "bg-white/5 border-white/60 text-white" : "bg-white/15 border-white/60 text-white"}`}
+        ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}
           >
             {/* Header */}
             <div className="flex items-start justify-between mb-2">
@@ -617,9 +617,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 <span>4.9 (2078)</span>
               </div>
             </div>
-
-            {/* Last checked */}
-            <div className="text-base text-white/70 mb-3">Last Checked: 3 hr ago</div>
 
             {/* Tabs */}
             <div className="mb-3">
