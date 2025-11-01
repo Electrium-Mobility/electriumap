@@ -34,8 +34,9 @@ export default function Home() {
         }}
         onPinClick={(pin) => {
           setPurgeTempSignal(Date.now());
-          setCoords(null);
-          setSelectedPin(pin);
++         setSelectedPin(pin);
++         setCoords({ lat: pin.lat, lng: pin.lng });
++         setShowPinOverlay(true);
         }}
         onCurrentLocation={(lat, lng) => {
           setCoords({ lat, lng });
