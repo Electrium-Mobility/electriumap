@@ -21,7 +21,7 @@ const pinsToGeoJSON = (pins: PinData[]): FeatureCollection<Point> => ({
 
 const HEATMAP_SOURCE_ID = "pins-heatmap-source";
 const HEATMAP_LAYER_ID  = "pins-heatmap-layer";
-const HEATMAP_MAX_ZOOM  = 9; // heatmap visible up to zoom 10
+const HEATMAP_MAX_ZOOM  = 9; // heatmap visible up to zoom 8
 
 interface MapBoxProps {
   width?: string;
