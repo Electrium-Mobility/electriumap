@@ -317,6 +317,7 @@ const MapBox = forwardRef<{
         map.addSource(HEATMAP_SOURCE_ID, {
           type: "geojson",
           data: pinsToGeoJSON(pinsData),
+          cluster : false
         });
       }
 
@@ -328,7 +329,7 @@ const MapBox = forwardRef<{
           maxzoom: HEATMAP_MAX_ZOOM,
           paint: {
             "heatmap-weight": 1,
-            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 9, 3],
+            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 5,1.5, 9, 2, 11, 3],
             "heatmap-color": [
               "interpolate",
               ["linear"],
@@ -340,8 +341,8 @@ const MapBox = forwardRef<{
               0.8, "rgb(239,138,98)",
               1, "rgb(178,24,43)"
             ],
-            "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 2, 4, 8, 8, 15],
-            "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 9, 1, 11, 0]
+            "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 1, 2, 4, 3, 8, 4, 12],
+            "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 1, 9, 0.8, 10, 0.5, 11, 0]
           },
         });
       }
