@@ -330,15 +330,17 @@ const MapBox = forwardRef<{
           paint: {
             "heatmap-weight": 1,
             "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 5,1.5, 9, 2, 11, 3],
-            "heatmap-color": ["interpolate",
-                              ["linear"],
-                              ["heatmap-density"],
-                              0, "rgba(0, 0, 0, 0)",
-                              0.3, "rgba(55, 126, 184, 0.2)",
-                              0.4, "rgba(102, 194, 165, 0.4)",
-                              0.6, "rgba(253, 231, 37, 0.6)",
-                              0.8, "rgba(248, 118, 109, 0.8)",
-                              1, "rgba(178, 24, 43, 1)"],
+            "heatmap-color": [
+              "interpolate",
+              ["linear"],
+              ["heatmap-density"],
+              0, "rgba(33,102,172,0)",
+              0.2, "rgb(103,169,207)",
+              0.4, "rgb(209,229,240)",
+              0.6, "rgb(253,219,199)",
+              0.8, "rgb(239,138,98)",
+              1, "rgb(178,24,43)"
+            ],
             "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 1, 2, 4, 3, 8, 4, 12],
             "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 1, 9, 0.8, 10, 0.5, 11, 0]
           },
