@@ -543,12 +543,19 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 onClick={async () => {
                   if (address !== "" && outletCount !== 0) {
                     try {
+                      // Get the authenticated user's UID (required by Firestore rules)
+                      const currentUser = auth.currentUser;
+                      if (!currentUser) {
+                        throw new Error("You must be signed in to add an outlet.");
+                      }
+                      const userId = currentUser.uid;
+
                       if (coords) {
                         await addOutlet({
                           latitude: coords.lat,
                           longitude: coords.lng,
                           userName: userName || "Anonymous",
-                          userId: userEmail || "unknown",
+                          userId: userId,
                           locationName: address,
                           chargerType: powerType || selectedPort,
                           description: `Condition: ${selectedCondition}. ${extraDetails}`,
@@ -556,7 +563,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                       } else {
                         await addOutletFrontend({
                           userName: userName || "Anonymous",
-                          userId: userEmail || "unknown",
+                          userId: userId,
                           locationName: address,
                           chargerType: powerType || selectedPort,
                           description: `Condition: ${selectedCondition}. ${extraDetails}`,
@@ -565,6 +572,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                       setShowAddOutlet(false);
                     } catch (err) {
                       console.error("Error submitting outlet:", err);
+                      alert(err instanceof Error ? err.message : "Failed to add outlet. Please try again.");
                     }
                   }
                 }}
