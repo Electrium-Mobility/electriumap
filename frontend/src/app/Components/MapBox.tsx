@@ -45,6 +45,7 @@ const MapBox = forwardRef<{
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const debouncedUpdatePinsRef = useRef<(() => void) | null>(null); //ref to store debouncedUpdatePins func to access flyTo effect
   // Store current bounds and visible pins
   const [currentBounds, setCurrentBounds] = useState<Bounds | null>(null);
   const [visiblePins, setVisiblePins] = useState<PinData[]>([]);
@@ -55,6 +56,7 @@ const MapBox = forwardRef<{
   //error message when failing to get current users position
   const [errorMessage, setErrorMessage] = useState('');
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [isLoadingPins, setIsLoadingPins] = useState(false);
 
   //gets current location for user centering
   useImperativeHandle(ref, () => ({
@@ -163,12 +165,21 @@ const MapBox = forwardRef<{
 
   // Effect to handle flying to searched location
   useEffect(() => {
-    console.log("Flying to searched location")
     if (flyTo && mapLoaded && mapRef.current) {
+      console.log("Flying to searched location:", flyTo);
+      
       mapRef.current.flyTo({
         center: [flyTo.lng, flyTo.lat],
         zoom: 14,
         essential: true
+      });
+
+      //update pins for new viewport after fly animation
+      mapRef.current.once("moveend", () => { //only fires once per search, not on next drags
+        console.log("Fly completed, updating pins for search location");
+        if (debouncedUpdatePinsRef.current) {
+          debouncedUpdatePinsRef.current();
+        }
       });
     }
   }, [flyTo, mapLoaded]);
@@ -217,6 +228,44 @@ const MapBox = forwardRef<{
   const filterPinsByBounds = useCallback((bounds: Bounds): PinData[] => {
     return allPins.filter((pin) => isPointInBounds(pin, bounds));
   }, [allPins]);
+
+  //function to fetch outlets from backend by bounds
+  const fetchOutletsByBounds = useCallback(async (bounds: Bounds) => {
+    try {
+      setIsLoadingPins(true);
+      const url = `/api/outlets?swLat=${bounds.sw[1]}&swLng=${bounds.sw[0]}&neLat=${bounds.ne[1]}&neLng=${bounds.ne[0]}`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (!Array.isArray(data)) return;
+      
+      const mapped: PinData[] = data
+        .filter((d: any) => typeof d.latitude === "number" && typeof d.longitude === "number")
+        .map((d: any, idx: number) => ({
+          id: d.id ?? String(idx),
+          lat: d.latitude,
+          lng: d.longitude,
+          title: d.locationName ?? "Outlet",
+          description: d.description ?? "",
+          category: d.chargerType ?? "",
+          fromDb: true,
+        }));
+      
+      //merge with existing pins (avoid duplicates)
+      setAllPins((prev) => {
+        const existingIds = new Set(prev.map(p => p.id)); //collect existing IDs
+        const newPins = mapped.filter(p => !existingIds.has(p.id)); //filter fetched pins to those not present currently
+        return [...prev, ...newPins]; //merge existing pins with new ones
+      });
+      
+      console.log("Fetched outlets for bounds:", mapped);
+    } catch (error) {
+      console.error("Error fetching outlets by bounds:", error);
+    } finally {
+      setIsLoadingPins(false);
+    }
+  }, []);
 
   // Function to clear all markers
   const clearAllMarkers = useCallback(() => {
@@ -273,24 +322,40 @@ const MapBox = forwardRef<{
 
   // Debounced function to update visible pins
   const debouncedUpdatePins = useCallback(
-    debounce(() => {
+    debounce(async () => {
       if (!mapRef.current) return;
       const zoom = mapRef.current.getZoom();
       const bounds = getBounds();
       if (!bounds) return;
 
       setCurrentBounds(bounds);
+      
+      //filter from existing pins
       const filteredPins = filterPinsByBounds(bounds);
       setVisiblePins(filteredPins);
 
+      //fetch extra pins from backend for current bounds/new regions
+      await fetchOutletsByBounds(bounds);
+      
+      //re-filter after fetching (in case new pins were added)
+      const updatedFilteredPins = filterPinsByBounds(bounds);
+      setVisiblePins(updatedFilteredPins);
+
       if (zoom > HEATMAP_MAX_ZOOM) {
-        renderPins(filteredPins);
+        renderPins(updatedFilteredPins);
       } else {
         clearAllMarkers(); // Ensure pins are hidden when heatmap is visible
       }
     }, 300), // 300ms debounce
-    [getBounds, filterPinsByBounds, renderPins, clearAllMarkers]
+    [getBounds, filterPinsByBounds, renderPins, clearAllMarkers, fetchOutletsByBounds]
   );
+
+  //update ref when debouncedUpdatePins changes
+  useEffect(() => {
+    debouncedUpdatePinsRef.current = debouncedUpdatePins;
+  }, [debouncedUpdatePins]);
+
+  
 
   useEffect(() => {
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -375,6 +440,12 @@ const MapBox = forwardRef<{
         }
         });
 
+      //update pins when map is dragged
+      map.on("moveend", () => {
+        if (debouncedUpdatePinsRef.current) {
+          debouncedUpdatePinsRef.current();
+        }
+      });
 
       // Click to drop a temporary pin
       map.on("click", (e: mapboxgl.MapMouseEvent) => {
