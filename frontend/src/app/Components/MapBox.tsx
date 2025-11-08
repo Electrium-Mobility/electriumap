@@ -21,7 +21,36 @@ const pinsToGeoJSON = (pins: PinData[]): FeatureCollection<Point> => ({
 
 const HEATMAP_SOURCE_ID = "pins-heatmap-source";
 const HEATMAP_LAYER_ID  = "pins-heatmap-layer";
-const HEATMAP_MAX_ZOOM  = 9; // heatmap visible up to zoom 8
+const HEATMAP_MAX_ZOOM  = 9; // heatmap visible up to zoom 9
+
+// Helper function to map API data to PinData format
+const mapApiDataToPins = (data: any[]): PinData[] => {
+  return data
+    .filter((d: any) => typeof d.latitude === "number" && typeof d.longitude === "number")
+    .map((d: any, idx: number) => ({
+      id: d.id ?? String(idx),
+      lat: d.latitude,
+      lng: d.longitude,
+      title: d.locationName ?? "Outlet",
+      description: d.description ?? "",
+      category: d.chargerType ?? "",
+      fromDb: true,
+    }));
+};
+
+// Helper function to create marker element HTML
+const createMarkerElement = (): string => {
+  return `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+};
+
+// Helper function to merge new pins with existing pins, avoiding duplicates
+const mergePinsWithoutDuplicates = (existingPins: PinData[], newPins: PinData[]): PinData[] => {
+  const existingIds = new Set(existingPins.map(p => p.id));
+  const uniqueNewPins = newPins.filter(p => !existingIds.has(p.id));
+  return [...existingPins, ...uniqueNewPins];
+};
+
+const PINDROP_MIN_ZOOM = 14;
 
 interface MapBoxProps {
   width?: string;
