@@ -3,7 +3,7 @@
 import React, { forwardRef, useImperativeHandle, useRef, useEffect,  useState, useCallback} from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { debounce, Bounds, PinData, isPointInBounds } from "./utils";
+import { debounce, Bounds, PinData, isPointInBounds, calculateBoundsForRadius } from "./utils";
 import pinsData from "./pins.json";            // fallback sample pins – replaced when Firestore loads
 import { isOnLand } from "../utils/addOutlet";
 
@@ -74,6 +74,7 @@ const MapBox = forwardRef<{
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const debouncedUpdatePinsRef = useRef<(() => void) | null>(null); //ref to store debouncedUpdatePins func to access flyTo effect
   // Store current bounds and visible pins
   const [currentBounds, setCurrentBounds] = useState<Bounds | null>(null);
   const [visiblePins, setVisiblePins] = useState<PinData[]>([]);
@@ -84,6 +85,7 @@ const MapBox = forwardRef<{
   //error message when failing to get current users position
   const [errorMessage, setErrorMessage] = useState('');
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [isLoadingPins, setIsLoadingPins] = useState(false);
 
   //gets current location for user centering
   useImperativeHandle(ref, () => ({
@@ -99,7 +101,7 @@ const MapBox = forwardRef<{
     }
 
     const el = document.createElement("div");
-    el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+    el.innerHTML = createMarkerElement();
     el.style.cursor = "pointer";
 
     const marker = new mapboxgl.Marker(el)
@@ -189,19 +191,6 @@ const MapBox = forwardRef<{
     });
   }, [purgeTempPinsSignal]);
 
-
-  // Effect to handle flying to searched location
-  useEffect(() => {
-    console.log("Flying to searched location")
-    if (flyTo && mapLoaded && mapRef.current) {
-      mapRef.current.flyTo({
-        center: [flyTo.lng, flyTo.lat],
-        zoom: 14,
-        essential: true
-      });
-    }
-  }, [flyTo, mapLoaded]);
-  
   // Fetch outlets data from the backend
   useEffect(() => {
     fetch("/api/outlets")
@@ -209,17 +198,7 @@ const MapBox = forwardRef<{
       .then((data) => {
         if (!Array.isArray(data)) return;
 
-        const mapped: PinData[] = data
-          .filter((d: any) => typeof d.latitude === "number" && typeof d.longitude === "number")
-          .map((d: any, idx: number) => ({
-            id: d.id ?? String(idx),
-            lat: d.latitude,
-            lng: d.longitude,
-            title: d.locationName ?? "Outlet",
-            description: d.description ?? "",
-            category: d.chargerType ?? "",
-            fromDb: true,
-          }));
+        const mapped = mapApiDataToPins(data);
 
         if (mapped.length) {
           setAllPins(mapped);
@@ -246,6 +225,91 @@ const MapBox = forwardRef<{
   const filterPinsByBounds = useCallback((bounds: Bounds): PinData[] => {
     return allPins.filter((pin) => isPointInBounds(pin, bounds));
   }, [allPins]);
+
+  //function to fetch outlets from backend by bounds (returns pins without updating state)
+  const fetchOutletsByBounds = useCallback(async (bounds: Bounds): Promise<PinData[]> => {
+    try {
+      setIsLoadingPins(true);
+      
+      // Validate bounds to prevent invalid API calls
+      const { sw, ne } = bounds;
+      if (!isFinite(sw[0]) || !isFinite(sw[1]) || !isFinite(ne[0]) || !isFinite(ne[1])) {
+        console.warn("Invalid bounds provided to fetchOutletsByBounds:", bounds);
+        return [];
+      }
+      
+      const url = `/api/outlets?swLat=${bounds.sw[1]}&swLng=${bounds.sw[0]}&neLat=${bounds.ne[1]}&neLng=${bounds.ne[0]}`;
+      
+      const response = await fetch(url);
+      
+      // Check if response is ok before parsing
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API error (${response.status}):`, errorText);
+        return [];
+      }
+      
+      const data = await response.json();
+      
+      // Check if response contains an error
+      if (data?.error) {
+        console.error("API returned error:", data.error);
+        return [];
+      }
+      
+      if (!Array.isArray(data)) {
+        console.warn("API response is not an array:", data);
+        return [];
+      }
+      
+      const mapped = mapApiDataToPins(data);
+      
+      console.log("Fetched outlets for bounds:", mapped);
+      return mapped;
+    } catch (error) {
+      console.error("Error fetching outlets by bounds:", error);
+      // Log more details about the error
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        console.error("Network error: Check if the Next.js dev server is running and the API route is accessible");
+      }
+      return [];
+    } finally {
+      setIsLoadingPins(false);
+    }
+  }, []);
+
+  // Effect to handle flying to searched location
+  useEffect(() => {
+    if (flyTo && mapLoaded && mapRef.current) {
+      console.log("Flying to searched location:", flyTo);
+      
+      // Calculate bounds for 10km radius around search location
+      const searchBounds = calculateBoundsForRadius(flyTo.lat, flyTo.lng, 10);
+      console.log("Fetching pins within 10km of search location");
+      
+      // Fetch all pins within 10km radius before flying
+      fetchOutletsByBounds(searchBounds).then((fetchedPins) => {
+        console.log(`Fetched ${fetchedPins.length} pins within 10km of search location`);
+        
+        // Update allPins with fetched pins
+        setAllPins((prev) => mergePinsWithoutDuplicates(prev, fetchedPins));
+      });
+      
+      mapRef.current.flyTo({
+        center: [flyTo.lng, flyTo.lat],
+        zoom: 14,
+        essential: true
+      });
+
+      //update pins for new viewport after fly animation
+      mapRef.current.once("moveend", () => { //only fires once per search, not on next drags
+        console.log("Fly completed, updating pins for search location");
+        if (debouncedUpdatePinsRef.current) {
+          debouncedUpdatePinsRef.current();
+        }
+      });
+    }
+  }, [flyTo, mapLoaded, fetchOutletsByBounds]);
 
   // Function to clear all markers
   const clearAllMarkers = useCallback(() => {
@@ -302,24 +366,43 @@ const MapBox = forwardRef<{
 
   // Debounced function to update visible pins
   const debouncedUpdatePins = useCallback(
-    debounce(() => {
+    debounce(async () => {
       if (!mapRef.current) return;
       const zoom = mapRef.current.getZoom();
       const bounds = getBounds();
       if (!bounds) return;
 
       setCurrentBounds(bounds);
-      const filteredPins = filterPinsByBounds(bounds);
-      setVisiblePins(filteredPins);
+      
+      //fetch extra pins from backend for current bounds/new regions first
+      const fetchedPins = await fetchOutletsByBounds(bounds);
+      
+      // Get current allPins state and merge with newly fetched pins
+      setAllPins((prev) => {
+        const updatedPins = mergePinsWithoutDuplicates(prev, fetchedPins);
+        
+        // Filter pins that are in the current viewport bounds
+        const filteredPins = updatedPins.filter((pin) => isPointInBounds(pin, bounds));
+        setVisiblePins(filteredPins);
 
-      if (zoom > HEATMAP_MAX_ZOOM) {
-        renderPins(filteredPins);
-      } else {
-        clearAllMarkers(); // Ensure pins are hidden when heatmap is visible
-      }
+        if (zoom > HEATMAP_MAX_ZOOM) {
+          renderPins(filteredPins);
+        } else {
+          clearAllMarkers(); // Ensure pins are hidden when heatmap is visible
+        }
+        
+        return updatedPins;
+      });
     }, 300), // 300ms debounce
-    [getBounds, filterPinsByBounds, renderPins, clearAllMarkers]
+    [getBounds, renderPins, clearAllMarkers, fetchOutletsByBounds]
   );
+
+  //update ref when debouncedUpdatePins changes
+  useEffect(() => {
+    debouncedUpdatePinsRef.current = debouncedUpdatePins;
+  }, [debouncedUpdatePins]);
+
+  
 
   useEffect(() => {
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -358,17 +441,19 @@ const MapBox = forwardRef<{
           maxzoom: HEATMAP_MAX_ZOOM,
           paint: {
             "heatmap-weight": 1,
-            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 0.8, 3, 1.2, 5, 1.5, 7, 1.8, 9, 2,],
-            "heatmap-color": ["interpolate",
-                              ["linear"],
-                              ["heatmap-density"],
-                              0, "rgba(0, 0, 0, 0)",
-                              0.3, "rgba(55, 126, 184, 0.2)",
-                              0.4, "rgba(102, 194, 165, 0.4)",
-                              0.6, "rgba(253, 231, 37, 0.6)",
-                              0.8, "rgba(248, 118, 109, 0.8)",
-                              1, "rgba(178, 24, 43, 1)"],
-            "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 1, 1, 2, 2, 3, 4, 4, 6, 5, 8, 6, 12, 7, 16, 8, 18, 9, 20],
+            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 1, 5,1.5, 9, 2, 11, 3],
+            "heatmap-color": [
+              "interpolate",
+              ["linear"],
+              ["heatmap-density"],
+              0, "rgba(33,102,172,0)",
+              0.2, "rgb(103,169,207)",
+              0.4, "rgb(209,229,240)",
+              0.6, "rgb(253,219,199)",
+              0.8, "rgb(239,138,98)",
+              1, "rgb(178,24,43)"
+            ],
+            "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 1, 2, 4, 3, 8, 4, 12],
             "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 1, 9, 0.8, 10, 0.5, 11, 0]
           },
         });
@@ -396,14 +481,19 @@ const MapBox = forwardRef<{
         if (showHeatmap) {
           clearAllMarkers();
         } else {
-          const bounds = getBounds();
-          if (bounds) {
-            const pinsInView = filterPinsByBounds(bounds);
-            renderPins(pinsInView);
+          // Use debouncedUpdatePins to ensure we have the latest pins
+          if (debouncedUpdatePinsRef.current) {
+            debouncedUpdatePinsRef.current();
           }
         }
         });
 
+      //update pins when map is dragged
+      map.on("moveend", () => {
+        if (debouncedUpdatePinsRef.current) {
+          debouncedUpdatePinsRef.current();
+        }
+      });
 
       // Click to drop a temporary pin
       map.on("click", (e: mapboxgl.MapMouseEvent) => {
@@ -413,12 +503,21 @@ const MapBox = forwardRef<{
         const { lng, lat } = e.lngLat;
         if (!isOnLand(lng, lat)) return;
 
+        const zoom = map.getZoom();
+
+        map.flyTo({ center: [lng, lat], zoom: PINDROP_MIN_ZOOM, essential: true });
+
+        const dropPins = zoom > PINDROP_MIN_ZOOM;
+        console.log(dropPins);
+        if (zoom < PINDROP_MIN_ZOOM) return;
+
         // Remove previous temp markers
         tempMarkersRef.current.forEach((m) => m.remove());
         tempMarkersRef.current = [];
 
         // Create new temp pin
-        const tempPin: PinData = {
+        let tempPin: PinData;
+        tempPin = {
           id: `temp-${Date.now()}`,
           lat,
           lng,
@@ -428,15 +527,15 @@ const MapBox = forwardRef<{
           fromDb: false,
         };
         setAllPins((prev) => [...prev.filter((p) => !p.id.startsWith("temp-")), tempPin]);
-
+        
         // Marker element
         const el = document.createElement("div");
         el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
         el.style.cursor = "pointer";
-
+        
         const marker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map);
         tempMarkersRef.current.push(marker);
-
+        
         // Click to remove temp pin
         marker.getElement().addEventListener("click", (ev) => {
           ev.stopPropagation();
@@ -444,8 +543,7 @@ const MapBox = forwardRef<{
           tempMarkersRef.current = tempMarkersRef.current.filter((m) => m !== marker);
           setAllPins((pins) => pins.filter((p) => p !== tempPin));
         });
-
-        map.flyTo({ center: [lng, lat], zoom: 17, essential: true });
+          
         onPinDrop?.(lat, lng);
       });
     });
@@ -545,23 +643,7 @@ const MapBox = forwardRef<{
           {errorMessage}
         </div>
       )}
-            
-    <div className="fixed top-22 left-10 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg p-4 text-black">
-      <p className="font-semibold text-sm">Viewport Info</p>
-      <p className="text-xs">Visible Pins: {visiblePins.length}</p>
-      <p className="text-xs">Total Pins: {allPins.length}</p>
-      {currentBounds && (
-        <>
-          <p className="text-xs">
-            SW: [{currentBounds.sw[0].toFixed(3)}, {currentBounds.sw[1].toFixed(3)}]
-          </p>
-          <p className="text-xs">
-            NE: [{currentBounds.ne[0].toFixed(3)}, {currentBounds.ne[1].toFixed(3)}]
-          </p>
-        </>
-      )}
-    </div>
-      </>
+    </>
     );
   }
 );

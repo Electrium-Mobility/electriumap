@@ -1,10 +1,13 @@
 "use client";
 
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import { PinData } from "./utils";
-import { addOutletFrontend, addOutlet } from "../utils/addOutlet";
-import { isOnLand } from "../utils/addOutlet";
-import { LucideBookmark, LucideClock, LucidePlus,LucideLocateFixed, LucideSearch, LucideUpload, SunMedium, Moon, ChevronDown, Plus, Bike, PlugZap, User, ArrowRight } from 'lucide-react';
+import { addOutletFrontend, addOutlet, isOnLand } from "../utils/addOutlet";
+import {
+  LucideBookmark, LucideClock, LucidePlus, LucideLocateFixed, LucideSearch,
+  LucideUpload, SunMedium, Moon, ChevronDown, Plus, Bike, PlugZap, User,
+  ArrowRight, MapPin, LucideX, Save, LucidePlugZap, LucideStar, LucideNavigation, LucidePlayCircle
+} from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut } from "firebase/auth";
 import { doc, getDoc, getDocs, collection, updateDoc } from "firebase/firestore";
@@ -16,7 +19,7 @@ import { useUserData } from '../create-account/UserDataContext';
 interface OverlayProps {
   showPinOverlay: boolean;
   coords: { lat: number; lng: number } | null;
-  searchCoords? : {lat : number, lng : number} | null;
+  searchCoords?: { lat: number; lng: number } | null;
   selectedPin?: PinData | null;
   onClose: () => void;
   lightMode: boolean;
@@ -35,8 +38,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
   coords,
   searchCoords,
   selectedPin,
-  onClose, 
-  lightMode, 
+  onClose,
+  lightMode,
   setLightMode,
   onSearchSelect,
   onCancelTempPin,
@@ -51,25 +54,26 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [extraDetails, setExtraDetails] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  const [searchResults, setSearchResults] = useState<Array<{place_name: string, center: [number, number]}>>([]);
+  const [searchResults, setSearchResults] = useState<Array<{ place_name: string, center: [number, number] }>>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
-  const [showProfile, setProfile ] = useState("");
+  const [showProfile, setProfile] = useState("");
   const { setUserData } = useUserData();
-
+  const justSelectedRef = React.useRef(false);
 
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
-  const [vehicles, setVehicles] = useState<Array<{id: string, title: string, type: string}>>([]);
-  const [userOutlets, setUserOutlets] = useState<Array<{id: string, locationName: string}>>([]);
+  const [vehicles, setVehicles] = useState<Array<{ id: string, title: string, type: string }>>([]);
+  const [userOutlets, setUserOutlets] = useState<Array<{ id: string, locationName: string }>>([]);
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const [isUpdatingProfileImage, setIsUpdatingProfileImage] = useState(false);
 
-  //States to check for Nearby Pins
+  // Nearby pins state
   const [nearbyPinsMessage, setNearbyPinsMessage] = useState<string>("");
   const [hasNearbyPins, setHasNearbyPins] = useState<boolean | null>(null);
+  const [isCheckingNearbyPins, setIsCheckingNearbyPins] = useState<boolean>(false);
 
   const router = useRouter();
-  
+
   // Treat presence of selectedPin as "existing outlet view" mode
   const isExisting = Boolean(selectedPin);
 
@@ -93,22 +97,15 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
               if (userData.profileImage) {
                 try {
-                  // Check if the data is already a valid data URL
                   if (userData.profileImage.startsWith('data:image')) {
                     setProfileImageUrl(userData.profileImage);
-                    console.log("Using existing data URL");
                   } else {
-                    // Add data URL prefix if missing
                     const imageData = `data:image/jpeg;base64,${userData.profileImage}`;
                     setProfileImageUrl(imageData);
-                    console.log("Added data URL prefix");
                   }
-                  console.log("Profile image length:", userData.profileImage.length);
                 } catch (imageError) {
                   console.error("Error processing profile image:", imageError);
                 }
-              } else {
-                console.log("No profile image found in user data");
               }
 
               // Fetch vehicles
@@ -116,14 +113,14 @@ const AddOutlet: React.FC<OverlayProps> = ({
               const vehiclesSnap = await getDocs(vehiclesRef);
               const vehiclesData = vehiclesSnap.docs.map(doc => ({
                 id: doc.id,
-                ...doc.data()
-              })) as Array<{id: string, title: string, type: string}>;
+                ...(doc.data() as any),
+              })) as Array<{ id: string, title: string, type: string }>;
               setVehicles(vehiclesData);
 
               // Fetch user's outlet references
               const userOutletsRef = collection(db, "Users", user.uid, "Outlets");
               const userOutletsSnap = await getDocs(userOutletsRef);
-              
+
               // Fetch the actual outlet documents
               const outletPromises = userOutletsSnap.docs.map(async (docSnap) => {
                 const outletRef = doc(db, "Outlets", docSnap.id);
@@ -131,22 +128,22 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 if (outletSnap.exists()) {
                   return {
                     id: outletSnap.id,
-                    locationName: outletSnap.data().locationName || "Unknown Location",
-                    ...outletSnap.data()
+                    locationName: (outletSnap.data() as any).locationName || "Unknown Location",
+                    ...(outletSnap.data() as any),
                   };
                 }
                 return null;
               });
 
-              const outlets = (await Promise.all(outletPromises)).filter(outlet => outlet !== null);
+              const outlets = (await Promise.all(outletPromises)).filter(Boolean) as any[];
               setUserOutlets(outlets);
             }
           }
         } else {
           setUserName("");
           setUserEmail("");
-          setVehicles([]); // Clear vehicles when logged out
-          setUserOutlets([]); // Clear outlets when logged out
+          setVehicles([]);
+          setUserOutlets([]);
         }
       } catch (error) {
         console.error("Error fetching user data:", error);
@@ -156,32 +153,20 @@ const AddOutlet: React.FC<OverlayProps> = ({
     fetchUserData();
   }, []);
 
-  // If new coordinates are provided (e.g. map click), pre-fill address and automatically open the
-  // "Add Outlet" form so the user can immediately submit a new outlet.
+  // If new coordinates are provided (e.g. map click), pre-fill address and auto-open the form
   useEffect(() => {
-    if (!coords) return;
 
-    // Pre-fill address field with the clicked coordinates
-    setAddress(`${coords.lng.toFixed(5)} ${coords.lat.toFixed(5)}`);
-
-    // Automatically open the Add Outlet popup when the map is clicked (but only if we are *not*
-    // currently showing a read-only pin details card).
     if (!selectedPin) {
+      if (!coords) return;
+      setAddress(`${coords.lng.toFixed(5)} ${coords.lat.toFixed(5)}`);
       setShowAddOutlet(true);
-    }
-  }, [coords, selectedPin]);
-
-  // If a pin on the map is selected, pre-fill form fields for read-only display
-  useEffect(() => {
-    if (selectedPin) {
-      // Switch to the Add-Outlet form, but in existing-pin mode (no submit)
-      setShowAddOutlet(true);
+    } else {
+      setShowAddOutlet(false);                // <— key line
       setAddress(selectedPin.title || "");
       setPowerType(selectedPin.category || "");
       setExtraDetails(selectedPin.description || "");
-      // Could set outlet count, port and condition if that data exists
     }
-  }, [selectedPin]);
+  }, [coords, selectedPin]);
 
   const handleProfileImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -189,27 +174,20 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
     setIsUpdatingProfileImage(true);
     try {
-      // Convert to base64
       const reader = new FileReader();
       reader.onload = async (e) => {
         const base64String = e.target?.result as string;
-        
-        // Update Firestore
         const user = auth.currentUser;
         if (user) {
           const userDocRef = doc(db, "Users", user.uid);
-          await updateDoc(userDocRef, {
-            profileImage: base64String
-          });
-          
-          // Update local state
+          await updateDoc(userDocRef, { profileImage: base64String });
           setProfileImageUrl(base64String);
         }
+        setIsUpdatingProfileImage(false);
       };
       reader.readAsDataURL(file);
     } catch (error) {
       console.error("Error updating profile image:", error);
-    } finally {
       setIsUpdatingProfileImage(false);
     }
   };
@@ -226,74 +204,83 @@ const AddOutlet: React.FC<OverlayProps> = ({
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(value)}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&limit=5`
       );
       const data = await response.json();
-      setSearchResults(data.features.map((feature: any) => ({
-        place_name: feature.place_name,
-        center: feature.center
-      })));
+      setSearchResults(
+        (data.features || []).map((feature: any) => ({
+          place_name: feature.place_name,
+          center: feature.center as [number, number],
+        }))
+      );
       setShowSearchResults(true);
     } catch (error) {
       console.error('Error fetching search results:', error);
     }
   };
 
-  const handleSearchResultClick = (result: {place_name: string, center: [number, number]}) => {
+  const handleSearchResultClick = (result: { place_name: string, center: [number, number] }) => {
+    justSelectedRef.current = true;
     setSearchValue(result.place_name);
+    setSearchResults([]);
     setShowSearchResults(false);
     onSearchSelect?.(result.center[0], result.center[1]);
   };
 
-  // Debounce search to avoid too many API calls
+  // Enter key selects first result
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchResults.length > 0) {
+      handleSearchResultClick(searchResults[0]);
+    }
+  };
+
+  // Debounce search
   useEffect(() => {
+    if (justSelectedRef.current) {
+      justSelectedRef.current = false;
+      return;
+    }
     const timeoutId = setTimeout(() => {
       handleSearch(searchValue);
     }, 300);
-
     return () => clearTimeout(timeoutId);
   }, [searchValue]);
 
-  //Function to calculate distance of a Pin from a given position (for finding distance of Nearby Pins)
+  // --- Nearby Pins helpers ---
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 6371; // Earth's radius in kilometers
+    const R = 6371; // km
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLng = (lng2 - lng1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLng/2) * Math.sin(dLng/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
 
-  // Function to check NearbyPins
   const checkNearbyPins = async (latitude: number, longitude: number): Promise<void> => {
     try {
-      // Fetching all outlets from Firestore
+      setIsCheckingNearbyPins(true);
       const outletsRef = collection(db, "Outlets");
       const outletsSnap = await getDocs(outletsRef);
-      
-      const allPins: PinData[] = outletsSnap.docs.map(doc => {
-        const data = doc.data();
+      const allPins: PinData[] = outletsSnap.docs.map(docSnap => {
+        const data = docSnap.data() as any;
         return {
-          id: doc.id,
-          lat: data.latitude || data.lat,
-          lng: data.longitude || data.lng,
+          id: docSnap.id,
+          lat: data.latitude ?? data.lat,
+          lng: data.longitude ?? data.lng,
           title: data.locationName || "",
           description: data.description || "",
           category: data.chargerType || "",
           fromDb: true
         };
       });
-      
+
+      // within 10km, exclude essentially same point (< ~10m)
       const nearbyPins = allPins.filter((pin: PinData) => {
-        const distance = calculateDistance(
-          latitude,
-          longitude,
-          pin.lat,
-          pin.lng
-        );
-        return distance <= 10;
+        if (pin.lat == null || pin.lng == null) return false;
+        const distance = calculateDistance(latitude, longitude, pin.lat, pin.lng);
+        return distance <= 10 && distance > 0.01;
       });
-      
+
       if (nearbyPins.length === 0) {
         setNearbyPinsMessage("No charging outlets found within 10km of this location.");
         setHasNearbyPins(false);
@@ -301,129 +288,87 @@ const AddOutlet: React.FC<OverlayProps> = ({
         setNearbyPinsMessage(`Found ${nearbyPins.length} outlet(s) within 10km.`);
         setHasNearbyPins(true);
       }
-      setTimeout(() => {setNearbyPinsMessage("")}, 7000 )
+      setTimeout(() => setNearbyPinsMessage(""), 7000);
     } catch (error) {
       console.error("Error checking nearby pins:", error);
       setNearbyPinsMessage("");
+      setHasNearbyPins(null);
+    } finally {
+      setIsCheckingNearbyPins(false);
     }
   };
 
-  // To check for NeabyPins when search value changes
   useEffect(() => {
-    console.log(searchCoords)
-    if (searchCoords?.lat && searchCoords?.lng) {
+    if (searchCoords?.lat != null && searchCoords?.lng != null) {
       checkNearbyPins(searchCoords.lat, searchCoords.lng);
-      console.log("Checking nearby pins for searched location");
     }
   }, [searchCoords, isExisting]);
 
-    return (
+  return (
+    <>
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
-
-        {/* search bar section */}
-        <div className={`flex items-center px-4 h-full backdrop-blur-sm border-1 font-semibold rounded-full shadow-lg w-[360px]
-          ${lightMode
-          ? "bg-white/5 border-white/60 text-black"
-          : "bg-white/15 border-white/60 text-white "
-          }`}>
+        {/* search bar */}
+        <div className={`relative flex items-center px-4 h-full backdrop-blur-sm border font-semibold rounded-full shadow-lg w-[360px]
+          ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
           <input
             type="text"
             placeholder="Search Electriumap"
             value={searchValue}
-          onChange={(e) => setSearchValue(e.target.value)}
-          className={`bg-transparent outline-none  w-full text-md ${lightMode ? "placeholder-black/60" : "placeholder-white/60"}`}
+            onChange={(e) => setSearchValue(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            className={`bg-transparent outline-none w-full text-md ${lightMode ? "placeholder-black/60" : "placeholder-white/60"}`}
           />
-          <LucideSearch className={`w-5 h-5 font-semibold`} />
-          
-        {/* search results dropdown */}
-        {showSearchResults && searchResults.length > 0 && (
-          <div className={`absolute top-full left-0 w-full mt-2 bg-white/10 font-semibold rounded-lg shadow-lg max-h-60 overflow-y-auto border-1 backdrop-blur-sm
-            ${lightMode
-          ? " border-white/60 text-black"
-          : " border-white/60 text-white "
-          }`}>
-            {searchResults.map((result, index) => (
-              <div
-                key={index}
-                className="px-4 py-3 hover:bg-white/20 backdrop-blur-sm cursor-pointer border-b border-white/10 last:border-b-0"
-                onClick={() => handleSearchResultClick(result)}
-              >
-                {result.place_name}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Alert Message to show Nearby Pins */}
-      {nearbyPinsMessage && !isExisting && (
-        <div className={`mt-2 p-3 rounded-lg text-sm ${
-          hasNearbyPins 
-            ? lightMode 
-              ? "bg-green-100/50 text-green-800" 
-              : "bg-green-900/30 text-green-200"
-            : lightMode
-              ? "bg-yellow-100/50 text-yellow-800"
-              : "bg-yellow-900/30 text-yellow-200"
-        }`}>
-          <p className="font-semibold">
-            {hasNearbyPins ? "🔋 Nearby Outlets" : "⚠️ No Nearby Outlets"}
-          </p>
-          <p>{nearbyPinsMessage}</p>
+          <LucideSearch className="w-5 h-5 font-semibold" />
+          {/* search results dropdown */}
+          {showSearchResults && searchResults.length > 0 && (
+            <div className={`absolute top-full left-0 w-full mt-2 bg-white/10 font-semibold rounded-lg shadow-lg max-h-60 overflow-y-auto border backdrop-blur-sm
+              ${lightMode ? "border-white/60 text-black" : "border-white/60 text-white"}`}>
+              {searchResults.map((result, index) => (
+                <div
+                  key={index}
+                  className="px-4 py-3 hover:bg-white/20 backdrop-blur-sm cursor-pointer border-b border-white/10 last:border-b-0"
+                  onClick={() => handleSearchResultClick(result)}
+                >
+                  {result.place_name}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
 
-      {/* dark/light mode switch */}
-      <div className="flex items-center gap-6"> 
-        <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
-          ${lightMode
-          ? "bg-white/5 border-white/60 text-black"
-          : "bg-white/15 border-white/60 text-white "
-          }`}>
-            {/* sliding indictor for which mode user is currently on */}
+        {/* dark/light mode switch */}
+        <div className="flex items-center gap-6">
+          <div className={`relative flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md 
+            ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
             <div
-              className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${
-                lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-900/70'
-              }`}
+              className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-900/70'}`}
             />
-            <button
-              onClick={() => setLightMode(true)}
-              className="z-10 w-1/2 h-full flex items-center justify-center"
-            >
-              <SunMedium  className="w-8 h-8"/>
+            <button onClick={() => setLightMode(true)} className="z-10 w-1/2 h-full flex items-center justify-center">
+              <SunMedium className="w-8 h-8" />
             </button>
-            <button
-              onClick={() => setLightMode(false)}
-              className="z-10 w-1/2 h-full flex items-center justify-center"
-            >
+            <button onClick={() => setLightMode(false)} className="z-10 w-1/2 h-full flex items-center justify-center">
               <Moon className="w-7 h-7" />
             </button>
           </div>
 
-          {/* filter button section */}
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
-            ${lightMode
-            ? "bg-white/5 border-white/60 text-black"
-            : "bg-white/15 border-white/60 text-white "
-            }`}>
-              <button className="flex items-center gap-3 text-base">
-                <span>Filter</span> <ChevronDown className="w-4 h-4 bold"/> 
-              </button>
+          {/* filter button */}
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md 
+            ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
+            <button className="flex items-center gap-3 text-base">
+              <span>Filter</span> <ChevronDown className="w-4 h-4 bold" />
+            </button>
           </div>
-       
-          {/* tool bar section */}
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
-            ${lightMode
-            ? "bg-white/5 border-white/60 text-black"
-            : "bg-white/15 border-white/60 text-white "
-            }`}>
-            <button className="flex flex-col items-center justify-center  w-14 h-14">
-              <LucideBookmark className="w-6 h-6 "/>
+
+          {/* toolbar */}
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md 
+            ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
+            <button className="flex flex-col items-center justify-center w-14 h-14">
+              <LucideBookmark className="w-6 h-6" />
               <span className="text-[10px] mt-1 whitespace-nowrap">Saved</span>
             </button>
 
-            <button className="flex flex-col items-center justify-center  w-14 h-14">
-              <LucideClock className="w-6 h-6 "/>
+            <button className="flex flex-col items-center justify-center w-14 h-14">
+              <LucideClock className="w-6 h-6" />
               <span className="text-[10px] mt-1 whitespace-nowrap">Recents</span>
             </button>
 
@@ -432,30 +377,28 @@ const AddOutlet: React.FC<OverlayProps> = ({
               className="flex flex-col items-center justify-center text-lime-600 w-16 h-14"
             >
               <LucidePlus className="w-7 h-7 text-lime-600" />
-              <span className="text-[10px] mt-0 whitespace-nowrap">
-                Add Outlet
-              </span>
+              <span className="text-[10px] whitespace-nowrap">Add Outlet</span>
             </button>
           </div>
 
-          {/* display user's profile when authenticated (logged in), else display Sign In button when logged out */}
-          {getIsAuthenticated() ? ( 
-            <div 
-              className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border-1 shadow-md font-semibold text-sm w-14 cursor-pointer overflow-hidden
+          {/* profile / sign in */}
+          {getIsAuthenticated() ? (
+            <div
+              className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border shadow-md font-semibold text-sm w-14 cursor-pointer overflow-hidden
                 ${lightMode ? "bg-white/5 border-white/60" : "bg-white/15 border-white/60"}`}
               onClick={() => setShowSettings(true)}
               title="Settings"
             >
               {profileImageUrl ? (
-                <Image 
+                <Image
                   src={profileImageUrl}
                   alt="Profile"
                   width={56}
                   height={56}
                   className="object-cover w-full h-full"
-                  unoptimized={true} 
-                  priority={true}    
-                  loading="eager"    
+                  unoptimized
+                  priority
+                  loading="eager"
                 />
               ) : (
                 <span className={`${lightMode ? "text-black" : "text-white"}`}>
@@ -463,188 +406,156 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 </span>
               )}
             </div>
-          ) : ( 
-            // displaying Sign In button at top right corner (logged out)
-            <div
-              className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md bg-lime-700
-                  ? "bg-white/5 border-white/60 text-black"
-                  : "bg-white/15 border-white/60 text-white"
-                }`}> 
-              <button 
-                onClick={() => router.push('/login')} // routes to login page
-                className="flex items-center gap-3 text-base"
-              >
-                <span>Sign In</span> 
-              </button> 
-            </div> 
+          ) : (
+            <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md bg-lime-700`}>
+              <button onClick={() => router.push('/login')} className="flex items-center gap-3 text-base">
+                <span>Sign In</span>
+              </button>
+            </div>
           )}
-
         </div>
+      </div>
 
-        {showAddOutlet && (
-          <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1  rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
-          ${lightMode
-          ? "bg-white/5 border-white/60 text-black"
-          : "bg-white/15 border-white/60 text-white"
-          }`}>
-            <div className="flex-grow">
-              <h2 className="font-semibold text-lg pb-1 pt-0 p-1 pl-0">
-                Address <span className="text-red-500">*</span>
+      {showAddOutlet && (
+        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border rounded-3xl shadow-lg w-[28rem] max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
+          ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
+          <div className="flex-grow">
+            <h2 className="font-semibold text-lg pb-1 pt-0 p-1 pl-0">
+              Address <span className="text-red-500">*</span>
+            </h2>
+
+            <div className="flex items-center">
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                readOnly={isExisting}
+                disabled={isExisting}
+                className="text-lg bg-white/35 rounded-md shadow-lg w-full h-7 p-1"
+              />
+              <button
+                onClick={onGeoLocateClick}
+                title="Find my location"
+                className="p-1 pr-0 hover:opacity-75 transition"
+              >
+                <LucideLocateFixed className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex items-center space-x-1 p-2 pl-0 pb-1">
+              <h2 className="font-semibold text-lg p-1 pb-1 pt-2 pr-1 pl-0">
+                Number of Outlets <span className="text-red-500">*</span>
               </h2>
-
-              <div className="flex items-center">
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  readOnly={isExisting}
-                  disabled={isExisting}
-                  className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1"
-                />
+              <div className="flex items-center bg-white/35 rounded-md px-0 py-0">
                 <button
-                  onClick={onGeoLocateClick}
-                  title="Find my location"
-                  className="p-1 pr-0 hover:opacity-75 transition"
+                  onClick={() => setOutletCount((prev) => Math.max(prev - 1, 0))}
+                  disabled={isExisting}
+                  className="text-lg px-1"
                 >
-                  <LucideLocateFixed className="w-6.5 h-6.5" />
+                  &lt;
+                </button>
+                <span className="text-lg font-semibold px-1">{outletCount}</span>
+                <button
+                  onClick={() => setOutletCount((prev) => prev + 1)}
+                  disabled={isExisting}
+                  className="text-lg px-1"
+                >
+                  &gt;
                 </button>
               </div>
-              <div className="flex items-center space-x-1 p-2 pl-0 pb-1">
-                <h2 className="font-semibold text-lg  p-1 pb-1 pt-2 pr-1 pl-0">
-                  Number of Outlets <span className="text-red-500">*</span>
-                </h2>
-                <div className="flex items-center bg-white/35 rounded-md px-0 py-0">
-                  <button
-                    onClick={() => setOutletCount((prev) => Math.max(prev - 1, 0))}
-                    disabled={isExisting}
-                    className="text-lg px-1"
-                  >
-                    &lt;
-                  </button>
-                  <span className="text-lg font-semibold px-1">{outletCount}</span>
-                  <button
-                    onClick={() => setOutletCount((prev) => prev + 1)}
-                    disabled={isExisting}
-                    className="text-lg px-1"
-                  >
-                    &gt;
-                  </button>
-                </div>
-              </div>
-              <h2 className="font-semibold text-lg  p-1 pb-1 pt-0 pl-0">
-                Power Type
-              </h2>
-              <input
-                type="text"
-                value={powerType}
-                onChange={(e) => setPowerType(e.target.value)}
-                readOnly={isExisting}
-                disabled={isExisting}
-                className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1">
-              </input>
-              <div className="flex w-full">
-                <div className="w-1/2">
-                  <h2 className="font-semibold text-lg p-1 pb-0 pl-0">
-                    Port Type
-                  </h2>
-                  {portOptions.map((option) => (
-                    <div
-                      key={option}
-                      className="flex items-center mb-0.5 cursor-pointer text-md"
-                      onClick={() => { if (!isExisting) setSelectedPort(option); }}
-                    >
-                      <div
-                        className={`w-5 h-5 mr-2 flex items-center justify-center rounded-md ${
-                          selectedPort === option ? "bg-white/35" : "bg-white/50"
-                        }`}
-                      >
-                        {selectedPort === option && (
-                          <span className={`text-md ${lightMode ? "text-lime-600": "text-lime-500"}`}>✔</span>
-                        )}
-                      </div>
-                      <span className="text-md">{option}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="w-1/2">
-                  <h2 className="font-semibold text-lg p-1 pb-0 pl-0">
-                    Condition
-                  </h2>
-                  {conditionOptions.map((option) => (
-                    <div
-                      key={option}
-                      className="flex items-center mb-0.5 cursor-pointer text-md"
-                      onClick={() => { if (!isExisting) setSelectedCondition(option); }}
-                    >
-                      <div
-                        className={`w-5 h-5 mr-2 flex items-center justify-center rounded-sm ${
-                          selectedCondition === option ? "bg-white/35" : "bg-white/50"
-                        }`}
-                      >
-                        {selectedCondition === option && (
-                          <span className={`text-md ${lightMode ? "text-lime-600": "text-lime-500"}`}>✔</span>
-                        )}
-                      </div>
-                      <span className="text-md">{option}</span>
-                    </div>
-                  ))}
-                </div>
-
-              </div>
-              <h2 className="font-semibold text-lg p-1 pb-0 pl-0">
-                Extra Details
-              </h2>
-              <input
-                type="text"
-                value={extraDetails}
-                onChange={(e) => setExtraDetails(e.target.value)}
-                readOnly={isExisting}
-                disabled={isExisting}
-                className="text-lg bg-white/35 rounded-md shadow-lg w-99 h-7 p-1">
-              </input>
             </div>
-            <div className={`relative p-7 mt-4 w-full flex-grow flex-shrink min-h-[80px] max-h-[25vh] overflow-hidden backdrop-blur-sm bg-white/1 border-2 border-dotted border-white rounded-2xl shadow-lg flex items-center justify-center text-center
-              ${lightMode
-                ? "text-black/60 bg-white/20 border-white/60"
-                : "text-white/40 bg-white/15 border-white/60"
-                }`}>
 
-              <div>
-                <LucideUpload className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-[80%] w-12 h-12 text-lime-600" />
+            <h2 className="font-semibold text-lg p-1 pb-1 pt-0 pl-0">Power Type</h2>
+            <input
+              type="text"
+              value={powerType}
+              onChange={(e) => setPowerType(e.target.value)}
+              readOnly={isExisting}
+              disabled={isExisting}
+              className="text-lg bg-white/35 rounded-md shadow-lg w-full h-7 p-1"
+            />
+
+            <div className="flex w-full gap-6">
+              <div className="w-1/2">
+                <h2 className="font-semibold text-lg p-1 pb-0 pl-0">Port Type</h2>
+                {portOptions.map((option) => (
+                  <div
+                    key={option}
+                    className="flex items-center mb-1 cursor-pointer text-md"
+                    onClick={() => { if (!isExisting) setSelectedPort(option); }}
+                  >
+                    <div className={`w-5 h-5 mr-2 flex items-center justify-center rounded-md ${selectedPort === option ? "bg-white/35" : "bg-white/50"}`}>
+                      {selectedPort === option && <span className={`text-md ${lightMode ? "text-lime-600" : "text-lime-500"}`}>✔</span>}
+                    </div>
+                    <span className="text-md">{option}</span>
+                  </div>
+                ))}
               </div>
-              <div>
-                <h2 className="font-semibold text-sm p-4 pt-14">
-                  Choose a file or drag it in here.
-                </h2>
+
+              <div className="w-1/2">
+                <h2 className="font-semibold text-lg p-1 pb-0 pl-0">Condition</h2>
+                {conditionOptions.map((option) => (
+                  <div
+                    key={option}
+                    className="flex items-center mb-1 cursor-pointer text-md"
+                    onClick={() => { if (!isExisting) setSelectedCondition(option); }}
+                  >
+                    <div className={`w-5 h-5 mr-2 flex items-center justify-center rounded-sm ${selectedCondition === option ? "bg-white/35" : "bg-white/50"}`}>
+                      {selectedCondition === option && <span className={`text-md ${lightMode ? "text-lime-600" : "text-lime-500"}`}>✔</span>}
+                    </div>
+                    <span className="text-md">{option}</span>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="flex justify-between w-full">
 
-              <button
-                onClick={() => {
-                  // Close the Add-Outlet popup without saving
-                  setShowAddOutlet(false);
-                  if (!isExisting) {
-                    onCancelTempPin?.();
-                  }
-                  onClose();
-                }}
-                className="text-md font-semibold bg-red-600 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5"
-              >
-                {isExisting ? "Close" : "Cancel"}
-              </button>
+            <h2 className="font-semibold text-lg p-1 pb-0 pl-0">Extra Details</h2>
+            <input
+              type="text"
+              value={extraDetails}
+              onChange={(e) => setExtraDetails(e.target.value)}
+              readOnly={isExisting}
+              disabled={isExisting}
+              className="text-lg bg-white/35 rounded-md shadow-lg w-full h-7 p-1"
+            />
+          </div>
 
-              { !isExisting && (
+          <div className={`relative p-7 mt-4 w-full min-h-[80px] max-h-[25vh] overflow-hidden backdrop-blur-sm bg-white/1 border-2 border-dotted rounded-2xl shadow-lg flex items-center justify-center text-center
+            ${lightMode ? "text-black/60 bg-white/20 border-white/60" : "text-white/40 bg-white/15 border-white/60"}`}>
+            <LucideUpload className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[80%] w-12 h-12" />
+            <h2 className="font-semibold text-sm p-4 pt-14">Choose a file or drag it in here.</h2>
+          </div>
+
+          <div className="flex justify-between w-full">
+            <button
+              onClick={() => {
+                setShowAddOutlet(false);
+                if (!isExisting) onCancelTempPin?.();
+                onClose();
+              }}
+              className="text-md font-semibold bg-red-600 rounded-2xl mt-3 px-4 py-1.5"
+            >
+              {isExisting ? "Close" : "Cancel"}
+            </button>
+
+            {!isExisting && (
               <button
                 onClick={async () => {
                   if (address !== "" && outletCount !== 0) {
                     try {
+                      // Get the authenticated user's UID (required by Firestore rules)
+                      const currentUser = auth.currentUser;
+                      if (!currentUser) {
+                        throw new Error("You must be signed in to add an outlet.");
+                      }
+                      const userId = currentUser.uid;
+
                       if (coords) {
                         await addOutlet({
                           latitude: coords.lat,
                           longitude: coords.lng,
                           userName: userName || "Anonymous",
-                          userId: userEmail || "unknown", // or auth.currentUser?.uid
+                          userId: userId,
                           locationName: address,
                           chargerType: powerType || selectedPort,
                           description: `Condition: ${selectedCondition}. ${extraDetails}`,
@@ -652,7 +563,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                       } else {
                         await addOutletFrontend({
                           userName: userName || "Anonymous",
-                          userId: userEmail || "unknown",
+                          userId: userId,
                           locationName: address,
                           chargerType: powerType || selectedPort,
                           description: `Condition: ${selectedCondition}. ${extraDetails}`,
@@ -661,74 +572,185 @@ const AddOutlet: React.FC<OverlayProps> = ({
                       setShowAddOutlet(false);
                     } catch (err) {
                       console.error("Error submitting outlet:", err);
+                      alert(err instanceof Error ? err.message : "Failed to add outlet. Please try again.");
                     }
                   }
                 }}
-                className="text-md font-semibold bg-lime-700 rounded-4xl mt-3 relative z-60 pl-4 pr-4 p-1.5"
+                className="text-md font-semibold bg-lime-700 rounded-2xl mt-3 px-4 py-1.5"
               >
                 Submit
               </button>
-              )}
-            </div>
+            )}
           </div>
-        )}
-      {/* Remove the old read-only selectedPin card; the same form is used for existing pins */}
-      {false && !showAddOutlet && selectedPin && (
-        <div></div>
+        </div>
       )}
 
+      {/* Selected pin overlays */}
       {!showAddOutlet && showPinOverlay && (
-        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1  text-lg   rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
-          ${lightMode
-          ? "bg-white/5 border-white/60 text-black"
-          : "bg-white/15 border-white/60 text-white "
-          }`}>
-          <div className="flex-grow">
-            <h2 className="font-semibold pt-0 p-1 pl-0">
-              You dropped a pin!
-            </h2>
-            <p className="pt-0 p-1 pl-0">
-              Longitude: {coords?.lng.toFixed(5)}
-            </p>
-            <p className="pt-0 p-1 pl-0">
-              Latitude: {coords?.lat.toFixed(5)}
-            </p>
-            <button
-              onClick={onClose}
-              className="font-semibold bg-lime-700 rounded-4xl pl-5 pr-5 p-1 flex justify-center"
+        selectedPin ? (
+          <div
+            className={`fixed top-[95px] right-6 z-50 p-4 rounded-[22px] shadow-lg w-[325px] max-h-[calc(100vh-140px)] overflow-auto backdrop-blur-sm border
+        ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <LucideBookmark className="w-5 h-5 opacity-90" />
+                <h2 className="text-2xl font-extrabold leading-tight tracking-tight">
+                  {selectedPin.title || "Unknown Location"}
+                </h2>
+              </div>
+              <button
+                onClick={onClose}
+                className="rounded-full p-1 hover:bg-white/20 transition"
+                aria-label="Close"
+                title="Close"
+              >
+                <LucideX className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Meta row */}
+            <div className="flex items-center gap-5 text-base opacity-90 mb-2">
+              <div className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                <span>0.1 km</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <LucideClock className="w-4 h-4" />
+                <span>5 min</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <LucideStar className="w-4 h-4" />
+                <span>4.9 (2078)</span>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="mb-3">
+              <div className="flex items-center gap-6">
+                <button className="pb-2 font-semibold relative after:absolute after:left-0 after:bottom-0 after:h-[2px] after:w-full after:bg-white/80">
+                  Overview
+                </button>
+                <button className="pb-2 opacity-60 cursor-not-allowed">Photos</button>
+                <button className="pb-2 opacity-60 cursor-not-allowed">Reviews</button>
+              </div>
+              <div className="h-px w-full bg-white/30" />
+            </div>
+
+            {/* Media placeholder */}
+            <div
+              className={`h-40 rounded-xl mb-4 border-2 border-dashed flex items-center justify-center
+          ${lightMode ? "bg-white/10 border-white/40" : "bg-white/10 border-white/30"}`}
             >
+              <span className="opacity-60 text-sm">Photos coming soon</span>
+            </div>
+
+            {/* Details */}
+            <div className="space-y-3 text-[15px]">
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 mt-0.5" />
+                <div>
+                  <span className="font-semibold">Address: </span>
+                  <span>{selectedPin.title || "123 University Ave, Waterloo, ON LH387H"}</span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <LucidePlugZap className="w-4 h-4 mt-0.5" />
+                <div>
+                  <span className="font-semibold">Power: </span>
+                  <span>{selectedPin.category || "Lorem Ipsum"}</span>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2">
+                <LucideStar className="w-4 h-4 mt-0.5" />
+                <div>
+                  <span className="font-semibold">Rating: </span>
+                  <span>{"—"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2 mt-3">
+              <button className="px-2 py-2 rounded-xl bg-[#2E7D32] hover:bg-[#457E00] text-white font-semibold inline-flex items-center gap-1.5">
+                <LucideNavigation className="w-5 h-5" />
+                Directions
+              </button>
+              <button className="px-2 py-2 rounded-xl bg-[#2E7D32] hover:bg-[#457E00] text-white font-semibold inline-flex items-center gap-1.5">
+                <LucidePlayCircle className="w-5 h-5" />
+                Start
+              </button>
+              <button className="px-2 py-2 rounded-xl bg-[#2E7D32] hover:bg-[#457E00] text-white font-semibold inline-flex items-center gap-1.5">
+                <Save className="w-5 h-5" />
+                Save
+              </button>
+            </div>
+          </div>
+        ) : (
+          
+          <div className={`fixed top-[95px] right-6 z-50 p-6 rounded-3xl shadow-lg w-[380px] backdrop-blur-sm border
+      ${lightMode ? "bg-white/5 border-white/60 text-white" : "bg-white/15 border-white/60 text-white"}`}>
+            <h2 className="text-lg font-semibold mb-2">You dropped a pin!</h2>
+            <p>Longitude: {coords?.lng?.toFixed(5)}</p>
+            <p>Latitude:  {coords?.lat?.toFixed(5)}</p>
+            <button onClick={onClose} className="mt-3 px-4 py-2 rounded-2xl bg-lime-700 hover:bg-lime-800 font-semibold">
               Close
             </button>
           </div>
+        )
+      )}
+
+      {/* Nearby Pins banner */}
+      {!isExisting && (nearbyPinsMessage || isCheckingNearbyPins) && (
+        <div className={`fixed top-20 left-8 z-50 backdrop-blur-md border rounded-2xl shadow-xl p-4 max-w-md transition-all duration-300 ${isCheckingNearbyPins
+          ? (lightMode ? "bg-blue-100/80 border-blue-300 text-blue-900" : "bg-blue-900/40 border-blue-500/60 text-blue-100")
+          : hasNearbyPins
+            ? (lightMode ? "bg-green-100/80 border-green-300 text-green-900" : "bg-green-900/40 border-green-500/60 text-green-100")
+            : (lightMode ? "bg-yellow-100/80 border-yellow-300 text-yellow-900" : "bg-yellow-900/40 border-yellow-500/60 text-yellow-100")
+          }`}>
+          {isCheckingNearbyPins ? (
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
+              <p className="font-semibold text-sm">Checking nearby outlets...</p>
+            </div>
+          ) : (
+            <>
+              <p className="font-semibold text-sm mb-1">
+                {hasNearbyPins ? "🔋 Nearby Outlets Found" : "⚠️ No Nearby Outlets"}
+              </p>
+              <p className="text-sm">{nearbyPinsMessage}</p>
+            </>
+          )}
         </div>
       )}
 
       {showSettings && (
         <div className="fixed top-1/2 left-1/2 z-50 w-[400px] max-w-full p-0 transform -translate-x-1/2 -translate-y-1/2">
-          <div className={`relative bg-gradient-to-br from-white/30 via-black-100/20 to-white/10 backdrop-blur-xl border-1 border-white/60 rounded-3xl shadow-2xl px-8 pt-8 pb-6 flex flex-col items-center ${lightMode ? "text-black" : "text-white"}`}>
+          <div className={`relative bg-gradient-to-br from-white/30 via-black/20 to-white/10 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl px-8 pt-8 pb-6 flex flex-col items-center ${lightMode ? "text-black" : "text-white"}`}>
             <button
               onClick={() => setShowSettings(false)}
-              className="absolute top-4 right-4 bg-white/15 border-white/60  hover:bg-white/25 transition-colors rounded-full w-10 h-10 flex items-center justify-center shadow-lg"
+              className="absolute top-4 right-4 bg-white/15 hover:bg-white/25 transition-colors rounded-full w-10 h-10 flex items-center justify-center shadow-lg"
               aria-label="Close"
             >
               <span className="text-2xl font-bold leading-none">×</span>
             </button>
 
-            {/* display user's profile picture*/}
             <div className="flex items-start mb-6 w-full">
               <div className="relative">
-                {/* display user's profile circle */}
-                <div className="w-16 h-16 rounded-full bg-white/15 border-white/60 flex items-center justify-center shadow-lg mb-2">
+                <div className="w-16 h-16 rounded-full bg-white/15 flex items-center justify-center shadow-lg mb-2">
                   {profileImageUrl ? (
-                    <Image 
+                    <Image
                       src={profileImageUrl}
                       alt="Profile"
                       width={64}
                       height={64}
                       className="object-cover w-full h-full rounded-full"
-                      unoptimized={true} 
-                      priority={true}    
-                      loading="eager"    
+                      unoptimized
+                      priority
+                      loading="eager"
                     />
                   ) : (
                     <span className="text-2xl font-bold">
@@ -737,8 +759,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   )}
                 </div>
 
-                {/* upload user's profile button  */}
-                <label 
+                <label
                   className="absolute bottom-1 -right-0 z-10 flex items-center justify-center h-5 w-5 rounded-full bg-lime-600 text-white shadow-md cursor-pointer hover:bg-lime-700"
                   title="Change profile picture"
                 >
@@ -751,73 +772,59 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   />
                   <Plus className="w-3 h-3" />
                 </label>
-                {/* <button 
-                  onClick={() => { 
-                    setProfile("testing"); 
-                    console.log('add profile button clicked');
-                  }} 
-                  className="absolute -bottom-0 -right-0 z-10 flex items-center justify-center h-5 w-5 rounded-full bg-lime-600 text-white shadow-md"
-                >
-                  <Plus className="w-3 h-3" />
-                </button> */}
-              </div> 
+              </div>
 
-              {/* display user's name and email */} 
-              <div className="ml-4 flex flex-col w-full min-w-0"> 
-                <div className={`text-lg font-semibold  ${lightMode ? "text-black" : "text-neutral-100"}`}>
+              <div className="ml-4 flex flex-col w-full min-w-0">
+                <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
                   {userName || ''}
                 </div>
                 <div className={`text-sm ${lightMode ? "text-black/40" : "text-neutral-400"}`}>
                   {userEmail || ''}
                 </div>
-              </div> 
+              </div>
             </div>
 
-            {/* user's vehicles */}
-            <div className="w-full flex flex-col gap-2"> 
-              <div className="flex items-center gap-2"> 
+            <div className="w-full flex flex-col gap-2">
+              <div className="flex items-center gap-2">
                 <Bike className={`${lightMode ? "text-black" : "text-neutral-100"}`} />
                 <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
                   My Vehicles
                 </div>
-              </div> 
-              
-              <div className="rounded-xl backdrop-blur-md max-h-[96px] overflow-y-auto"> 
+              </div>
+
+              <div className="rounded-xl backdrop-blur-md max-h-24 overflow-y-auto">
                 {vehicles.length > 0 ? (
                   vehicles.map((vehicle) => (
-                    <button 
+                    <button
                       key={vehicle.id}
-                      className={`flex items-center justify-between w-full px-4 py-2 rounded-md h-12
-                        ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
+                      className={`flex items-center justify-between w-full px-4 py-2 rounded-md h-12 ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
                     >
                       <span>{vehicle.title}</span>
                       <ArrowRight className="w-5 h-5" />
                     </button>
                   ))
                 ) : (
-                  <div className={`px-4 py-2 ${lightMode ? "text-black/40" : "text-neutral-100"}`}>
+                  <div className={`${lightMode ? "text-black/40" : "text-neutral-100"} px-4 py-2`}>
                     No vehicles added yet
                   </div>
                 )}
               </div>
             </div>
-            
-            {/* user's shared outlets */}
-            <div className="w-full flex flex-col gap-2 pt-3"> 
-              <div className="flex items-center gap-2"> 
+
+            <div className="w-full flex flex-col gap-2 pt-3">
+              <div className="flex items-center gap-2">
                 <PlugZap className={`${lightMode ? "text-black" : "text-neutral-100"}`} />
                 <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
                   My Shared Outlets
                 </div>
-              </div> 
-              
-              <div className="rounded-xl backdrop-blur-md max-h-[96px] overflow-y-auto"> 
+              </div>
+
+              <div className="rounded-xl backdrop-blur-md max-h-24 overflow-y-auto">
                 {userOutlets.length > 0 ? (
                   userOutlets.map((outlet) => (
-                    <button 
+                    <button
                       key={outlet.id}
-                      className={`flex items-center justify-between w-full px-4 py-2 rounded-md h-12
-                        ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
+                      className={`flex items-center justify-between w-full px-4 py-2 rounded-md h-12 ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
                     >
                       <span className="truncate max-w-[280px]" title={outlet.locationName}>
                         {outlet.locationName}
@@ -826,40 +833,33 @@ const AddOutlet: React.FC<OverlayProps> = ({
                     </button>
                   ))
                 ) : (
-                  <div className={`px-4 py-2 ${lightMode ? "text-black/40" : "text-neutral-100"}`}>
+                  <div className={`${lightMode ? "text-black/40" : "text-neutral-100"} px-4 py-2`}>
                     No outlets shared yet
                   </div>
                 )}
               </div>
             </div>
 
-            {/* user's account setting - logout, change password, delete account */}
-            <div className="w-full flex flex-col pt-3 pb-1"> 
-              <div className="flex items-center gap-2"> 
+            <div className="w-full flex flex-col pt-3 pb-1">
+              <div className="flex items-center gap-2">
                 <User className={`${lightMode ? "text-black" : "text-neutral-100"}`} />
-                <div className={`text-lg font-semibold  ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                <div className={`text-lg font-semibold ${lightMode ? "text-black" : "text-neutral-100"}`}>
                   Account
                 </div>
-              </div> 
-                
-              {/* change password */}
+              </div>
+
               <div className="rounded-xl backdrop-blur-md">
-                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
-                  ${lightMode ? "hover:bg-lime-600/40" : "hover:bg-lime-900"}`}
-                >
+                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md ${lightMode ? "hover:bg-lime-600/40" : "hover:bg-lime-900"}`}>
                   Change Password
                   <ArrowRight className="w-5 h-5" />
                 </button>
 
-                <button 
+                <button
                   onClick={() => {
                     signOut(auth)
                       .then(() => {
-                        console.log("User signed out");
-                        setIsAuthenticated(false); // logouts user, triggering the Sign In button to appear
+                        setIsAuthenticated(false);
                         setShowSettings(false);
-                        console.log("isAuthenticated set to false");
-                        // Clear user data context
                         setUserData({
                           email: '',
                           password: '',
@@ -867,42 +867,32 @@ const AddOutlet: React.FC<OverlayProps> = ({
                           lastName: '',
                           profileImage: null,
                           profileImagePreview: '',
-                          vehicle: {
-                            title: '',
-                            type: ''
-                          }
+                          vehicle: { title: '', type: '' },
                         });
-                        // Clear local states
                         setUserName('');
                         setUserEmail('');
                         setVehicles([]);
                         setUserOutlets([]);
                         setProfileImageUrl('');
-                        console.log("User data cleared");
                       })
-                      .catch((error) => {
-                        console.error("Sign-out error:", error);
-                      });
+                      .catch((error) => console.error("Sign-out error:", error));
                   }}
-                  className={`flex items-center justify-between w-full px-4 py-2 rounded-md
-                    ${lightMode ? "hover:bg-lime-600/40": "hover:bg-lime-900"}`} 
+                  className={`flex items-center justify-between w-full px-4 py-2 rounded-md ${lightMode ? "hover:bg-lime-600/40" : "hover:bg-lime-900"}`}
                 >
                   Logout
                   <ArrowRight className="w-5 h-5" />
                 </button>
 
-                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md
-                  ${lightMode ? "hover:bg-red-600/40": "hover:bg-red-900"}`} 
-                >
+                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md ${lightMode ? "hover:bg-red-600/40" : "hover:bg-red-900"}`}>
                   Delete Account
                   <ArrowRight className="w-5 h-5" />
                 </button>
-              </div> 
-            </div> 
+              </div>
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
