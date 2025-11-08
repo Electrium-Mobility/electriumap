@@ -21,7 +21,7 @@ const pinsToGeoJSON = (pins: PinData[]): FeatureCollection<Point> => ({
 
 const HEATMAP_SOURCE_ID = "pins-heatmap-source";
 const HEATMAP_LAYER_ID  = "pins-heatmap-layer";
-const HEATMAP_MAX_ZOOM  = 11; // heatmap visible up to zoom 10
+const HEATMAP_MAX_ZOOM  = 9; // heatmap visible up to zoom 9
 
 // Helper function to map API data to PinData format
 const mapApiDataToPins = (data: any[]): PinData[] => {
@@ -471,6 +471,7 @@ const MapBox = forwardRef<{
       // Zoom/heatmap toggle
       map.on("zoom", () => {
         const zoom = map.getZoom();
+        console.log(zoom)
         const showHeatmap = zoom < HEATMAP_MAX_ZOOM;
 
         if (map.getLayer(HEATMAP_LAYER_ID)) {
@@ -567,6 +568,54 @@ const MapBox = forwardRef<{
       : "mapbox://styles/hannahwiens/cmcj9t5wf000v01p6chg0e07a";
 
     mapRef.current.setStyle(newStyle);
+
+    //Readding heatmap after setting newStyle
+    mapRef.current.once('style.load', () => {
+      if (!mapRef.current) return;
+
+    if (!mapRef.current.getSource(HEATMAP_SOURCE_ID)) {
+      mapRef.current.addSource(HEATMAP_SOURCE_ID, {
+        type: "geojson",
+        data: pinsToGeoJSON(pinsData), 
+        cluster: false
+      });
+    }
+
+    if (!mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
+        mapRef.current.addLayer({
+          id: HEATMAP_LAYER_ID,
+          type: "heatmap",
+          source: HEATMAP_SOURCE_ID,
+          maxzoom: HEATMAP_MAX_ZOOM,
+          paint: {
+            "heatmap-weight": 1,
+            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 0.8, 3, 1.2, 5, 1.5, 7, 1.8, 9, 2,],
+            "heatmap-color": [
+              "interpolate",
+              ["linear"],
+              ["heatmap-density"],
+              0, "rgba(33,102,172,0)",
+              0.2, "rgb(103,169,207)",
+              0.4, "rgb(209,229,240)",
+              0.6, "rgb(253,219,199)",
+              0.8, "rgb(239,138,98)",
+              1, "rgb(178,24,43)"
+            ],
+            "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 1, 1, 2, 2, 3, 4, 4, 6, 5, 8, 6, 12, 7, 16, 8, 18, 9, 20],
+            "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 1, 9, 0.8, 10, 0.5, 11, 0]
+          },
+        });
+      }
+
+    const zoom = mapRef.current.getZoom();
+    if (zoom >= HEATMAP_MAX_ZOOM) {
+      const bounds = getBounds();
+      if (bounds) {
+        const pinsInView = filterPinsByBounds(bounds);
+        renderPins(pinsInView);
+      }
+    }
+  });
   }, [lightMode]);
   
 
