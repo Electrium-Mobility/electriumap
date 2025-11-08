@@ -223,10 +223,3 @@ export function isOnLand(lat: number, lng: number): boolean {
     booleanPointInPolygon(pt, feature)
   );
 }
-interface FrontendOutletInput {
-  locationName: string;
-  chargerType: string;
-  description: string;
-  userName: string;
-  userId: string;
-}
