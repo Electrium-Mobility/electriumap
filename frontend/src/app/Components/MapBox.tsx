@@ -192,13 +192,10 @@ const MapBox = forwardRef<{
     });
   }, [purgeTempPinsSignal]);
 
-  // Fetch outlets data from the backend
+    // Fetch outlets data from the backend
   useEffect(() => {
     fetch("/api/outlets")
-      .then((res) => {
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
         if (!Array.isArray(data)) return;
 
@@ -206,13 +203,10 @@ const MapBox = forwardRef<{
 
         if (mapped.length) {
           setAllPins(mapped);
-          console.log("✅ Fetched outlets from API:", mapped.length);
         }
+        console.log("Fetched outlets:", mapped);
       })
-      .catch((error) => {
-        console.warn("⚠️ API fetch failed, keeping fallback pins.json data:", error.message);
-        // Don't update allPins - keep the initial pinsData
-      });
+      .catch(console.error);
   }, []);
 
   // Function to get current map bounds

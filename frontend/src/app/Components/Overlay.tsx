@@ -27,7 +27,12 @@ interface OverlayProps {
   onSearchSelect?: (lng: number, lat: number) => void;
   /** Called when the user cancels adding a new outlet so the temporary pin can be removed */
   onCancelTempPin?: () => void;
-  onGeoLocateClick?: () => void
+  onGeoLocateClick?: () => void;
+    /** Port types selected for filtering */
+  selectedPortTypes?: string[];
+  /** Callback when port type filter changes */
+  onPortTypeFilterChange?: (portTypes: string[]) => void;
+
 }
 
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
@@ -43,7 +48,9 @@ const AddOutlet: React.FC<OverlayProps> = ({
   setLightMode,
   onSearchSelect,
   onCancelTempPin,
-  onGeoLocateClick
+  onGeoLocateClick,
+  selectedPortTypes = [],
+  onPortTypeFilterChange
 }) => {
   const [showAddOutlet, setShowAddOutlet] = useState(false);
   const [address, setAddress] = useState("");
@@ -66,6 +73,9 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [userOutlets, setUserOutlets] = useState<Array<{ id: string, locationName: string }>>([]);
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const [isUpdatingProfileImage, setIsUpdatingProfileImage] = useState(false);
+      // Filter dropdown state
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+
 
   // Nearby pins state
   const [nearbyPinsMessage, setNearbyPinsMessage] = useState<string>("");
@@ -242,6 +252,15 @@ const AddOutlet: React.FC<OverlayProps> = ({
     }, 300);
     return () => clearTimeout(timeoutId);
   }, [searchValue]);
+
+    // --- Filter handlers ---
+  const handlePortTypeToggle = (portType: string) => {
+    const newSelectedTypes = selectedPortTypes.includes(portType)
+      ? selectedPortTypes.filter(t => t !== portType)
+      : [...selectedPortTypes, portType];
+    
+    onPortTypeFilterChange?.(newSelectedTypes);
+  };
 
   // --- Nearby Pins helpers ---
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
