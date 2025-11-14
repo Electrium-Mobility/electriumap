@@ -9,7 +9,7 @@ import {
   ArrowRight, MapPin, LucideX, Save, LucidePlugZap, LucideStar, LucideNavigation, LucidePlayCircle
 } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
-import { signOut } from "firebase/auth";
+import { signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import { doc, getDoc, getDocs, collection, updateDoc } from "firebase/firestore";
 import { setIsAuthenticated, getIsAuthenticated } from '../globals';
 import { useRouter } from 'next/navigation';
@@ -76,6 +76,13 @@ const AddOutlet: React.FC<OverlayProps> = ({
       // Filter dropdown state
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // Nearby pins state
   const [nearbyPinsMessage, setNearbyPinsMessage] = useState<string>("");
@@ -199,6 +206,92 @@ const AddOutlet: React.FC<OverlayProps> = ({
     } catch (error) {
       console.error("Error updating profile image:", error);
       setIsUpdatingProfileImage(false);
+    }
+  };
+
+  // Check if user has email/password provider
+  const hasEmailPasswordProvider = () => {
+    const user = auth.currentUser;
+    if (!user) return false;
+    
+    // Check if user has password provider linked
+    const providers = user.providerData;
+    return providers.some(provider => provider.providerId === 'password');
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+    
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+      setPasswordError("You must be logged in to change your password");
+      return;
+    }
+
+    // Check if user has email/password provider
+    if (!hasEmailPasswordProvider()) {
+      setPasswordError("Password change is not available for accounts signed in with Google. Please use your Google account settings to manage your account.");
+      return;
+    }
+    
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("All fields are required");
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters long");
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords do not match");
+      return;
+    }
+    
+    if (currentPassword === newPassword) {
+      setPasswordError("New password must be different from current password");
+      return;
+    }
+    
+    setIsChangingPassword(true);
+    
+    try {
+      // Reauthenticate user with current password
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+      
+      // Update password
+      await updatePassword(user, newPassword);
+      
+      setPasswordSuccess("Password changed successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      
+      // Close modal after 2 seconds
+      setTimeout(() => {
+        setShowChangePassword(false);
+        setPasswordSuccess("");
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error changing password:", error);
+      if (error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
+        setPasswordError("Current password is incorrect. Please check your password and try again.");
+      } else if (error.code === "auth/weak-password") {
+        setPasswordError("New password is too weak. Please choose a stronger password.");
+      } else if (error.code === "auth/requires-recent-login") {
+        setPasswordError("For security reasons, please log out and log back in before changing your password.");
+      } else if (error.code === "auth/operation-not-allowed") {
+        setPasswordError("Password change is not enabled for this account. Please contact support.");
+      } else {
+        setPasswordError(error.message || "Failed to change password. Please try again.");
+      }
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -921,10 +1014,27 @@ const AddOutlet: React.FC<OverlayProps> = ({
               </div>
 
               <div className="rounded-xl backdrop-blur-md">
-                <button className={`flex items-center justify-between w-full px-4 py-2 rounded-md ${lightMode ? "hover:bg-lime-600/40" : "hover:bg-lime-900"}`}>
-                  Change Password
-                  <ArrowRight className="w-5 h-5" />
-                </button>
+                {hasEmailPasswordProvider() ? (
+                  <button 
+                    onClick={() => {
+                      setShowChangePassword(true);
+                      setPasswordError("");
+                      setPasswordSuccess("");
+                      setCurrentPassword("");
+                      setNewPassword("");
+                      setConfirmPassword("");
+                    }}
+                    className={`flex items-center justify-between w-full px-4 py-2 rounded-md ${lightMode ? "hover:bg-lime-600/40" : "hover:bg-lime-900"}`}
+                  >
+                    Change Password
+                    <ArrowRight className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <div className={`flex items-center justify-between w-full px-4 py-2 rounded-md ${lightMode ? "text-black/50" : "text-neutral-400"}`}>
+                    <span>Change Password</span>
+                    <span className="text-xs">(Google accounts)</span>
+                  </div>
+                )}
 
                 <button
                   onClick={() => {
@@ -963,6 +1073,136 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Change Password Modal */}
+      {showChangePassword && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+            onClick={() => {
+              if (!isChangingPassword) {
+                setShowChangePassword(false);
+                setPasswordError("");
+                setPasswordSuccess("");
+                setCurrentPassword("");
+                setNewPassword("");
+                setConfirmPassword("");
+              }
+            }}
+          />
+          {/* Modal */}
+          <div className="fixed top-1/2 left-1/2 z-50 w-[400px] max-w-full p-0 transform -translate-x-1/2 -translate-y-1/2">
+            <div className={`relative bg-gradient-to-br from-white/30 via-black/20 to-white/10 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl px-8 pt-8 pb-6 ${lightMode ? "text-black" : "text-white"}`}>
+            <button
+              onClick={() => {
+                setShowChangePassword(false);
+                setPasswordError("");
+                setPasswordSuccess("");
+                setCurrentPassword("");
+                setNewPassword("");
+                setConfirmPassword("");
+              }}
+              className="absolute top-4 right-4 bg-white/15 hover:bg-white/25 transition-colors rounded-full w-10 h-10 flex items-center justify-center shadow-lg"
+              aria-label="Close"
+            >
+              <LucideX className="w-6 h-6" />
+            </button>
+
+            <h2 className={`text-2xl font-bold mb-6 ${lightMode ? "text-black" : "text-white"}`}>
+              Change Password
+            </h2>
+
+            {!hasEmailPasswordProvider() && (
+              <div className="px-4 py-3 rounded-lg bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 text-sm mb-4">
+                Password change is only available for accounts signed in with email and password. Google account users should manage their password through their Google account settings.
+              </div>
+            )}
+
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className={`w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 focus:outline-none focus:border-lime-500 ${lightMode ? "text-black placeholder-black/60" : "text-white placeholder-white/60"}`}
+                  placeholder="Enter current password"
+                  disabled={isChangingPassword || !hasEmailPasswordProvider()}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className={`w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 focus:outline-none focus:border-lime-500 ${lightMode ? "text-black placeholder-black/60" : "text-white placeholder-white/60"}`}
+                  placeholder="Enter new password (min. 6 characters)"
+                  disabled={isChangingPassword || !hasEmailPasswordProvider()}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm font-semibold mb-2 ${lightMode ? "text-black" : "text-neutral-100"}`}>
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`w-full px-4 py-2 rounded-lg bg-white/20 border border-white/30 focus:outline-none focus:border-lime-500 ${lightMode ? "text-black placeholder-black/60" : "text-white placeholder-white/60"}`}
+                  placeholder="Confirm new password"
+                  disabled={isChangingPassword || !hasEmailPasswordProvider()}
+                />
+              </div>
+
+              {passwordError && (
+                <div className="px-4 py-2 rounded-lg bg-red-500/20 border border-red-500/50 text-red-200 text-sm">
+                  {passwordError}
+                </div>
+              )}
+
+              {passwordSuccess && (
+                <div className="px-4 py-2 rounded-lg bg-green-500/20 border border-green-500/50 text-green-200 text-sm">
+                  {passwordSuccess}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowChangePassword(false);
+                    setPasswordError("");
+                    setPasswordSuccess("");
+                    setCurrentPassword("");
+                    setNewPassword("");
+                    setConfirmPassword("");
+                  }}
+                  className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-colors ${lightMode ? "bg-gray-300 hover:bg-gray-400 text-black" : "bg-white/15 hover:bg-white/25 text-white"}`}
+                  disabled={isChangingPassword}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 rounded-lg bg-lime-600 hover:bg-lime-700 text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isChangingPassword || !hasEmailPasswordProvider()}
+                >
+                  {isChangingPassword ? "Changing..." : "Change Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        </>
       )}
     </>
   );
