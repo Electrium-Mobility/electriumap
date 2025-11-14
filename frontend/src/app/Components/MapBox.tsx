@@ -436,7 +436,6 @@ const MapBox = forwardRef<{
                        pinsData;
     
     source.setData(pinsToGeoJSON(dataToShow));
-    console.log(`🗺️ Heatmap updated: ${dataToShow.length} pins (${selectedPortTypes.length} filters active)`);
     
     // Also update visible markers if we're zoomed in
     const zoom = map.getZoom();
