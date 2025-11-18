@@ -64,12 +64,13 @@ interface MapBoxProps {
   /** Signal to purge temporary pins (increments every cancel) */
   purgeTempPinsSignal?: number;
   onCurrentLocation?: (lat: number, lng: number) => void;
+  selectedPortTypes?: string[];
 }
 
 const MapBox = forwardRef<{
     handleGeoLocate: () => void
  }, MapBoxProps>(
-  ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation }, ref) => {
+  ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation, selectedPortTypes = [] }, ref) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -191,7 +192,7 @@ const MapBox = forwardRef<{
     });
   }, [purgeTempPinsSignal]);
 
-  // Fetch outlets data from the backend
+    // Fetch outlets data from the backend
   useEffect(() => {
     fetch("/api/outlets")
       .then((res) => res.json())
@@ -225,6 +226,21 @@ const MapBox = forwardRef<{
   const filterPinsByBounds = useCallback((bounds: Bounds): PinData[] => {
     return allPins.filter((pin) => isPointInBounds(pin, bounds));
   }, [allPins]);
+
+// Function to check if a pin matches the selected port filters
+  const matchesPortFilters = useCallback((pin: PinData): boolean => {
+    // If no filters selected, show all pins
+    if (selectedPortTypes.length === 0) return true;
+    
+    // Check if pin's category matches any selected port type
+    const portType = pin.category?.trim();
+    return portType ? selectedPortTypes.includes(portType) : false;
+  }, [selectedPortTypes]);
+
+  // Function to filter pins by port type
+  const filterPinsByPortType = useCallback((pins: PinData[]): PinData[] => {
+    return pins.filter(matchesPortFilters);
+  }, [matchesPortFilters]);
 
   //function to fetch outlets from backend by bounds (returns pins without updating state)
   const fetchOutletsByBounds = useCallback(async (bounds: Bounds): Promise<PinData[]> => {
@@ -382,7 +398,8 @@ const MapBox = forwardRef<{
         const updatedPins = mergePinsWithoutDuplicates(prev, fetchedPins);
         
         // Filter pins that are in the current viewport bounds
-        const filteredPins = updatedPins.filter((pin) => isPointInBounds(pin, bounds));
+        const pinsInBounds = updatedPins.filter((pin) => isPointInBounds(pin, bounds));
+        const filteredPins = filterPinsByPortType(pinsInBounds);
         setVisiblePins(filteredPins);
 
         if (zoom > HEATMAP_MAX_ZOOM) {
@@ -394,7 +411,7 @@ const MapBox = forwardRef<{
         return updatedPins;
       });
     }, 300), // 300ms debounce
-    [getBounds, renderPins, clearAllMarkers, fetchOutletsByBounds]
+    [getBounds, renderPins, clearAllMarkers, fetchOutletsByBounds, filterPinsByPortType]
   );
 
   //update ref when debouncedUpdatePins changes
@@ -402,6 +419,35 @@ const MapBox = forwardRef<{
     debouncedUpdatePinsRef.current = debouncedUpdatePins;
   }, [debouncedUpdatePins]);
 
+  // Auto-updates the heatmap layer when filters change
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current) return;
+    
+    const map = mapRef.current;
+    const source = map.getSource(HEATMAP_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+    if (!source) return;
+    
+    // Filter pins that match the port type filters
+    const pinsForHeatmap = allPins.filter(matchesPortFilters);
+    
+    // Fallback to pinsData if no pins available
+    const dataToShow = pinsForHeatmap.length > 0 ? pinsForHeatmap : 
+                       allPins.length > 0 ? allPins : 
+                       pinsData;
+    
+    source.setData(pinsToGeoJSON(dataToShow));
+    
+    // Also update visible markers if we're zoomed in
+    const zoom = map.getZoom();
+    if (zoom > HEATMAP_MAX_ZOOM) {
+      const bounds = getBounds();
+      if (bounds) {
+        const pinsInBounds = allPins.filter((pin) => isPointInBounds(pin, bounds));
+        const visibleFilteredPins = pinsInBounds.filter(matchesPortFilters);
+        renderPins(visibleFilteredPins);
+      }
+    }
+  }, [allPins, matchesPortFilters, mapLoaded, getBounds, renderPins, selectedPortTypes]);
   
 
   useEffect(() => {

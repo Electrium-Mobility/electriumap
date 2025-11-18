@@ -13,13 +13,17 @@ export default function Home() {
   const [selectedPin, setSelectedPin] = useState<PinData | null>(null);
   const [purgeTempSignal, setPurgeTempSignal] = useState(0);
   const [searchCoords, setSearchCoords] = useState<{ lng: number; lat: number } | null>(null);
-
+  const [selectedPortTypes, setSelectedPortTypes] = useState<string[]>([]);
 
   const mapRef = useRef<{ handleGeoLocate: () => void }>(null);
 
   const handleSearchSelect = (lng: number, lat: number) => {
     setSearchCoords({lng, lat});
     setFlyToLocation({ lng, lat });
+  };
+
+  const handlePortTypeFilterChange = (portTypes: string[]) => {
+    setSelectedPortTypes(portTypes);
   };
 
   return (
@@ -34,9 +38,9 @@ export default function Home() {
         }}
         onPinClick={(pin) => {
           setPurgeTempSignal(Date.now());
-+         setSelectedPin(pin);
-+         setCoords({ lat: pin.lat, lng: pin.lng });
-+         setShowPinOverlay(true);
+          setSelectedPin(pin);
+          setCoords({ lat: pin.lat, lng: pin.lng });
+          setShowPinOverlay(true);
         }}
         onCurrentLocation={(lat, lng) => {
           setCoords({ lat, lng });
@@ -45,6 +49,7 @@ export default function Home() {
         }}
         lightMode={lightMode}
         purgeTempPinsSignal={purgeTempSignal}
+        selectedPortTypes={selectedPortTypes}
       />
 
       <Overlay
@@ -61,6 +66,8 @@ export default function Home() {
         setLightMode={setLightMode}
         onCancelTempPin={() => setPurgeTempSignal(Date.now())}
         onGeoLocateClick={() => mapRef.current?.handleGeoLocate()}
+        selectedPortTypes={selectedPortTypes}
+        onPortTypeFilterChange={handlePortTypeFilterChange}
       />
     </div>
   );
