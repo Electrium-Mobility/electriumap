@@ -6,7 +6,11 @@ import { addOutletFrontend, addOutlet, isOnLand } from "../utils/addOutlet";
 import {
   LucideBookmark, LucideClock, LucidePlus, LucideLocateFixed, LucideSearch,
   LucideUpload, SunMedium, Moon, ChevronDown, Plus, Bike, PlugZap, User,
+<<<<<<< HEAD
   ArrowRight, MapPin, LucideX, Save, LucidePlugZap, LucideStar, LucideNavigation, LucidePlayCircle
+=======
+  ArrowRight, MapPin, LucideX, Save, LucidePlugZap, LucideStar, LucideNavigation, LucidePlayCircle, Cable
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
 } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
@@ -28,6 +32,7 @@ interface OverlayProps {
   /** Called when the user cancels adding a new outlet so the temporary pin can be removed */
   onCancelTempPin?: () => void;
   onGeoLocateClick?: () => void;
+<<<<<<< HEAD
     /** Port types selected for filtering */
   selectedPortTypes?: string[];
   /** Callback when port type filter changes */
@@ -37,10 +42,413 @@ interface OverlayProps {
   onStopFollow?: () => void;
   isLocatingToggle?: boolean;
   setIsLocatingToggle?: (val: boolean) => void;
+=======
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
 }
 
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
 const conditionOptions = ["New", "Worn", "Slightly Damaged", "Damaged"];
+
+// Step 1: Welcome & Location
+const Step1: React.FC<{
+  address: string;
+  onAddressChange: (address: string) => void;
+  lightMode: boolean;
+  isExisting: boolean;
+  onGeoLocateClick?: () => void;
+}> = ({ address, onAddressChange, lightMode, isExisting, onGeoLocateClick }) => (
+  <div className="step-content">
+    <h2 className="font-semibold text-xl mb-5 text-center">Let's get started with the outlet's location</h2>
+    <div className="form-group">
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={address}
+          onChange={(e) => onAddressChange(e.target.value)}
+          readOnly={isExisting}
+          disabled={isExisting}
+          placeholder="Enter the address"
+          className={`w-full p-4 rounded-xl border-2 text-lg ${
+            lightMode 
+              ? 'border-gray-300 bg-white/50 text-black placeholder-gray-500' 
+              : 'border-white/40 bg-white/20 text-white placeholder-white/60'
+          } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+        />
+        {!isExisting && onGeoLocateClick && (
+          <button
+            onClick={onGeoLocateClick}
+            title="Find my location"
+            className={`p-4 rounded-xl border-2 transition-all hover:opacity-80 ${
+              lightMode ? 'border-gray-300 bg-white/50 text-black' : 'border-white/40 bg-white/20 text-white'}`}>
+            <LucideLocateFixed className="w-6 h-6" />
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+// Step 2: Outlet Count & Power Type
+const Step2: React.FC<{
+  outletCount: number;
+  onOutletCountChange: (count: number) => void;
+  powerType: string;
+  onPowerTypeChange: (value: string) => void;
+  lightMode: boolean;
+  isExisting: boolean;
+}> = ({ outletCount, onOutletCountChange, powerType, onPowerTypeChange, lightMode, isExisting }) => (
+  <div className="step-content">
+    <h2 className="font-semibold text-xl mb-5 text-center">How many outlets are located here?</h2>
+    <div className="form-group">
+      <div className="flex items-center justify-center gap-6 mb-5">
+        <button
+          onClick={() => !isExisting && onOutletCountChange(Math.max(0, outletCount - 1))}
+          disabled={isExisting || outletCount <= 0}
+          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold transition-all ${
+            lightMode 
+              ? 'bg-white/50 border-2 border-gray-300 text-black hover:bg-white/70' 
+              : 'bg-white/20 border-2 border-white/40 text-white hover:bg-white/30'
+          } ${(isExisting || outletCount <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          -
+        </button>
+        
+        <div className={`w-22 h-22 rounded-full flex items-center justify-center text-3xl font-bold ${
+          lightMode ? 'bg-lime-100 text-lime-800' : 'bg-lime-600 text-white'
+        }`}>
+          {outletCount}
+        </div>
+        
+        <button
+          onClick={() => !isExisting && onOutletCountChange(outletCount + 1)}
+          disabled={isExisting}
+          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold transition-all ${
+            lightMode 
+              ? 'bg-white/50 border-2 border-gray-300 text-black hover:bg-white/70' 
+              : 'bg-white/20 border-2 border-white/40 text-white hover:bg-white/30'
+          } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          +
+        </button>
+      </div>
+      
+      <div className="text-center mb-4">
+        <p className="text-lg opacity-70">
+          {outletCount === 1 ? '1 outlet' : `${outletCount} outlets`} selected
+        </p>
+      </div>
+
+      {/* Power Type Section - Shows after outlet count is selected */}
+      {outletCount > 0 && (
+        <div>
+          <h3 className="font-semibold text-xl mb-4 text-center">Describe the Power Type</h3>
+          <input
+            type="text"
+            value={powerType}
+            onChange={(e) => onPowerTypeChange(e.target.value)}
+            readOnly={isExisting}
+            disabled={isExisting}
+            placeholder="Describe the power type"
+            className={`w-full p-4 rounded-xl border-2 text-lg ${
+              lightMode 
+                ? 'border-gray-300 bg-white/50 text-black placeholder-gray-500' 
+                : 'border-white/40 bg-white/20 text-white placeholder-white/60'
+            } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          />
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// Step 3: Port Type & Condition
+const Step3: React.FC<{
+  selectedPort: string;
+  onPortChange: (port: string) => void;
+  otherPort: string;
+  onOtherPortChange: (value: string) => void;
+  condition: string;
+  onConditionChange: (condition: string) => void;
+  lightMode: boolean;
+  isExisting: boolean;
+}> = ({ selectedPort, onPortChange, otherPort, onOtherPortChange, condition, onConditionChange, lightMode, isExisting }) => {
+  const portOptions = [
+    { id: 'triple-peg', name: 'Triple Peg', icon: <img src="/images/port2.png.webp" className="w-full h-auto"></img> },
+    { id: 'double-peg', name: 'Double Peg', icon: <img src="/images/port1.png.webp" className="w-full h-auto"></img> },
+    { id: 'usb', name: 'USB', icon: <img src="/images/port3.png.webp" className="w-full h-auto"></img> },
+    { id: 'hdmi', name: 'HDMI', icon: <Cable className="w-6 h-6" /> },
+  ];
+
+  const conditionOptions = [
+    { id: 'perfect', name: 'Perfect'},
+    { id: 'slightly-worn', name: 'Slightly Worn'},
+    { id: 'partially-damaged', name: 'Partially Damaged'},
+    { id: 'damaged', name: 'Damaged'},
+  ];
+
+  return (
+    <div className="step-content">
+      <h2 className="font-semibold text-xl mb-4 text-center">What is the type of port?</h2>
+      
+      {/* Port Type Selection */}
+      <div className="grid grid-cols-4 gap-3 mb-4">
+        {portOptions.map((port) => (
+          <button
+            key={port.id}
+            type="button"
+            onClick={() => !isExisting && onPortChange(port.name)}
+            disabled={isExisting}
+            className={`p-3 rounded-lg border-2 transition-all text-center ${
+              selectedPort === port.name
+                ? lightMode
+                  ? 'border-lime-500 bg-lime-100 text-lime-800'
+                  : 'border-lime-500 bg-lime-600 text-white'
+                : lightMode
+                  ? 'border-gray-300 bg-white/50 text-black hover:border-lime-400'
+                  : 'border-white/40 bg-white/20 text-white hover:border-lime-400'
+            } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <div className={`p-1 rounded ${
+                selectedPort === port.name ? 'bg-white/20' : 'bg-white/10'
+              }`}>
+                {port.icon}
+              </div>
+              <div className="font-semibold text-sm">{port.name}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+      
+      {/* Other Port Option */}
+      <button
+        type="button"
+        onClick={() => !isExisting && onPortChange('Other')}
+        disabled={isExisting}
+        className={`w-full p-3 rounded-lg border-2 transition-all text-center mb-3 ${
+          selectedPort === 'Other'
+            ? lightMode
+              ? 'border-lime-500 bg-lime-100 text-lime-800'
+              : 'border-lime-500 bg-lime-600 text-white'
+            : lightMode
+              ? 'border-gray-300 bg-white/50 text-black hover:border-lime-400'
+              : 'border-white/40 bg-white/20 text-white hover:border-lime-400'
+        } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        <div className="flex items-center justify-center gap-2">
+          <Plus className="w-5 h-5" />
+          <div className="font-semibold text-m">Other</div>
+        </div>
+      </button>
+      
+      {/* Other Port Text Input */}
+      {selectedPort === 'Other' && !isExisting && (
+        <div className="mb-4">
+          <input
+            type="text"
+            value={otherPort}
+            onChange={(e) => onOtherPortChange(e.target.value)}
+            placeholder="Port Type"
+            className={`w-full p-3 rounded-lg border-2 text-sm ${
+              lightMode 
+                ? 'border-gray-300 bg-white/50 text-black placeholder-gray-500' 
+                : 'border-white/40 bg-white/20 text-white placeholder-white/60'
+            }`}
+          />
+        </div>
+      )}
+
+      {/* Condition Section - Shows after port type is selected */}
+      {(selectedPort || otherPort) && (
+        <div className="mt-6">
+          <h3 className="font-semibold text-xl mb-4 text-center">Describe the condition</h3>
+          <div className="grid grid-cols-4 gap-2">
+            {conditionOptions.map((cond) => (
+              <button
+                key={cond.id}
+                type="button"
+                onClick={() => !isExisting && onConditionChange(cond.name)}
+                disabled={isExisting}
+                className={`w-full p-3 rounded-lg border-2 transition-all text-center ${
+                  condition === cond.name
+                    ? lightMode
+                      ? 'border-lime-500 bg-lime-100 text-lime-800'
+                      : 'border-lime-500 bg-lime-600 text-white'
+                    : lightMode
+                      ? 'border-gray-300 bg-white/50 text-black hover:border-lime-400'
+                      : 'border-white/40 bg-white/20 text-white hover:border-lime-400'
+                } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <div className="font-semibold text-sm">{cond.name}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Step 4: Extra Details & File Upload
+const Step4: React.FC<{
+  extraDetails: string;
+  onExtraDetailsChange: (details: string) => void;
+  images: File[];
+  onImageUpload: (files: FileList) => void;
+  onRemoveImage: (index: number) => void;
+  lightMode: boolean;
+  isExisting: boolean;
+}> = ({ extraDetails, onExtraDetailsChange, images, onImageUpload, onRemoveImage, lightMode, isExisting }) => {
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!isExisting && e.dataTransfer.files) {
+      onImageUpload(e.dataTransfer.files);
+    }
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isExisting && e.target.files) {
+      onImageUpload(e.target.files);
+    }
+  };
+
+  return (
+    <div className="step-content">
+      <h2 className="font-semibold text-xl mb-5 text-center">Any other details?</h2>
+      <div className="form-group">
+        {/* Extra Details Text Area */}
+        <div className="mb-5">
+          <textarea
+            value={extraDetails}
+            onChange={(e) => onExtraDetailsChange(e.target.value)}
+            readOnly={isExisting}
+            disabled={isExisting}
+            placeholder="Additional Details"
+            className={`w-full p-4 rounded-xl border-2 resize-none ${
+              lightMode 
+                ? 'border-gray-300 bg-white/50 text-black placeholder-gray-500' 
+                : 'border-white/40 bg-white/20 text-white placeholder-white/60'
+            } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          />
+        </div>
+
+        {/* File Upload Section */}
+        <div className="mb-4">
+          <div 
+            className={`relative p-8 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all ${
+              lightMode
+                ? 'border-gray-300 bg-white/20 hover:border-lime-400'
+                : 'border-white/40 bg-white/10 hover:border-lime-400'
+            } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+            onClick={() => !isExisting && document.getElementById('file-input')?.click()}
+          >
+            <LucideUpload className="mx-auto w-12 h-12 text-lime-600 mb-4" />
+            <p className="text-m">Choose a file or drag it in here</p>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleFileInput}
+              disabled={isExisting}
+              className="hidden"
+              id="file-input"
+            />
+          </div>
+        </div>
+        
+        {/* Image Previews */}
+        {images.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {images.map((image, index) => (
+              <div key={index} className="relative aspect-square rounded-lg overflow-hidden">
+                <img 
+                  src={URL.createObjectURL(image)} 
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                {!isExisting && (
+                  <button
+                    type="button"
+                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                    onClick={() => onRemoveImage(index)}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Review Step
+const ReviewStep: React.FC<{
+  formData: any;
+  lightMode: boolean;
+}> = ({ formData, lightMode }) => (
+  <div className="step-content">
+    <h2 className="font-semibold text-2xl mb-6 text-center">Review Your Outlet</h2>
+    <div className="form-group">
+      <div className={`p-6 rounded-2xl ${
+        lightMode ? 'bg-white/20 border-2 border-white/30' : 'bg-white/10 border-2 border-white/20'
+      }`}>
+        <div className="space-y-4">
+          <div className="flex justify-between items-start pb-3 border-b border-white/20">
+            <strong className="text-lg">Location:</strong>
+            <span className="text-right text-lg">{formData.address || 'Not specified'}</span>
+          </div>
+          
+          <div className="flex justify-between items-start pb-3 border-b border-white/20">
+            <strong className="text-lg">Outlet Count:</strong>
+            <span className="text-lg">{formData.outletCount}</span>
+          </div>
+          
+          <div className="flex justify-between items-start pb-3 border-b border-white/20">
+            <strong className="text-lg">Power Type:</strong>
+            <span className="text-right text-lg">{formData.powerType || 'Not specified'}</span>
+          </div>
+          
+          <div className="flex justify-between items-start pb-3 border-b border-white/20">
+            <strong className="text-lg">Port Type:</strong>
+            <span className="text-right text-lg">
+              {formData.selectedPort === 'Other' ? formData.otherPort : formData.selectedPort || 'Not specified'}
+            </span>
+          </div>
+          
+          <div className="flex justify-between items-start pb-3 border-b border-white/20">
+            <strong className="text-lg">Condition:</strong>
+            <span className="text-right text-lg">{formData.condition || 'Not specified'}</span>
+          </div>
+          
+          {formData.extraDetails && (
+            <div className="flex justify-between items-start pb-3 border-b border-white/20">
+              <strong className="text-lg">Extra Details:</strong>
+              <span className="text-right text-lg max-w-[60%]">{formData.extraDetails}</span>
+            </div>
+          )}
+          
+          <div className="flex justify-between items-start">
+            <strong className="text-lg">Photos:</strong>
+            <span className="text-right text-lg">{formData.images.length} uploaded</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-6 text-center">
+        <p className="text-lg opacity-70">
+          Confirm all details are correct before submitting.
+        </p>
+      </div>
+    </div>
+  </div>
+);
 
 const AddOutlet: React.FC<OverlayProps> = ({
   showPinOverlay,
@@ -64,12 +472,18 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const isLocatingToggleProp = isLocatingToggle;
   const setIsLocatingToggleProp = setIsLocatingToggle;
   const [showAddOutlet, setShowAddOutlet] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Form state for 5-step wizard (4 steps + review)
   const [address, setAddress] = useState("");
-  const [outletCount, setOutletCount] = useState(1);
+  const [outletCount, setOutletCount] = useState(0);
   const [powerType, setPowerType] = useState("");
-  const [selectedPort, setSelectedPort] = useState("Triple Peg");
-  const [selectedCondition, setSelectedCondition] = useState("New");
+  const [selectedPort, setSelectedPort] = useState("");
+  const [otherPort, setOtherPort] = useState("");
+  const [condition, setCondition] = useState("");
   const [extraDetails, setExtraDetails] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  
   const [showSettings, setShowSettings] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState<Array<{ place_name: string, center: [number, number] }>>([]);
@@ -84,6 +498,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [userOutlets, setUserOutlets] = useState<Array<{ id: string, locationName: string }>>([]);
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const [isUpdatingProfileImage, setIsUpdatingProfileImage] = useState(false);
+<<<<<<< HEAD
       // Filter dropdown state
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
@@ -95,6 +510,16 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
+=======
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
   // Nearby pins state
   const [nearbyPinsMessage, setNearbyPinsMessage] = useState<string>("");
   const [hasNearbyPins, setHasNearbyPins] = useState<boolean | null>(null);
@@ -104,6 +529,84 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
   // Treat presence of selectedPin as "existing outlet view" mode
   const isExisting = Boolean(selectedPin);
+
+  // Form data for summary
+  const formData = {
+    address,
+    outletCount,
+    powerType,
+    selectedPort,
+    otherPort,
+    condition,
+    extraDetails,
+    images
+  };
+
+  // Handlers for form fields
+  const handleOutletCountChange = (count: number) => {
+    setOutletCount(count);
+  };
+
+  const handleImageUpload = (files: FileList) => {
+    const newImages = Array.from(files).slice(0, 4 - images.length);
+    setImages(prev => [...prev, ...newImages]);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleNext = () => {
+    if (currentStep < 5) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (address && outletCount > 0) {
+      try {
+        const portType = selectedPort === 'Other' ? otherPort : selectedPort;
+        if (coords) {
+          await addOutlet({
+            latitude: coords.lat,
+            longitude: coords.lng,
+            userName: userName || "Anonymous",
+            userId: userEmail || "unknown",
+            locationName: address,
+            chargerType: `${powerType}, ${portType}`,
+            description: `Condition: ${condition}. ${extraDetails}`,
+          });
+        } else {
+          await addOutletFrontend({
+            userName: userName || "Anonymous",
+            userId: userEmail || "unknown",
+            locationName: address,
+            chargerType: `${powerType}, ${portType}`,
+            description: `Condition: ${condition}. ${extraDetails}`,
+          });
+        }
+        setShowAddOutlet(false);
+        setCurrentStep(1);
+        // Reset form
+        setAddress("");
+        setOutletCount(1);
+        setPowerType("");
+        setSelectedPort("");
+        setOtherPort("");
+        setCondition("");
+        setExtraDetails("");
+        setImages([]);
+      } catch (err) {
+        console.error("Error submitting outlet:", err);
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -183,16 +686,32 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
   // If new coordinates are provided (e.g. map click), pre-fill address and auto-open the form
   useEffect(() => {
+<<<<<<< HEAD
 
+=======
+    if (!coords) return;
+    setAddress(`${coords.lng.toFixed(5)} ${coords.lat.toFixed(5)}`);
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     if (!selectedPin) {
       if (!coords) return;
       setAddress(`${coords.lng.toFixed(5)} ${coords.lat.toFixed(5)}`);
       setShowAddOutlet(true);
+<<<<<<< HEAD
     } else {
       setShowAddOutlet(false);                // <— key line
       setAddress(selectedPin.title || "");
       setPowerType(selectedPin.category || "");
       setExtraDetails(selectedPin.description || "");
+=======
+    }
+  }, [coords, selectedPin]);
+
+  // If a pin on the map is selected, pre-fill form fields
+  useEffect(() => {
+    if (selectedPin) {
+      setShowAddOutlet(true);
+      setAddress(selectedPin.title || "");
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     }
   }, [coords, selectedPin]);
 
@@ -224,7 +743,11 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const hasEmailPasswordProvider = () => {
     const user = auth.currentUser;
     if (!user) return false;
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     // Check if user has password provider linked
     const providers = user.providerData;
     return providers.some(provider => provider.providerId === 'password');
@@ -234,7 +757,11 @@ const AddOutlet: React.FC<OverlayProps> = ({
     e.preventDefault();
     setPasswordError("");
     setPasswordSuccess("");
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     const user = auth.currentUser;
     if (!user || !user.email) {
       setPasswordError("You must be logged in to change your password");
@@ -246,43 +773,76 @@ const AddOutlet: React.FC<OverlayProps> = ({
       setPasswordError("Password change is not available for accounts signed in with Google. Please use your Google account settings to manage your account.");
       return;
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     // Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError("All fields are required");
       return;
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     if (newPassword.length < 6) {
       setPasswordError("New password must be at least 6 characters long");
       return;
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     if (newPassword !== confirmPassword) {
       setPasswordError("New passwords do not match");
       return;
     }
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     if (currentPassword === newPassword) {
       setPasswordError("New password must be different from current password");
       return;
     }
+<<<<<<< HEAD
 
     setIsChangingPassword(true);
 
+=======
+    
+    setIsChangingPassword(true);
+    
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     try {
       // Reauthenticate user with current password
       const credential = EmailAuthProvider.credential(user.email, currentPassword);
       await reauthenticateWithCredential(user, credential);
+<<<<<<< HEAD
 
       // Update password
       await updatePassword(user, newPassword);
 
+=======
+      
+      // Update password
+      await updatePassword(user, newPassword);
+      
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
       setPasswordSuccess("Password changed successfully!");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
       // Close modal after 2 seconds
       setTimeout(() => {
         setShowChangePassword(false);
@@ -338,7 +898,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
     onSearchSelect?.(result.center[0], result.center[1]);
   };
 
+<<<<<<< HEAD
   // Enter key selects first result
+=======
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchResults.length > 0) {
       handleSearchResultClick(searchResults[0]);
@@ -357,6 +920,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
     return () => clearTimeout(timeoutId);
   }, [searchValue]);
 
+<<<<<<< HEAD
     // --- Filter handlers ---
   const handlePortTypeToggle = (portType: string) => {
     const newSelectedTypes = selectedPortTypes.includes(portType)
@@ -366,6 +930,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
     onPortTypeFilterChange?.(newSelectedTypes);
   };
 
+=======
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
   // --- Nearby Pins helpers ---
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371; // km
@@ -396,7 +962,11 @@ const AddOutlet: React.FC<OverlayProps> = ({
           fromDb: true
         };
       });
+<<<<<<< HEAD
 
+=======
+      
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
       // within 10km, exclude essentially same point (< ~10m)
       const nearbyPins = allPins.filter((pin: PinData) => {
         if (pin.lat == null || pin.lng == null) return false;
@@ -422,7 +992,11 @@ const AddOutlet: React.FC<OverlayProps> = ({
   };
 
   useEffect(() => {
+<<<<<<< HEAD
     if (searchCoords?.lat != null && searchCoords?.lng != null) {
+=======
+    if (searchCoords?.lat && searchCoords?.lng) {
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
       checkNearbyPins(searchCoords.lat, searchCoords.lng);
     }
   }, [searchCoords, isExisting]);
@@ -430,8 +1004,13 @@ const AddOutlet: React.FC<OverlayProps> = ({
   return (
     <>
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
+<<<<<<< HEAD
         {/* search bar */}
         <div className={`relative flex items-center px-4 h-full backdrop-blur-sm border font-semibold rounded-full shadow-lg w-[360px]
+=======
+        {/* Search Bar */}
+        <div className={`flex items-center px-4 h-full backdrop-blur-sm border-1 font-semibold rounded-full shadow-lg w-[360px]
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
           ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
           <input
             type="text"
@@ -441,6 +1020,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
             onKeyDown={handleSearchKeyDown}
             className={`bg-transparent outline-none w-full text-md ${lightMode ? "placeholder-black/60" : "placeholder-white/60"}`}
           />
+<<<<<<< HEAD
           <LucideSearch className="w-5 h-5 font-semibold" />
           {/* search results dropdown */}
           {showSearchResults && searchResults.length > 0 && (
@@ -463,6 +1043,36 @@ const AddOutlet: React.FC<OverlayProps> = ({
         <div className="flex items-center gap-6">
           <div className={`relative flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
             ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
+=======
+          <LucideSearch className={`w-5 h-5 font-semibold`} />
+          
+        {showSearchResults && searchResults.length > 0 && (
+          <div className={`absolute top-full left-0 w-full mt-2 bg-white/10 font-semibold rounded-lg shadow-lg max-h-60 overflow-y-auto border-1 backdrop-blur-sm
+            ${lightMode
+          ? " border-white/60 text-black"
+          : " border-white/60 text-white "
+          }`}>
+            {searchResults.map((result, index) => (
+              <div
+                key={index}
+                className="px-4 py-3 hover:bg-white/20 backdrop-blur-sm cursor-pointer border-b border-white/10 last:border-b-0"
+                onClick={() => handleSearchResultClick(result)}
+              >
+                {result.place_name}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Dark/Light Mode Switch */}
+      <div className="flex items-center gap-6"> 
+        <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
+          ${lightMode
+          ? "bg-white/5 border-white/60 text-black"
+          : "bg-white/15 border-white/60 text-white "
+          }`}>
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
             <div
               className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-900/70'}`}
             />
@@ -474,6 +1084,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </button>
           </div>
 
+<<<<<<< HEAD
           {/* filter button with dropdown */}
           <div className="relative">
             <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
@@ -484,6 +1095,16 @@ const AddOutlet: React.FC<OverlayProps> = ({
               >
                 <span>Filter</span>
                 <ChevronDown className={`w-4 h-4 bold transition-transform ${showFilterDropdown ? "rotate-180" : ""}`} />
+=======
+          {/* Filter Button */}
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
+            ${lightMode
+            ? "bg-white/5 border-white/60 text-black"
+            : "bg-white/15 border-white/60 text-white "
+            }`}>
+              <button className="flex items-center gap-3 text-base">
+                <span>Filter</span> <ChevronDown className="w-4 h-4 bold"/> 
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
               </button>
             </div>
 
@@ -534,12 +1155,24 @@ const AddOutlet: React.FC<OverlayProps> = ({
               </div>
             )}
           </div>
+<<<<<<< HEAD
 
           {/* toolbar */}
           <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
             ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
             <button className="flex flex-col items-center justify-center w-14 h-14">
               <LucideBookmark className="w-6 h-6" />
+=======
+       
+          {/* Tool Bar */}
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
+            ${lightMode
+            ? "bg-white/5 border-white/60 text-black"
+            : "bg-white/15 border-white/60 text-white "
+            }`}>
+            <button className="flex flex-col items-center justify-center  w-14 h-14">
+              <LucideBookmark className="w-6 h-6 "/>
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
               <span className="text-[10px] mt-1 whitespace-nowrap">Saved</span>
             </button>
 
@@ -577,10 +1210,17 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </button>
           </div>
 
+<<<<<<< HEAD
           {/* profile / sign in */}
           {getIsAuthenticated() ? (
             <div
               className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border shadow-md font-semibold text-sm w-14 cursor-pointer overflow-hidden
+=======
+          {/* User Profile / Sign In */}
+          {getIsAuthenticated() ? ( 
+            <div 
+              className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border-1 shadow-md font-semibold text-sm w-14 cursor-pointer overflow-hidden
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
                 ${lightMode ? "bg-white/5 border-white/60" : "bg-white/15 border-white/60"}`}
               onClick={() => setShowSettings(true)}
               title="Settings"
@@ -602,16 +1242,33 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 </span>
               )}
             </div>
+<<<<<<< HEAD
           ) : (
             <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md bg-lime-700`}>
               <button onClick={() => router.push('/login')} className="flex items-center gap-3 text-base">
                 <span>Sign In</span>
               </button>
             </div>
+=======
+          ) : ( 
+            <div
+              className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md bg-lime-700
+                  ? "bg-white/5 border-white/60 text-black"
+                  : "bg-white/15 border-white/60 text-white"
+                }`}> 
+              <button 
+                onClick={() => router.push('/login')}
+                className="flex items-center gap-3 text-base"
+              >
+                <span>Sign In</span> 
+              </button> 
+            </div> 
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
           )}
         </div>
       </div>
 
+<<<<<<< HEAD
       {showAddOutlet && (
         <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border rounded-3xl shadow-lg w-[28rem] max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
           ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
@@ -773,8 +1430,141 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   }
                 }}
                 className="text-md font-semibold bg-lime-700 rounded-2xl mt-3 px-4 py-1.5"
+=======
+      {/* Add Outlet 5-Step Wizard Modal */}
+      {showAddOutlet && (
+        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1 rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
+          ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
+          
+          {/* Progress Bar */}
+          <div className="flex justify-between mb-4 relative">
+            <div className="absolute top-1/2 left-0 right-0 h-1 bg-white/20 -translate-y-1/2 z-0"></div>
+            {[1, 2, 3, 4, 5].map(step => (
+              <div key={step} className="relative z-10">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                  step <= currentStep 
+                    ? 'bg-lime-600 text-white' 
+                    : 'bg-white/30 text-white/60'
+                }`}>
+                  {step}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Step Indicator */}
+          {/*<div className="text-center mb-6 text-sm opacity-70">
+            Step {currentStep} of 5
+          </div>*/}
+
+          {/* electrium logo */}
+          <div className="flex justify-center mb-4">
+            <div className="w-1/3">
+              <img src="/images/electrium.png" className="w-full h-auto"></img>
+            </div>
+          </div>
+            
+          {/* Step Content */}
+          <div className="flex-grow mb-6">
+            {/* Step 1: Welcome & Location */}
+            {currentStep === 1 && (
+              <Step1
+                address={address}
+                onAddressChange={setAddress}
+                lightMode={lightMode}
+                isExisting={isExisting}
+                onGeoLocateClick={onGeoLocateClick}
+              />
+            )}
+
+            {/* Step 2: Outlet Count & Power Type (Merged) */}
+            {currentStep === 2 && (
+              <Step2
+                outletCount={outletCount}
+                onOutletCountChange={handleOutletCountChange}
+                powerType={powerType}
+                onPowerTypeChange={setPowerType}
+                lightMode={lightMode}
+                isExisting={isExisting}
+              />
+            )}
+
+            {/* Step 3: Port Type & Condition (Merged) */}
+            {currentStep === 3 && (
+              <Step3
+                selectedPort={selectedPort}
+                onPortChange={setSelectedPort}
+                otherPort={otherPort}
+                onOtherPortChange={setOtherPort}
+                condition={condition}
+                onConditionChange={setCondition}
+                lightMode={lightMode}
+                isExisting={isExisting}
+              />
+            )}
+
+            {/* Step 4: Extra Details & File Upload */}
+            {currentStep === 4 && (
+              <Step4
+                extraDetails={extraDetails}
+                onExtraDetailsChange={setExtraDetails}
+                images={images}
+                onImageUpload={handleImageUpload}
+                onRemoveImage={handleRemoveImage}
+                lightMode={lightMode}
+                isExisting={isExisting}
+              />
+            )}
+
+            {/* Step 5: Review */}
+            {currentStep === 5 && (
+              <ReviewStep
+                formData={formData}
+                lightMode={lightMode}
+              />
+            )}
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between w-full">
+            <button
+              onClick={() => {
+                if (currentStep === 1) {
+                  setShowAddOutlet(false);
+                  if (!isExisting) {
+                    onCancelTempPin?.();
+                  }
+                  onClose();
+                  setCurrentStep(1);
+                } else {
+                  handleBack();
+                }
+              }}
+              className="text-md font-semibold bg-red-600 rounded-4xl px-6 py-2 hover:bg-red-700 transition-colors"
+            >
+              {currentStep === 1 ? (isExisting ? "Close" : "Cancel") : "Back"}
+            </button>
+
+            {!isExisting && (
+              <button
+                onClick={currentStep === 5 ? handleSubmit : handleNext}
+                disabled={
+                  (currentStep === 1 && !address.trim()) ||
+                  (currentStep === 2 && (outletCount < 1 || !powerType.trim())) ||
+                  (currentStep === 3 && ((!selectedPort && !otherPort.trim()) || !condition)) ||
+                  (currentStep === 4 && !extraDetails.trim())
+                }
+                className={`text-md font-semibold rounded-4xl px-6 py-2 transition-colors ${
+                  (currentStep === 1 && !address.trim()) ||
+                  (currentStep === 2 && (outletCount < 1 || !powerType.trim())) ||
+                  (currentStep === 3 && ((!selectedPort && !otherPort.trim()) || !condition)) ||
+                  (currentStep === 4 && !extraDetails.trim())
+                    ? 'bg-gray-500 cursor-not-allowed'
+                    : 'bg-lime-700 hover:bg-lime-800'
+                }`}
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
               >
-                Submit
+                {currentStep === 5 ? "Submit" : "Next"}
               </button>
             )}
           </div>
@@ -783,6 +1573,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
       {/* Selected pin overlays */}
       {!showAddOutlet && showPinOverlay && (
+<<<<<<< HEAD
         selectedPin ? (
           <div
             className={`fixed top-[95px] right-6 z-50 p-4 rounded-[22px] shadow-lg w-[325px] max-h-[calc(100vh-140px)] overflow-auto backdrop-blur-sm border
@@ -838,6 +1629,26 @@ const AddOutlet: React.FC<OverlayProps> = ({
             <div
               className={`h-40 rounded-xl mb-4 border-2 border-dashed flex items-center justify-center
           ${lightMode ? "bg-white/10 border-white/40" : "bg-white/10 border-white/30"}`}
+=======
+        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1 text-lg rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
+          ${lightMode
+          ? "bg-white/5 border-white/60 text-black"
+          : "bg-white/15 border-white/60 text-white "
+          }`}>
+          <div className="flex-grow">
+            <h2 className="font-semibold pt-0 p-1 pl-0">
+              You dropped a pin!
+            </h2>
+            <p className="pt-0 p-1 pl-0">
+              Longitude: {coords?.lng.toFixed(5)}
+            </p>
+            <p className="pt-0 p-1 pl-0">
+              Latitude: {coords?.lat.toFixed(5)}
+            </p>
+            <button
+              onClick={onClose}
+              className="font-semibold bg-lime-700 rounded-4xl pl-5 pr-5 p-1 flex justify-center"
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
             >
               <span className="opacity-60 text-sm">Photos coming soon</span>
             </div>
@@ -923,8 +1734,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
         </div>
       )}
 
+      {/* Settings Modal */}
       {showSettings && (
         <div className="fixed top-1/2 left-1/2 z-50 w-[400px] max-w-full p-0 transform -translate-x-1/2 -translate-y-1/2">
+<<<<<<< HEAD
           <div className={`relative bg-gradient-to-br from-white/30 via-black/20 to-white/10 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl px-8 pt-8 pb-6 flex flex-col items-center ${lightMode ? "text-black" : "text-white"}`}>
             <button
               onClick={() => setShowSettings(false)}
@@ -1148,6 +1961,32 @@ const AddOutlet: React.FC<OverlayProps> = ({
             {!hasEmailPasswordProvider() && (
               <div className="px-4 py-3 rounded-lg bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 text-sm mb-4">
                 Password change is only available for accounts signed in with email and password. Google account users should manage their password through their Google account settings.
+=======
+          {/* Your existing settings modal content */}
+        </div>
+      )}
+
+      {/* Nearby Pins Alert */}
+      {!isExisting && (nearbyPinsMessage || isCheckingNearbyPins) && (
+        <div className={`fixed top-20 left-8 z-50 backdrop-blur-md border-1 rounded-2xl shadow-xl p-4 max-w-md transition-all duration-300 ${
+          isCheckingNearbyPins
+            ? lightMode 
+              ? "bg-blue-100/80 border-blue-300 text-blue-900" 
+              : "bg-blue-900/40 border-blue-500/60 text-blue-100"
+            : hasNearbyPins 
+              ? lightMode 
+                ? "bg-green-100/80 border-green-300 text-green-900" 
+                : "bg-green-900/40 border-green-500/60 text-green-100"
+              : lightMode
+                ? "bg-yellow-100/80 border-yellow-300 text-yellow-900"
+                : "bg-yellow-900/40 border-yellow-500/60 text-yellow-100"
+        }`}>
+          {isCheckingNearbyPins ? (
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
+              <div>
+                <p className="font-semibold text-sm">Checking nearby outlets...</p>
+>>>>>>> 019d1c2 (redesign add outlet into seperated pages)
               </div>
             )}
 
