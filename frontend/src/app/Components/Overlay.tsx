@@ -474,12 +474,65 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </button>
           </div>
 
-          {/* filter button */}
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
-            ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
-            <button className="flex items-center gap-3 text-base">
-              <span>Filter</span> <ChevronDown className="w-4 h-4 bold" />
-            </button>
+          {/* filter button with dropdown */}
+          <div className="relative">
+            <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
+              ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
+              <button
+                className="flex items-center gap-3 text-base"
+                onClick={() => setShowFilterDropdown(!showFilterDropdown)}
+              >
+                <span>Filter</span>
+                <ChevronDown className={`w-4 h-4 bold transition-transform ${showFilterDropdown ? "rotate-180" : ""}`} />
+              </button>
+            </div>
+
+            {/* Filter dropdown - matches existing button style */}
+            {showFilterDropdown && (
+              <div className={`absolute top-full right-0 mt-2 w-52 backdrop-blur-sm border rounded-2xl shadow-lg overflow-hidden z-50
+                ${lightMode ? "bg-white/5 border-white/60" : "bg-white/15 border-white/60"}`}>
+
+                {/* Header */}
+                <div className={`px-4 py-3 border-b font-semibold text-base
+                  ${lightMode ? "border-white/30 text-black" : "border-white/20 text-white"}`}>
+                  Port Types
+                </div>
+
+                {/* Port type options - stacked list */}
+                <div className="py-2">
+                  {portOptions.map((portType) => (
+                    <button
+                      key={portType}
+                      className={`w-full px-4 py-3 text-left font-semibold transition-all text-base
+                        ${selectedPortTypes.includes(portType)
+                          ? (lightMode
+                              ? "bg-lime-600/40 text-black border-l-4 border-lime-600"
+                              : "bg-lime-900/70 text-white border-l-4 border-lime-500")
+                          : (lightMode
+                              ? "text-black hover:bg-white/20"
+                              : "text-white hover:bg-white/10")
+                        }`}
+                      onClick={() => handlePortTypeToggle(portType)}
+                    >
+                      {portType}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Clear filters button */}
+                {selectedPortTypes.length > 0 && (
+                  <div className={`px-3 py-3 border-t ${lightMode ? "border-white/30" : "border-white/20"}`}>
+                    <button
+                      onClick={() => onPortTypeFilterChange?.([])}
+                      className={`w-full py-2.5 px-4 rounded-xl font-semibold transition-all text-white
+                        ${lightMode ? "bg-lime-600 hover:bg-lime-700" : "bg-lime-700 hover:bg-lime-800"}`}
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* toolbar */}
