@@ -93,6 +93,7 @@ const MapBox = forwardRef<{
   };
   const userMarkerRootRef = useRef<Root | null>(null);
   const userMarkerElRef = useRef<HTMLDivElement | null>(null);
+  const notifiedStartRef = useRef(false);
 
   // Color for user pointer: black in light mode, white in dark mode
   const pointerColor = lightMode ? '#000000' /* black for light mode */ : '#ffffff' /* white for dark mode */;
@@ -251,18 +252,23 @@ const MapBox = forwardRef<{
       setErrorMessage("Geolocation not available");
       return;
     }
-
+    // mark locating state, but notify parent only after first successful position
     setIsLocating(true);
     setIsFollowing(true);
     // keep refs in sync immediately
     isLocatingRef.current = true;
     isFollowingRef.current = true;
-    // notify parent that following started
-    try { onStartFollow?.(); } catch (e) { /* ignore */ }
+    notifiedStartRef.current = false;
 
     const id = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
+        // notify parent only once after we successfully received a position
+        if (!notifiedStartRef.current) {
+          try { onStartFollow?.(); } catch (e) { /* ignore */ }
+          notifiedStartRef.current = true;
+        }
+
         placeOrUpdateUserMarker(latitude, longitude);
         onCurrentLocation?.(latitude, longitude);
         // update last-follow center
@@ -281,8 +287,14 @@ const MapBox = forwardRef<{
         }
       },
       (err) => {
+        console.warn(err);
         setErrorMessage("Unable to retrieve live location.");
-        console.error(err);
+        // If we haven't yet notified parent that following started, revert locating state
+        if (!notifiedStartRef.current) {
+          setIsLocating(false);
+          isLocatingRef.current = false;
+          try { onStopFollow?.(); } catch (e) { /* ignore */ }
+        }
       },
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
     );
@@ -298,6 +310,7 @@ const MapBox = forwardRef<{
     }
     // notify parent that following stopped
     try { onStopFollow?.(); } catch (e) { /* ignore */ }
+    notifiedStartRef.current = false;
   };
 
   // Cleanup on unmount

@@ -398,12 +398,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 if (current) {
                   // stop following
                   onStopFollow?.();
-                  setIsLocatingToggleProp?.(false);
                 } else {
-                  // trigger a locate and start following
+                  // trigger a locate and start following (MapBox will notify page on success)
                   onGeoLocateClick?.();
                   onStartFollow?.();
-                  setIsLocatingToggleProp?.(true);
                 }
               }}
               title={isLocatingToggleProp ? 'Stop tracking' : 'Show my location'}

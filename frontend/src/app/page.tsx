@@ -64,8 +64,8 @@ export default function Home() {
         setLightMode={setLightMode}
         onCancelTempPin={() => setPurgeTempSignal(Date.now())}
         onGeoLocateClick={() => mapRef.current?.handleGeoLocate()}
-        onStartFollow={() => { mapRef.current?.startFollowing?.(); setIsLocatingToggle(true); }}
-        onStopFollow={() => { mapRef.current?.stopFollowing?.(); setIsLocatingToggle(false); }}
+        onStartFollow={() => { mapRef.current?.startFollowing?.(); }}
+        onStopFollow={() => { mapRef.current?.stopFollowing?.(); }}
         isLocatingToggle={isLocatingToggle}
         setIsLocatingToggle={setIsLocatingToggle}
       />
