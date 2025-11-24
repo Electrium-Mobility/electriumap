@@ -46,7 +46,7 @@ interface MapBoxProps {
 const MapBox = forwardRef<{
     handleGeoLocate: () => void
  }, MapBoxProps>(
-  ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation, onStartFollow, onStopFollow }, ref) => {
+  ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation, onStartFollow, onStopFollow, onMapLoad }, ref) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -533,6 +533,7 @@ const MapBox = forwardRef<{
 
     map.on("load", () => {
       setMapLoaded(true);
+      try { onMapLoad?.(); } catch (e) { /* ignore */ }
 
       // Add heatmap source and layer
       if (!map.getSource(HEATMAP_SOURCE_ID)) {

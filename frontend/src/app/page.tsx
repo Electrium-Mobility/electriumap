@@ -46,6 +46,15 @@ export default function Home() {
         }}
         onStartFollow={() => setIsLocatingToggle(true)}
         onStopFollow={() => setIsLocatingToggle(false)}
+        onMapLoad={() => {
+          // Auto-locate once on first page load (acts like pressing the locate button)
+          try {
+            mapRef.current?.handleGeoLocate?.();
+            mapRef.current?.startFollowing?.();
+          } catch (e) {
+            /* ignore */
+          }
+        }}
         lightMode={lightMode}
         purgeTempPinsSignal={purgeTempSignal}
       />
