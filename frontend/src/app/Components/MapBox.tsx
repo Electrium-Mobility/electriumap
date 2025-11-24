@@ -5,7 +5,7 @@ import { createRoot, Root } from "react-dom/client";
 import { Navigation } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { debounce, Bounds, PinData, isPointInBounds } from "./utils";
+import { debounce, Bounds, PinData, isPointInBounds, calculateBoundsForRadius } from "./utils";
 import pinsData from "./pins.json";            // fallback sample pins – replaced when Firestore loads
 import { isOnLand } from "../utils/addOutlet";
 
@@ -23,7 +23,34 @@ const pinsToGeoJSON = (pins: PinData[]): FeatureCollection<Point> => ({
 
 const HEATMAP_SOURCE_ID = "pins-heatmap-source";
 const HEATMAP_LAYER_ID  = "pins-heatmap-layer";
-const HEATMAP_MAX_ZOOM  = 11; // heatmap visible up to zoom 10
+const HEATMAP_MAX_ZOOM  = 9; // heatmap visible up to zoom 9
+
+// Helper function to map API data to PinData format
+const mapApiDataToPins = (data: any[]): PinData[] => {
+  return data
+    .filter((d: any) => typeof d.latitude === "number" && typeof d.longitude === "number")
+    .map((d: any, idx: number) => ({
+      id: d.id ?? String(idx),
+      lat: d.latitude,
+      lng: d.longitude,
+      title: d.locationName ?? "Outlet",
+      description: d.description ?? "",
+      category: d.chargerType ?? "",
+      fromDb: true,
+    }));
+};
+
+// Helper function to create marker element HTML
+const createMarkerElement = (): string => {
+  return `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+};
+
+// Helper function to merge new pins with existing pins, avoiding duplicates
+const mergePinsWithoutDuplicates = (existingPins: PinData[], newPins: PinData[]): PinData[] => {
+  const existingIds = new Set(existingPins.map(p => p.id));
+  const uniqueNewPins = newPins.filter(p => !existingIds.has(p.id));
+  return [...existingPins, ...uniqueNewPins];
+};
 
 const PINDROP_MIN_ZOOM = 14;
 
@@ -41,16 +68,18 @@ interface MapBoxProps {
   onCurrentLocation?: (lat: number, lng: number) => void;
   onStartFollow?: () => void;
   onStopFollow?: () => void;
+  selectedPortTypes?: string[];
 }
 
 const MapBox = forwardRef<{
     handleGeoLocate: () => void
  }, MapBoxProps>(
-  ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation, onStartFollow, onStopFollow, onMapLoad }, ref) => {
+  ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation, onStartFollow, onStopFollow, onMapLoad, selectedPortTypes = [] }, ref) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const debouncedUpdatePinsRef = useRef<(() => void) | null>(null); //ref to store debouncedUpdatePins func to access flyTo effect
   // Store current bounds and visible pins
   const [currentBounds, setCurrentBounds] = useState<Bounds | null>(null);
   const [visiblePins, setVisiblePins] = useState<PinData[]>([]);
@@ -97,6 +126,7 @@ const MapBox = forwardRef<{
 
   // Color for user pointer: black in light mode, white in dark mode
   const pointerColor = lightMode ? '#000000' /* black for light mode */ : '#ffffff' /* white for dark mode */;
+  const [isLoadingPins, setIsLoadingPins] = useState(false);
 
   //gets current location for user centering
   useImperativeHandle(ref, () => ({
@@ -124,7 +154,7 @@ const MapBox = forwardRef<{
     }
 
     const el = document.createElement("div");
-    el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
+    el.innerHTML = createMarkerElement();
     el.style.cursor = "pointer";
 
     const marker = new mapboxgl.Marker(el)
@@ -381,17 +411,11 @@ const MapBox = forwardRef<{
   useEffect(() => {
     console.log("Flying to searched location")
     if (flyTo && mapLoaded && mapRef.current) {
-      try {
-        programmaticMoveRef.current = true;
-        mapRef.current.flyTo({
-          center: [flyTo.lng, flyTo.lat],
-          zoom: 14,
-          essential: true
-        });
-        mapRef.current.once('idle', () => { programmaticMoveRef.current = false; });
-      } catch (e) {
-        programmaticMoveRef.current = false;
-      }
+      mapRef.current.flyTo({
+        center: [flyTo.lng, flyTo.lat],
+        zoom: 14,
+        essential: true
+      });
     }
   }, [flyTo, mapLoaded]);
 
@@ -402,17 +426,7 @@ const MapBox = forwardRef<{
       .then((data) => {
         if (!Array.isArray(data)) return;
 
-        const mapped: PinData[] = data
-          .filter((d: any) => typeof d.latitude === "number" && typeof d.longitude === "number")
-          .map((d: any, idx: number) => ({
-            id: d.id ?? String(idx),
-            lat: d.latitude,
-            lng: d.longitude,
-            title: d.locationName ?? "Outlet",
-            description: d.description ?? "",
-            category: d.chargerType ?? "",
-            fromDb: true,
-          }));
+        const mapped = mapApiDataToPins(data);
 
         if (mapped.length) {
           setAllPins(mapped);
@@ -439,6 +453,106 @@ const MapBox = forwardRef<{
   const filterPinsByBounds = useCallback((bounds: Bounds): PinData[] => {
     return allPins.filter((pin) => isPointInBounds(pin, bounds));
   }, [allPins]);
+
+// Function to check if a pin matches the selected port filters
+  const matchesPortFilters = useCallback((pin: PinData): boolean => {
+    // If no filters selected, show all pins
+    if (selectedPortTypes.length === 0) return true;
+
+    // Check if pin's category matches any selected port type
+    const portType = pin.category?.trim();
+    return portType ? selectedPortTypes.includes(portType) : false;
+  }, [selectedPortTypes]);
+
+  // Function to filter pins by port type
+  const filterPinsByPortType = useCallback((pins: PinData[]): PinData[] => {
+    return pins.filter(matchesPortFilters);
+  }, [matchesPortFilters]);
+
+  //function to fetch outlets from backend by bounds (returns pins without updating state)
+  const fetchOutletsByBounds = useCallback(async (bounds: Bounds): Promise<PinData[]> => {
+    try {
+      setIsLoadingPins(true);
+
+      // Validate bounds to prevent invalid API calls
+      const { sw, ne } = bounds;
+      if (!isFinite(sw[0]) || !isFinite(sw[1]) || !isFinite(ne[0]) || !isFinite(ne[1])) {
+        console.warn("Invalid bounds provided to fetchOutletsByBounds:", bounds);
+        return [];
+      }
+
+      const url = `/api/outlets?swLat=${bounds.sw[1]}&swLng=${bounds.sw[0]}&neLat=${bounds.ne[1]}&neLng=${bounds.ne[0]}`;
+
+      const response = await fetch(url);
+
+      // Check if response is ok before parsing
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`API error (${response.status}):`, errorText);
+        return [];
+      }
+
+      const data = await response.json();
+
+      // Check if response contains an error
+      if (data?.error) {
+        console.error("API returned error:", data.error);
+        return [];
+      }
+
+      if (!Array.isArray(data)) {
+        console.warn("API response is not an array:", data);
+        return [];
+      }
+
+      const mapped = mapApiDataToPins(data);
+
+      console.log("Fetched outlets for bounds:", mapped);
+      return mapped;
+    } catch (error) {
+      console.error("Error fetching outlets by bounds:", error);
+      // Log more details about the error
+      if (error instanceof TypeError && error.message === "Failed to fetch") {
+        console.error("Network error: Check if the Next.js dev server is running and the API route is accessible");
+      }
+      return [];
+    } finally {
+      setIsLoadingPins(false);
+    }
+  }, []);
+
+  // Effect to handle flying to searched location
+  useEffect(() => {
+    if (flyTo && mapLoaded && mapRef.current) {
+      console.log("Flying to searched location:", flyTo);
+
+      // Calculate bounds for 10km radius around search location
+      const searchBounds = calculateBoundsForRadius(flyTo.lat, flyTo.lng, 10);
+      console.log("Fetching pins within 10km of search location");
+
+      // Fetch all pins within 10km radius before flying
+      fetchOutletsByBounds(searchBounds).then((fetchedPins) => {
+        console.log(`Fetched ${fetchedPins.length} pins within 10km of search location`);
+
+        // Update allPins with fetched pins
+        setAllPins((prev) => mergePinsWithoutDuplicates(prev, fetchedPins));
+      });
+
+      mapRef.current.flyTo({
+        center: [flyTo.lng, flyTo.lat],
+        zoom: 14,
+        essential: true
+      });
+
+      //update pins for new viewport after fly animation
+      mapRef.current.once("moveend", () => { //only fires once per search, not on next drags
+        console.log("Fly completed, updating pins for search location");
+        if (debouncedUpdatePinsRef.current) {
+          debouncedUpdatePinsRef.current();
+        }
+      });
+    }
+  }, [flyTo, mapLoaded, fetchOutletsByBounds]);
 
   // Function to clear all markers
   const clearAllMarkers = useCallback(() => {
@@ -495,24 +609,73 @@ const MapBox = forwardRef<{
 
   // Debounced function to update visible pins
   const debouncedUpdatePins = useCallback(
-    debounce(() => {
+    debounce(async () => {
       if (!mapRef.current) return;
       const zoom = mapRef.current.getZoom();
       const bounds = getBounds();
       if (!bounds) return;
 
       setCurrentBounds(bounds);
-      const filteredPins = filterPinsByBounds(bounds);
-      setVisiblePins(filteredPins);
 
-      if (zoom > HEATMAP_MAX_ZOOM) {
-        renderPins(filteredPins);
-      } else {
-        clearAllMarkers(); // Ensure pins are hidden when heatmap is visible
-      }
+      //fetch extra pins from backend for current bounds/new regions first
+      const fetchedPins = await fetchOutletsByBounds(bounds);
+
+      // Get current allPins state and merge with newly fetched pins
+      setAllPins((prev) => {
+        const updatedPins = mergePinsWithoutDuplicates(prev, fetchedPins);
+
+        // Filter pins that are in the current viewport bounds
+        const pinsInBounds = updatedPins.filter((pin) => isPointInBounds(pin, bounds));
+        const filteredPins = filterPinsByPortType(pinsInBounds);
+        setVisiblePins(filteredPins);
+
+        if (zoom > HEATMAP_MAX_ZOOM) {
+          renderPins(filteredPins);
+        } else {
+          clearAllMarkers(); // Ensure pins are hidden when heatmap is visible
+        }
+
+        return updatedPins;
+      });
     }, 300), // 300ms debounce
-    [getBounds, filterPinsByBounds, renderPins, clearAllMarkers]
+    [getBounds, renderPins, clearAllMarkers, fetchOutletsByBounds, filterPinsByPortType]
   );
+
+  //update ref when debouncedUpdatePins changes
+  useEffect(() => {
+    debouncedUpdatePinsRef.current = debouncedUpdatePins;
+  }, [debouncedUpdatePins]);
+
+  // Auto-updates the heatmap layer when filters change
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current) return;
+
+    const map = mapRef.current;
+    const source = map.getSource(HEATMAP_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+    if (!source) return;
+
+    // Filter pins that match the port type filters
+    const pinsForHeatmap = allPins.filter(matchesPortFilters);
+
+    // Fallback to pinsData if no pins available
+    const dataToShow = pinsForHeatmap.length > 0 ? pinsForHeatmap :
+                       allPins.length > 0 ? allPins :
+                       pinsData;
+
+    source.setData(pinsToGeoJSON(dataToShow));
+
+    // Also update visible markers if we're zoomed in
+    const zoom = map.getZoom();
+    if (zoom > HEATMAP_MAX_ZOOM) {
+      const bounds = getBounds();
+      if (bounds) {
+        const pinsInBounds = allPins.filter((pin) => isPointInBounds(pin, bounds));
+        const visibleFilteredPins = pinsInBounds.filter(matchesPortFilters);
+        renderPins(visibleFilteredPins);
+      }
+    }
+  }, [allPins, matchesPortFilters, mapLoaded, getBounds, renderPins, selectedPortTypes]);
+
 
   useEffect(() => {
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -582,6 +745,7 @@ const MapBox = forwardRef<{
       // Zoom/heatmap toggle
       map.on("zoom", () => {
         const zoom = map.getZoom();
+        console.log(zoom)
         const showHeatmap = zoom < HEATMAP_MAX_ZOOM;
 
         if (map.getLayer(HEATMAP_LAYER_ID)) {
@@ -591,10 +755,9 @@ const MapBox = forwardRef<{
         if (showHeatmap) {
           clearAllMarkers();
         } else {
-          const bounds = getBounds();
-          if (bounds) {
-            const pinsInView = filterPinsByBounds(bounds);
-            renderPins(pinsInView);
+          // Use debouncedUpdatePins to ensure we have the latest pins
+          if (debouncedUpdatePinsRef.current) {
+            debouncedUpdatePinsRef.current();
           }
         }
         });
@@ -634,6 +797,12 @@ const MapBox = forwardRef<{
         }
       });
 
+      //update pins when map is dragged
+      map.on("moveend", () => {
+        if (debouncedUpdatePinsRef.current) {
+          debouncedUpdatePinsRef.current();
+        }
+      });
 
       // Click to drop a temporary pin
       map.on("click", (e: mapboxgl.MapMouseEvent) => {
@@ -708,6 +877,54 @@ const MapBox = forwardRef<{
       : "mapbox://styles/hannahwiens/cmcj9t5wf000v01p6chg0e07a";
 
     mapRef.current.setStyle(newStyle);
+
+    //Readding heatmap after setting newStyle
+    mapRef.current.once('style.load', () => {
+      if (!mapRef.current) return;
+
+    if (!mapRef.current.getSource(HEATMAP_SOURCE_ID)) {
+      mapRef.current.addSource(HEATMAP_SOURCE_ID, {
+        type: "geojson",
+        data: pinsToGeoJSON(pinsData),
+        cluster: false
+      });
+    }
+
+    if (!mapRef.current.getLayer(HEATMAP_LAYER_ID)) {
+        mapRef.current.addLayer({
+          id: HEATMAP_LAYER_ID,
+          type: "heatmap",
+          source: HEATMAP_SOURCE_ID,
+          maxzoom: HEATMAP_MAX_ZOOM,
+          paint: {
+            "heatmap-weight": 1,
+            "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 0, 0.8, 3, 1.2, 5, 1.5, 7, 1.8, 9, 2,],
+            "heatmap-color": [
+              "interpolate",
+              ["linear"],
+              ["heatmap-density"],
+              0, "rgba(33,102,172,0)",
+              0.2, "rgb(103,169,207)",
+              0.4, "rgb(209,229,240)",
+              0.6, "rgb(253,219,199)",
+              0.8, "rgb(239,138,98)",
+              1, "rgb(178,24,43)"
+            ],
+            "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 1, 1, 2, 2, 3, 4, 4, 6, 5, 8, 6, 12, 7, 16, 8, 18, 9, 20],
+            "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 1, 9, 0.8, 10, 0.5, 11, 0]
+          },
+        });
+      }
+
+    const zoom = mapRef.current.getZoom();
+    if (zoom >= HEATMAP_MAX_ZOOM) {
+      const bounds = getBounds();
+      if (bounds) {
+        const pinsInView = filterPinsByBounds(bounds);
+        renderPins(pinsInView);
+      }
+    }
+  });
   }, [lightMode]);
 
 
