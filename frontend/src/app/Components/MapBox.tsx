@@ -1,6 +1,8 @@
 "use client";
 
 import React, { forwardRef, useImperativeHandle, useRef, useEffect,  useState, useCallback} from "react";
+import { createRoot, Root } from "react-dom/client";
+import { Navigation } from "lucide-react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { debounce, Bounds, PinData, isPointInBounds, calculateBoundsForRadius } from "./utils";
@@ -64,13 +66,15 @@ interface MapBoxProps {
   /** Signal to purge temporary pins (increments every cancel) */
   purgeTempPinsSignal?: number;
   onCurrentLocation?: (lat: number, lng: number) => void;
+  onStartFollow?: () => void;
+  onStopFollow?: () => void;
   selectedPortTypes?: string[];
 }
 
 const MapBox = forwardRef<{
     handleGeoLocate: () => void
  }, MapBoxProps>(
-  ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation, selectedPortTypes = [] }, ref) => {
+  ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation, onStartFollow, onStopFollow, onMapLoad, selectedPortTypes = [] }, ref) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -86,14 +90,62 @@ const MapBox = forwardRef<{
   //error message when failing to get current users position
   const [errorMessage, setErrorMessage] = useState('');
   const [mapLoaded, setMapLoaded] = useState(false);
+  // Live location tracking state
+  const [isLocating, setIsLocating] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(true);
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const lastFollowCenterRef = useRef<[number, number] | null>(null);
+  const programmaticMoveRef = useRef(false);
+  const isFollowingRef = useRef(isFollowing);
+  const isLocatingRef = useRef(isLocating);
+
+  // Cancel follow if user moves map further than this (meters)
+  const FOLLOW_CANCEL_METERS = 50;
+
+  // Simple haversine distance (meters) between two [lng, lat]
+  const distanceMeters = (a: [number, number], b: [number, number]) => {
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const [lng1, lat1] = a;
+    const [lng2, lat2] = b;
+    const R = 6371000; // meters
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lng2 - lng1);
+    const rLat1 = toRad(lat1);
+    const rLat2 = toRad(lat2);
+    const sinDLat = Math.sin(dLat / 2);
+    const sinDLon = Math.sin(dLon / 2);
+    const aa = sinDLat * sinDLat + sinDLon * sinDLon * Math.cos(rLat1) * Math.cos(rLat2);
+    const c = 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
+    return R * c;
+  };
+  const userMarkerRootRef = useRef<Root | null>(null);
+  const userMarkerElRef = useRef<HTMLDivElement | null>(null);
+  const notifiedStartRef = useRef(false);
+
+  // Color for user pointer: black in light mode, white in dark mode
+  const pointerColor = lightMode ? '#000000' /* black for light mode */ : '#ffffff' /* white for dark mode */;
   const [isLoadingPins, setIsLoadingPins] = useState(false);
 
   //gets current location for user centering
   useImperativeHandle(ref, () => ({
-    handleGeoLocate
+    handleGeoLocate,
+    startFollowing,
+    stopFollowing,
+    toggleFollowing: () => {
+      if (isLocatingRef.current) {
+        stopFollowing();
+      } else {
+        handleGeoLocate();
+        startFollowing();
+      }
+    },
+    getIsLocating: () => !!isLocatingRef.current,
+    getIsFollowing: () => !!isFollowingRef.current,
   }));
-  
-  //Drops pin at current location 
+
+  //Drops pin at current location
   const dropPinAt = (lat: number, lng: number) => {
     const land = isOnLand(lng, lat);
     if (!land) {
@@ -124,13 +176,15 @@ const MapBox = forwardRef<{
   //flys to current location and drops pin
   const handleGeoLocate = () => {
     setErrorMessage('');
-    
+    setLoadingLocation(true);
     if (!navigator.geolocation) {
       setErrorMessage('Get current location not supported.');
+      setLoadingLocation(false);
       return;
     }
     if (!mapRef.current) {
       console.log("Map not initialized yet");
+      setLoadingLocation(false);
       return;
     }
 
@@ -140,24 +194,36 @@ const MapBox = forwardRef<{
         const fly = () => {
           console.log(`Flying to ${longitude} and ${latitude}`);
           if ( mapLoaded && mapRef.current) {
-            mapRef.current?.flyTo({
-              center: [longitude, latitude],
-              zoom: 15,
-              essential: true
-          });
+            try {
+              programmaticMoveRef.current = true;
+              mapRef.current?.flyTo({
+                center: [longitude, latitude],
+                zoom: 15,
+                essential: true
+              });
+              mapRef.current.once('idle', () => { programmaticMoveRef.current = false; });
+            } catch (e) {
+              programmaticMoveRef.current = false;
+            }
           }
-          
-          onCurrentLocation?.(latitude, longitude);
 
+          onCurrentLocation?.(latitude, longitude);
           mapRef.current?.once("idle", () => {
+            // Place or update user marker
+            placeOrUpdateUserMarker(latitude, longitude);
             dropPinAt(latitude, longitude);
+            // start following by default when user clicks locate
+            setIsFollowing(true);
+            isFollowingRef.current = true;
+            lastFollowCenterRef.current = [longitude, latitude];
           });
+          setLoadingLocation(false);
         };
 
-        // If style isn’t loaded yet, waits for styledata event
-        if (mapRef.current?.isStyleLoaded()) {
+        // If style isn't loaded yet, waits for styledata event
+        if (mapRef.current && mapRef.current?.isStyleLoaded()) {
           fly();
-        } else {
+        } else if (mapRef.current) {
           console.log("Map style not loaded yet, waiting...");
           mapRef.current?.once("styledata", fly);
         }
@@ -165,10 +231,158 @@ const MapBox = forwardRef<{
       //if retrival unsuccessful, displays error
       (error) => {
         setErrorMessage('Unable to retrieve your location.');
+        setLoadingLocation(false);
       },
       { enableHighAccuracy: true }
     );
   };
+
+  // Places or moves the user's navigation marker
+  const placeOrUpdateUserMarker = (lat: number, lng: number) => {
+    if (!mapRef.current) return;
+
+    // If marker already exists, update position and re-render the icon with current color
+    if (userMarkerRef.current && userMarkerElRef.current && userMarkerRootRef.current) {
+      userMarkerRef.current.setLngLat([lng, lat]);
+      try {
+        userMarkerRootRef.current.render(
+          <Navigation color={pointerColor} size={36} />
+        );
+      } catch (e) {
+        console.warn("Failed to re-render user marker icon:", e);
+      }
+      return;
+    }
+
+    // Create element and mount the lucide icon into it
+    const el = document.createElement("div");
+    el.style.transform = "translate(-50%, -50%)";
+    el.style.cursor = "default";
+
+    // Render React icon into the DOM node
+    try {
+      const root = createRoot(el);
+      root.render(<Navigation color={pointerColor} size={36} />);
+      userMarkerRootRef.current = root;
+      userMarkerElRef.current = el;
+    } catch (e) {
+      // Fallback to simple innerHTML if createRoot isn't available
+      el.innerHTML = `<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"36\" height=\"36\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"${pointerColor}\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 3 11 13\"/><path d=\"M21 3 14 21 11 13 3 10 21 3z\"/></svg>`;
+      userMarkerElRef.current = el;
+    }
+
+    userMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: "center" })
+      .setLngLat([lng, lat])
+      .addTo(mapRef.current);
+  };
+
+  // Start watching the user's location and optionally follow
+  const startFollowing = () => {
+    if (!navigator.geolocation || !mapRef.current) {
+      setErrorMessage("Geolocation not available");
+      return;
+    }
+    // mark locating state, but notify parent only after first successful position
+    setIsLocating(true);
+    setIsFollowing(true);
+    // keep refs in sync immediately
+    isLocatingRef.current = true;
+    isFollowingRef.current = true;
+    notifiedStartRef.current = false;
+
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        // notify parent only once after we successfully received a position
+        if (!notifiedStartRef.current) {
+          try { onStartFollow?.(); } catch (e) { /* ignore */ }
+          notifiedStartRef.current = true;
+        }
+
+        placeOrUpdateUserMarker(latitude, longitude);
+        onCurrentLocation?.(latitude, longitude);
+        // update last-follow center
+        lastFollowCenterRef.current = [longitude, latitude];
+
+        if (isFollowingRef.current && mapRef.current) {
+          try {
+            programmaticMoveRef.current = true;
+            mapRef.current.easeTo({ center: [longitude, latitude], zoom: 16, duration: 500 });
+            mapRef.current.once('idle', () => {
+              programmaticMoveRef.current = false;
+            });
+          } catch (e) {
+            programmaticMoveRef.current = false;
+          }
+        }
+      },
+      (err) => {
+        console.warn(err);
+        setErrorMessage("Unable to retrieve live location.");
+        // If we haven't yet notified parent that following started, revert locating state
+        if (!notifiedStartRef.current) {
+          setIsLocating(false);
+          isLocatingRef.current = false;
+          try { onStopFollow?.(); } catch (e) { /* ignore */ }
+        }
+      },
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
+    );
+
+    watchIdRef.current = id as unknown as number;
+  };
+
+  const stopFollowing = () => {
+    setIsLocating(false);
+    if (watchIdRef.current != null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    // notify parent that following stopped
+    try { onStopFollow?.(); } catch (e) { /* ignore */ }
+    notifiedStartRef.current = false;
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (watchIdRef.current != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+      if (userMarkerRef.current) {
+        try { userMarkerRef.current.remove(); } catch (e) {}
+        userMarkerRef.current = null;
+      }
+      if (userMarkerRootRef.current) {
+        try { userMarkerRootRef.current.unmount(); } catch (e) {}
+        userMarkerRootRef.current = null;
+      }
+      userMarkerElRef.current = null;
+    };
+  }, []);
+
+  // Update existing user marker color when pointerColor (theme) changes
+  useEffect(() => {
+    // Prefer re-rendering via react root when available
+    if (userMarkerRootRef.current) {
+      try {
+        userMarkerRootRef.current.render(<Navigation color={pointerColor} size={36} />);
+        return;
+      } catch (e) {
+        console.warn('Failed to update user marker via root render', e);
+      }
+    }
+
+    // Fallback: update the element innerHTML directly
+    if (userMarkerElRef.current) {
+      try {
+        userMarkerElRef.current.innerHTML = `\n<svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"36\\" height=\\"36\\" viewBox=\\"0 0 24 24\\" fill=\\"none\\" stroke=\\"${pointerColor}\\" stroke-width=\\"1.5\\" stroke-linecap=\\"round\\" stroke-linejoin=\\"round\\">\n  <path d=\\"M21 3 11 13\\"/>\n  <path d=\\"M21 3 14 21 11 13 3 10 21 3z\\"/>\n</svg>`;
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [pointerColor]);
 
 
   // Remove any temporary pins that were added by a map click but later cancelled
@@ -192,7 +406,20 @@ const MapBox = forwardRef<{
     });
   }, [purgeTempPinsSignal]);
 
-    // Fetch outlets data from the backend
+
+  // Effect to handle flying to searched location
+  useEffect(() => {
+    console.log("Flying to searched location")
+    if (flyTo && mapLoaded && mapRef.current) {
+      mapRef.current.flyTo({
+        center: [flyTo.lng, flyTo.lat],
+        zoom: 14,
+        essential: true
+      });
+    }
+  }, [flyTo, mapLoaded]);
+
+  // Fetch outlets data from the backend
   useEffect(() => {
     fetch("/api/outlets")
       .then((res) => res.json())
@@ -212,10 +439,10 @@ const MapBox = forwardRef<{
   // Function to get current map bounds
   const getBounds = useCallback((): Bounds | null => {
     if (!mapRef.current) return null;
-    
+
     const bounds = mapRef.current.getBounds();
     if (!bounds) return null;
-    
+
     return {
       sw: [bounds.getWest(), bounds.getSouth()],
       ne: [bounds.getEast(), bounds.getNorth()]
@@ -231,7 +458,7 @@ const MapBox = forwardRef<{
   const matchesPortFilters = useCallback((pin: PinData): boolean => {
     // If no filters selected, show all pins
     if (selectedPortTypes.length === 0) return true;
-    
+
     // Check if pin's category matches any selected port type
     const portType = pin.category?.trim();
     return portType ? selectedPortTypes.includes(portType) : false;
@@ -246,40 +473,40 @@ const MapBox = forwardRef<{
   const fetchOutletsByBounds = useCallback(async (bounds: Bounds): Promise<PinData[]> => {
     try {
       setIsLoadingPins(true);
-      
+
       // Validate bounds to prevent invalid API calls
       const { sw, ne } = bounds;
       if (!isFinite(sw[0]) || !isFinite(sw[1]) || !isFinite(ne[0]) || !isFinite(ne[1])) {
         console.warn("Invalid bounds provided to fetchOutletsByBounds:", bounds);
         return [];
       }
-      
+
       const url = `/api/outlets?swLat=${bounds.sw[1]}&swLng=${bounds.sw[0]}&neLat=${bounds.ne[1]}&neLng=${bounds.ne[0]}`;
-      
+
       const response = await fetch(url);
-      
+
       // Check if response is ok before parsing
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`API error (${response.status}):`, errorText);
         return [];
       }
-      
+
       const data = await response.json();
-      
+
       // Check if response contains an error
       if (data?.error) {
         console.error("API returned error:", data.error);
         return [];
       }
-      
+
       if (!Array.isArray(data)) {
         console.warn("API response is not an array:", data);
         return [];
       }
-      
+
       const mapped = mapApiDataToPins(data);
-      
+
       console.log("Fetched outlets for bounds:", mapped);
       return mapped;
     } catch (error) {
@@ -298,19 +525,19 @@ const MapBox = forwardRef<{
   useEffect(() => {
     if (flyTo && mapLoaded && mapRef.current) {
       console.log("Flying to searched location:", flyTo);
-      
+
       // Calculate bounds for 10km radius around search location
       const searchBounds = calculateBoundsForRadius(flyTo.lat, flyTo.lng, 10);
       console.log("Fetching pins within 10km of search location");
-      
+
       // Fetch all pins within 10km radius before flying
       fetchOutletsByBounds(searchBounds).then((fetchedPins) => {
         console.log(`Fetched ${fetchedPins.length} pins within 10km of search location`);
-        
+
         // Update allPins with fetched pins
         setAllPins((prev) => mergePinsWithoutDuplicates(prev, fetchedPins));
       });
-      
+
       mapRef.current.flyTo({
         center: [flyTo.lng, flyTo.lat],
         zoom: 14,
@@ -361,7 +588,7 @@ const MapBox = forwardRef<{
       const el = document.createElement("div");
       el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
       el.style.cursor = "pointer";
-      
+
       const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(finalHtml);
 
       // Use custom element for the marker
@@ -375,7 +602,7 @@ const MapBox = forwardRef<{
         ev.stopPropagation();
         onPinClick?.(pin);
       });
-      
+
       markersRef.current.push(marker);
     });
   }, [clearAllMarkers, onPinClick]);
@@ -389,14 +616,14 @@ const MapBox = forwardRef<{
       if (!bounds) return;
 
       setCurrentBounds(bounds);
-      
+
       //fetch extra pins from backend for current bounds/new regions first
       const fetchedPins = await fetchOutletsByBounds(bounds);
-      
+
       // Get current allPins state and merge with newly fetched pins
       setAllPins((prev) => {
         const updatedPins = mergePinsWithoutDuplicates(prev, fetchedPins);
-        
+
         // Filter pins that are in the current viewport bounds
         const pinsInBounds = updatedPins.filter((pin) => isPointInBounds(pin, bounds));
         const filteredPins = filterPinsByPortType(pinsInBounds);
@@ -407,7 +634,7 @@ const MapBox = forwardRef<{
         } else {
           clearAllMarkers(); // Ensure pins are hidden when heatmap is visible
         }
-        
+
         return updatedPins;
       });
     }, 300), // 300ms debounce
@@ -422,21 +649,21 @@ const MapBox = forwardRef<{
   // Auto-updates the heatmap layer when filters change
   useEffect(() => {
     if (!mapLoaded || !mapRef.current) return;
-    
+
     const map = mapRef.current;
     const source = map.getSource(HEATMAP_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
     if (!source) return;
-    
+
     // Filter pins that match the port type filters
     const pinsForHeatmap = allPins.filter(matchesPortFilters);
-    
+
     // Fallback to pinsData if no pins available
-    const dataToShow = pinsForHeatmap.length > 0 ? pinsForHeatmap : 
-                       allPins.length > 0 ? allPins : 
+    const dataToShow = pinsForHeatmap.length > 0 ? pinsForHeatmap :
+                       allPins.length > 0 ? allPins :
                        pinsData;
-    
+
     source.setData(pinsToGeoJSON(dataToShow));
-    
+
     // Also update visible markers if we're zoomed in
     const zoom = map.getZoom();
     if (zoom > HEATMAP_MAX_ZOOM) {
@@ -448,7 +675,7 @@ const MapBox = forwardRef<{
       }
     }
   }, [allPins, matchesPortFilters, mapLoaded, getBounds, renderPins, selectedPortTypes]);
-  
+
 
   useEffect(() => {
     mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -469,6 +696,7 @@ const MapBox = forwardRef<{
 
     map.on("load", () => {
       setMapLoaded(true);
+      try { onMapLoad?.(); } catch (e) { /* ignore */ }
 
       // Add heatmap source and layer
       if (!map.getSource(HEATMAP_SOURCE_ID)) {
@@ -534,6 +762,41 @@ const MapBox = forwardRef<{
         }
         });
 
+      // Cancel follow when the user interacts with the map.
+      // - Immediately stop following on user drag (most intuitive UX)
+      // - Also keep a distance-based fallback on `moveend` for non-drag interactions
+      map.on('dragstart', () => {
+        if (isFollowingRef.current) {
+          setIsFollowing(false);
+          isFollowingRef.current = false;
+          try { onStopFollow?.(); } catch (e) { /* ignore */ }
+        }
+      });
+
+      // Cancel follow if user moves the map manually beyond threshold
+      map.on('moveend', (evt: any) => {
+        // If the move was programmatic, ignore it
+        if (programmaticMoveRef.current) return;
+
+        // If there was no user event backing this move (e.g. programmatic), ignore
+        if (!evt || !evt.originalEvent) return;
+
+        if (!isFollowingRef.current) return;
+        if (!mapRef.current) return;
+
+        const center = mapRef.current.getCenter();
+        const centerArr: [number, number] = [center.lng, center.lat];
+        if (lastFollowCenterRef.current) {
+          const dist = distanceMeters(lastFollowCenterRef.current, centerArr);
+          if (dist > FOLLOW_CANCEL_METERS) {
+            // user moved map — stop following
+            setIsFollowing(false);
+            isFollowingRef.current = false;
+            try { onStopFollow?.(); } catch (e) { /* ignore */ }
+          }
+        }
+      });
+
       //update pins when map is dragged
       map.on("moveend", () => {
         if (debouncedUpdatePinsRef.current) {
@@ -573,15 +836,15 @@ const MapBox = forwardRef<{
           fromDb: false,
         };
         setAllPins((prev) => [...prev.filter((p) => !p.id.startsWith("temp-")), tempPin]);
-        
+
         // Marker element
         const el = document.createElement("div");
         el.innerHTML = `<img src="/images/pin_lightning.webp" style="width: 50px; height: 50px;" />`;
         el.style.cursor = "pointer";
-        
+
         const marker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map);
         tempMarkersRef.current.push(marker);
-        
+
         // Click to remove temp pin
         marker.getElement().addEventListener("click", (ev) => {
           ev.stopPropagation();
@@ -589,7 +852,7 @@ const MapBox = forwardRef<{
           tempMarkersRef.current = tempMarkersRef.current.filter((m) => m !== marker);
           setAllPins((pins) => pins.filter((p) => p !== tempPin));
         });
-          
+
         onPinDrop?.(lat, lng);
       });
     });
@@ -622,7 +885,7 @@ const MapBox = forwardRef<{
     if (!mapRef.current.getSource(HEATMAP_SOURCE_ID)) {
       mapRef.current.addSource(HEATMAP_SOURCE_ID, {
         type: "geojson",
-        data: pinsToGeoJSON(pinsData), 
+        data: pinsToGeoJSON(pinsData),
         cluster: false
       });
     }
@@ -663,7 +926,7 @@ const MapBox = forwardRef<{
     }
   });
   }, [lightMode]);
-  
+
 
   return (
     <>
@@ -691,11 +954,26 @@ const MapBox = forwardRef<{
           {errorMessage}
         </div>
       )}
-    </>
+
+    <div className="fixed top-22 left-10 backdrop-blur-lg bg-white/30 border border-white/60 rounded-2xl shadow-lg p-4 text-black">
+      <p className="font-semibold text-sm">Viewport Info</p>
+      <p className="text-xs">Visible Pins: {visiblePins.length}</p>
+      <p className="text-xs">Total Pins: {allPins.length}</p>
+      {currentBounds && (
+        <>
+          <p className="text-xs">
+            SW: [{currentBounds.sw[0].toFixed(3)}, {currentBounds.sw[1].toFixed(3)}]
+          </p>
+          <p className="text-xs">
+            NE: [{currentBounds.ne[0].toFixed(3)}, {currentBounds.ne[1].toFixed(3)}]
+          </p>
+        </>
+      )}
+    </div>
+      </>
     );
   }
 );
 MapBox.displayName = "MapBox";
 
 export default MapBox;
-

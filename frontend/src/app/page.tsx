@@ -14,8 +14,10 @@ export default function Home() {
   const [purgeTempSignal, setPurgeTempSignal] = useState(0);
   const [searchCoords, setSearchCoords] = useState<{ lng: number; lat: number } | null>(null);
   const [selectedPortTypes, setSelectedPortTypes] = useState<string[]>([]);
+  const [isLocatingToggle, setIsLocatingToggle] = useState(false);
 
-  const mapRef = useRef<{ handleGeoLocate: () => void }>(null);
+
+  const mapRef = useRef<any>(null);
 
   const handleSearchSelect = (lng: number, lat: number) => {
     setSearchCoords({lng, lat});
@@ -47,6 +49,17 @@ export default function Home() {
           setSearchCoords({lng, lat});
           setShowPinOverlay(true);
         }}
+        onStartFollow={() => setIsLocatingToggle(true)}
+        onStopFollow={() => setIsLocatingToggle(false)}
+        onMapLoad={() => {
+          // Auto-locate once on first page load (acts like pressing the locate button)
+          try {
+            mapRef.current?.handleGeoLocate?.();
+            mapRef.current?.startFollowing?.();
+          } catch (e) {
+            /* ignore */
+          }
+        }}
         lightMode={lightMode}
         purgeTempPinsSignal={purgeTempSignal}
         selectedPortTypes={selectedPortTypes}
@@ -66,6 +79,10 @@ export default function Home() {
         setLightMode={setLightMode}
         onCancelTempPin={() => setPurgeTempSignal(Date.now())}
         onGeoLocateClick={() => mapRef.current?.handleGeoLocate()}
+        onStartFollow={() => { mapRef.current?.startFollowing?.(); }}
+        onStopFollow={() => { mapRef.current?.stopFollowing?.(); }}
+        isLocatingToggle={isLocatingToggle}
+        setIsLocatingToggle={setIsLocatingToggle}
         selectedPortTypes={selectedPortTypes}
         onPortTypeFilterChange={handlePortTypeFilterChange}
       />

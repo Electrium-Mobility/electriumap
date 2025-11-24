@@ -33,6 +33,10 @@ interface OverlayProps {
   /** Callback when port type filter changes */
   onPortTypeFilterChange?: (portTypes: string[]) => void;
 
+  onStartFollow?: () => void;
+  onStopFollow?: () => void;
+  isLocatingToggle?: boolean;
+  setIsLocatingToggle?: (val: boolean) => void;
 }
 
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
@@ -49,9 +53,16 @@ const AddOutlet: React.FC<OverlayProps> = ({
   onSearchSelect,
   onCancelTempPin,
   onGeoLocateClick,
+  onStartFollow,
+  onStopFollow,
+  isLocatingToggle,
+  setIsLocatingToggle,
   selectedPortTypes = [],
   onPortTypeFilterChange
 }) => {
+  // use locating toggle from parent when provided (lifted state)
+  const isLocatingToggleProp = isLocatingToggle;
+  const setIsLocatingToggleProp = setIsLocatingToggle;
   const [showAddOutlet, setShowAddOutlet] = useState(false);
   const [address, setAddress] = useState("");
   const [outletCount, setOutletCount] = useState(1);
@@ -213,7 +224,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const hasEmailPasswordProvider = () => {
     const user = auth.currentUser;
     if (!user) return false;
-    
+
     // Check if user has password provider linked
     const providers = user.providerData;
     return providers.some(provider => provider.providerId === 'password');
@@ -223,7 +234,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
     e.preventDefault();
     setPasswordError("");
     setPasswordSuccess("");
-    
+
     const user = auth.currentUser;
     if (!user || !user.email) {
       setPasswordError("You must be logged in to change your password");
@@ -235,43 +246,43 @@ const AddOutlet: React.FC<OverlayProps> = ({
       setPasswordError("Password change is not available for accounts signed in with Google. Please use your Google account settings to manage your account.");
       return;
     }
-    
+
     // Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError("All fields are required");
       return;
     }
-    
+
     if (newPassword.length < 6) {
       setPasswordError("New password must be at least 6 characters long");
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
       setPasswordError("New passwords do not match");
       return;
     }
-    
+
     if (currentPassword === newPassword) {
       setPasswordError("New password must be different from current password");
       return;
     }
-    
+
     setIsChangingPassword(true);
-    
+
     try {
       // Reauthenticate user with current password
       const credential = EmailAuthProvider.credential(user.email, currentPassword);
       await reauthenticateWithCredential(user, credential);
-      
+
       // Update password
       await updatePassword(user, newPassword);
-      
+
       setPasswordSuccess("Password changed successfully!");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      
+
       // Close modal after 2 seconds
       setTimeout(() => {
         setShowChangePassword(false);
@@ -351,7 +362,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
     const newSelectedTypes = selectedPortTypes.includes(portType)
       ? selectedPortTypes.filter(t => t !== portType)
       : [...selectedPortTypes, portType];
-    
+
     onPortTypeFilterChange?.(newSelectedTypes);
   };
 
@@ -450,7 +461,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
         {/* dark/light mode switch */}
         <div className="flex items-center gap-6">
-          <div className={`relative flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md 
+          <div className={`relative flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
             ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
             <div
               className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-900/70'}`}
@@ -463,11 +474,11 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </button>
           </div>
 
-{/* filter button with dropdown */}
+          {/* filter button with dropdown */}
           <div className="relative">
-            <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md 
+            <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
               ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
-              <button 
+              <button
                 className="flex items-center gap-3 text-base"
                 onClick={() => setShowFilterDropdown(!showFilterDropdown)}
               >
@@ -480,13 +491,13 @@ const AddOutlet: React.FC<OverlayProps> = ({
             {showFilterDropdown && (
               <div className={`absolute top-full right-0 mt-2 w-52 backdrop-blur-sm border rounded-2xl shadow-lg overflow-hidden z-50
                 ${lightMode ? "bg-white/5 border-white/60" : "bg-white/15 border-white/60"}`}>
-                
+
                 {/* Header */}
                 <div className={`px-4 py-3 border-b font-semibold text-base
                   ${lightMode ? "border-white/30 text-black" : "border-white/20 text-white"}`}>
                   Port Types
                 </div>
-                
+
                 {/* Port type options - stacked list */}
                 <div className="py-2">
                   {portOptions.map((portType) => (
@@ -494,11 +505,11 @@ const AddOutlet: React.FC<OverlayProps> = ({
                       key={portType}
                       className={`w-full px-4 py-3 text-left font-semibold transition-all text-base
                         ${selectedPortTypes.includes(portType)
-                          ? (lightMode 
-                              ? "bg-lime-600/40 text-black border-l-4 border-lime-600" 
+                          ? (lightMode
+                              ? "bg-lime-600/40 text-black border-l-4 border-lime-600"
                               : "bg-lime-900/70 text-white border-l-4 border-lime-500")
-                          : (lightMode 
-                              ? "text-black hover:bg-white/20" 
+                          : (lightMode
+                              ? "text-black hover:bg-white/20"
                               : "text-white hover:bg-white/10")
                         }`}
                       onClick={() => handlePortTypeToggle(portType)}
@@ -525,7 +536,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
           </div>
 
           {/* toolbar */}
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md 
+          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
             ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
             <button className="flex flex-col items-center justify-center w-14 h-14">
               <LucideBookmark className="w-6 h-6" />
@@ -543,6 +554,26 @@ const AddOutlet: React.FC<OverlayProps> = ({
             >
               <LucidePlus className="w-7 h-7 text-lime-600" />
               <span className="text-[10px] whitespace-nowrap">Add Outlet</span>
+            </button>
+
+            {/* locate / follow button */}
+            <button
+              onClick={() => {
+                const current = !!isLocatingToggleProp;
+                if (current) {
+                  // stop following
+                  onStopFollow?.();
+                } else {
+                  // trigger a locate and start following (MapBox will notify page on success)
+                  onGeoLocateClick?.();
+                  onStartFollow?.();
+                }
+              }}
+              title={isLocatingToggleProp ? 'Stop tracking' : 'Show my location'}
+              className={`flex flex-col items-center justify-center w-14 h-14 ${isLocatingToggleProp ? 'text-lime-600' : ''}`}
+            >
+              <LucideNavigation className="w-6 h-6" />
+              <span className="text-[10px] mt-1 whitespace-nowrap">Locate</span>
             </button>
           </div>
 
@@ -855,7 +886,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </div>
           </div>
         ) : (
-          
+
           <div className={`fixed top-[95px] right-6 z-50 p-6 rounded-3xl shadow-lg w-[380px] backdrop-blur-sm border
       ${lightMode ? "bg-white/5 border-white/60 text-white" : "bg-white/15 border-white/60 text-white"}`}>
             <h2 className="text-lg font-semibold mb-2">You dropped a pin!</h2>
@@ -1015,7 +1046,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
               <div className="rounded-xl backdrop-blur-md">
                 {hasEmailPasswordProvider() ? (
-                  <button 
+                  <button
                     onClick={() => {
                       setShowChangePassword(true);
                       setPasswordError("");
@@ -1079,7 +1110,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
       {showChangePassword && (
         <>
           {/* Backdrop */}
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
             onClick={() => {
               if (!isChangingPassword) {
