@@ -13,6 +13,7 @@ export default function Home() {
   const [selectedPin, setSelectedPin] = useState<PinData | null>(null);
   const [purgeTempSignal, setPurgeTempSignal] = useState(0);
   const [searchCoords, setSearchCoords] = useState<{ lng: number; lat: number } | null>(null);
+  const [isLocatingToggle, setIsLocatingToggle] = useState(false);
 
 
   const mapRef = useRef<any>(null);
@@ -43,6 +44,8 @@ export default function Home() {
           setSearchCoords({lng, lat});
           setShowPinOverlay(true);
         }}
+        onStartFollow={() => setIsLocatingToggle(true)}
+        onStopFollow={() => setIsLocatingToggle(false)}
         lightMode={lightMode}
         purgeTempPinsSignal={purgeTempSignal}
       />
@@ -61,8 +64,10 @@ export default function Home() {
         setLightMode={setLightMode}
         onCancelTempPin={() => setPurgeTempSignal(Date.now())}
         onGeoLocateClick={() => mapRef.current?.handleGeoLocate()}
-        onStartFollow={() => mapRef.current?.startFollowing?.()}
-        onStopFollow={() => mapRef.current?.stopFollowing?.()}
+        onStartFollow={() => { mapRef.current?.startFollowing?.(); setIsLocatingToggle(true); }}
+        onStopFollow={() => { mapRef.current?.stopFollowing?.(); setIsLocatingToggle(false); }}
+        isLocatingToggle={isLocatingToggle}
+        setIsLocatingToggle={setIsLocatingToggle}
       />
     </div>
   );

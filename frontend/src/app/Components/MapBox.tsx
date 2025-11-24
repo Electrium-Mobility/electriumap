@@ -39,12 +39,14 @@ interface MapBoxProps {
   /** Signal to purge temporary pins (increments every cancel) */
   purgeTempPinsSignal?: number;
   onCurrentLocation?: (lat: number, lng: number) => void;
+  onStartFollow?: () => void;
+  onStopFollow?: () => void;
 }
 
 const MapBox = forwardRef<{
     handleGeoLocate: () => void
  }, MapBoxProps>(
-  ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation }, ref) => {
+  ({ width = "100vw", height = "100vh", onPinDrop, onPinClick, lightMode, flyTo, purgeTempPinsSignal, onCurrentLocation, onStartFollow, onStopFollow }, ref) => {
   // Store marker references outside useEffect
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -255,6 +257,8 @@ const MapBox = forwardRef<{
     // keep refs in sync immediately
     isLocatingRef.current = true;
     isFollowingRef.current = true;
+    // notify parent that following started
+    try { onStartFollow?.(); } catch (e) { /* ignore */ }
 
     const id = navigator.geolocation.watchPosition(
       (pos) => {
@@ -292,6 +296,8 @@ const MapBox = forwardRef<{
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
+    // notify parent that following stopped
+    try { onStopFollow?.(); } catch (e) { /* ignore */ }
   };
 
   // Cleanup on unmount
@@ -579,9 +585,25 @@ const MapBox = forwardRef<{
         }
         });
 
+      // Cancel follow when the user interacts with the map.
+      // - Immediately stop following on user drag (most intuitive UX)
+      // - Also keep a distance-based fallback on `moveend` for non-drag interactions
+      map.on('dragstart', () => {
+        if (isFollowingRef.current) {
+          setIsFollowing(false);
+          isFollowingRef.current = false;
+          try { onStopFollow?.(); } catch (e) { /* ignore */ }
+        }
+      });
+
       // Cancel follow if user moves the map manually beyond threshold
-      map.on('moveend', () => {
-        if (programmaticMoveRef.current) return; // ignore programmatic moves
+      map.on('moveend', (evt: any) => {
+        // If the move was programmatic, ignore it
+        if (programmaticMoveRef.current) return;
+
+        // If there was no user event backing this move (e.g. programmatic), ignore
+        if (!evt || !evt.originalEvent) return;
+
         if (!isFollowingRef.current) return;
         if (!mapRef.current) return;
 
@@ -593,6 +615,7 @@ const MapBox = forwardRef<{
             // user moved map — stop following
             setIsFollowing(false);
             isFollowingRef.current = false;
+            try { onStopFollow?.(); } catch (e) { /* ignore */ }
           }
         }
       });

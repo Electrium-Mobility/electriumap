@@ -30,6 +30,8 @@ interface OverlayProps {
   onGeoLocateClick?: () => void
   onStartFollow?: () => void;
   onStopFollow?: () => void;
+  isLocatingToggle?: boolean;
+  setIsLocatingToggle?: (val: boolean) => void;
 }
 
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
@@ -47,9 +49,13 @@ const AddOutlet: React.FC<OverlayProps> = ({
   onCancelTempPin,
   onGeoLocateClick,
   onStartFollow,
-  onStopFollow
+  onStopFollow,
+  isLocatingToggle,
+  setIsLocatingToggle
 }) => {
-  const [isLocatingToggle, setIsLocatingToggle] = useState(false);
+  // use locating toggle from parent when provided (lifted state)
+  const isLocatingToggleProp = isLocatingToggle;
+  const setIsLocatingToggleProp = setIsLocatingToggle;
   const [showAddOutlet, setShowAddOutlet] = useState(false);
   const [address, setAddress] = useState("");
   const [outletCount, setOutletCount] = useState(1);
@@ -388,19 +394,20 @@ const AddOutlet: React.FC<OverlayProps> = ({
             {/* locate / follow button */}
             <button
               onClick={() => {
-                if (isLocatingToggle) {
+                const current = !!isLocatingToggleProp;
+                if (current) {
                   // stop following
                   onStopFollow?.();
-                  setIsLocatingToggle(false);
+                  setIsLocatingToggleProp?.(false);
                 } else {
                   // trigger a locate and start following
                   onGeoLocateClick?.();
                   onStartFollow?.();
-                  setIsLocatingToggle(true);
+                  setIsLocatingToggleProp?.(true);
                 }
               }}
-              title={isLocatingToggle ? 'Stop tracking' : 'Show my location'}
-              className={`flex flex-col items-center justify-center w-14 h-14 ${isLocatingToggle ? 'text-lime-600' : ''}`}
+              title={isLocatingToggleProp ? 'Stop tracking' : 'Show my location'}
+              className={`flex flex-col items-center justify-center w-14 h-14 ${isLocatingToggleProp ? 'text-lime-600' : ''}`}
             >
               <LucideNavigation className="w-6 h-6" />
               <span className="text-[10px] mt-1 whitespace-nowrap">Locate</span>
