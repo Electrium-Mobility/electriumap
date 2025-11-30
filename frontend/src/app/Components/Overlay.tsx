@@ -1100,8 +1100,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
               <div key={step} className="relative z-10">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
                   step <= currentStep 
-                    ? 'bg-lime-600 text-white' 
-                    : 'bg-white/30 text-white/60'
+                        ? (lightMode ? 'bg-lime-600 text-white' : 'bg-lime-600 text-white')
+                        : (lightMode ? 'bg-gray-200 text-black/60' : 'bg-white/30 text-white/60')
                 }`}>
                   {step}
                 </div>
@@ -1197,7 +1197,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   handleBack();
                 }
               }}
-              className="text-md font-semibold bg-red-600 rounded-4xl px-6 py-2 hover:bg-red-700 transition-colors"
+              className="text-md font-semibold text-white bg-red-600 rounded-4xl px-6 py-2 hover:bg-red-700 transition-colors"
             >
               {currentStep === 1 ? (isExisting ? "Close" : "Cancel") : "Back"}
             </button>
@@ -1220,7 +1220,9 @@ const AddOutlet: React.FC<OverlayProps> = ({
                     : 'bg-lime-700 hover:bg-lime-800'
                 }`}
               >
+                <div className='text-white'>
                 {currentStep === 5 ? "Submit" : "Next"}
+                </div>
               </button>
             )}
           </div>
