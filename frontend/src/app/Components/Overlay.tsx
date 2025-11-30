@@ -6,11 +6,7 @@ import { addOutletFrontend, addOutlet, isOnLand } from "../utils/addOutlet";
 import {
   LucideBookmark, LucideClock, LucidePlus, LucideLocateFixed, LucideSearch,
   LucideUpload, SunMedium, Moon, ChevronDown, Plus, Bike, PlugZap, User,
-<<<<<<< HEAD
-  ArrowRight, MapPin, LucideX, Save, LucidePlugZap, LucideStar, LucideNavigation, LucidePlayCircle
-=======
   ArrowRight, MapPin, LucideX, Save, LucidePlugZap, LucideStar, LucideNavigation, LucidePlayCircle, Cable
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
 } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
@@ -32,7 +28,6 @@ interface OverlayProps {
   /** Called when the user cancels adding a new outlet so the temporary pin can be removed */
   onCancelTempPin?: () => void;
   onGeoLocateClick?: () => void;
-<<<<<<< HEAD
     /** Port types selected for filtering */
   selectedPortTypes?: string[];
   /** Callback when port type filter changes */
@@ -42,8 +37,6 @@ interface OverlayProps {
   onStopFollow?: () => void;
   isLocatingToggle?: boolean;
   setIsLocatingToggle?: (val: boolean) => void;
-=======
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
 }
 
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
@@ -498,7 +491,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [userOutlets, setUserOutlets] = useState<Array<{ id: string, locationName: string }>>([]);
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const [isUpdatingProfileImage, setIsUpdatingProfileImage] = useState(false);
-<<<<<<< HEAD
       // Filter dropdown state
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
@@ -510,16 +502,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-=======
-  const [showChangePassword, setShowChangePassword] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [passwordSuccess, setPasswordSuccess] = useState("");
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
   // Nearby pins state
   const [nearbyPinsMessage, setNearbyPinsMessage] = useState<string>("");
   const [hasNearbyPins, setHasNearbyPins] = useState<boolean | null>(null);
@@ -686,32 +668,15 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
   // If new coordinates are provided (e.g. map click), pre-fill address and auto-open the form
   useEffect(() => {
-<<<<<<< HEAD
-
-=======
-    if (!coords) return;
-    setAddress(`${coords.lng.toFixed(5)} ${coords.lat.toFixed(5)}`);
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     if (!selectedPin) {
       if (!coords) return;
       setAddress(`${coords.lng.toFixed(5)} ${coords.lat.toFixed(5)}`);
       setShowAddOutlet(true);
-<<<<<<< HEAD
     } else {
       setShowAddOutlet(false);                // <— key line
       setAddress(selectedPin.title || "");
       setPowerType(selectedPin.category || "");
       setExtraDetails(selectedPin.description || "");
-=======
-    }
-  }, [coords, selectedPin]);
-
-  // If a pin on the map is selected, pre-fill form fields
-  useEffect(() => {
-    if (selectedPin) {
-      setShowAddOutlet(true);
-      setAddress(selectedPin.title || "");
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     }
   }, [coords, selectedPin]);
 
@@ -743,11 +708,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const hasEmailPasswordProvider = () => {
     const user = auth.currentUser;
     if (!user) return false;
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     // Check if user has password provider linked
     const providers = user.providerData;
     return providers.some(provider => provider.providerId === 'password');
@@ -757,11 +717,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
     e.preventDefault();
     setPasswordError("");
     setPasswordSuccess("");
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     const user = auth.currentUser;
     if (!user || !user.email) {
       setPasswordError("You must be logged in to change your password");
@@ -773,76 +728,38 @@ const AddOutlet: React.FC<OverlayProps> = ({
       setPasswordError("Password change is not available for accounts signed in with Google. Please use your Google account settings to manage your account.");
       return;
     }
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     // Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError("All fields are required");
       return;
     }
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     if (newPassword.length < 6) {
       setPasswordError("New password must be at least 6 characters long");
       return;
     }
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     if (newPassword !== confirmPassword) {
       setPasswordError("New passwords do not match");
       return;
     }
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     if (currentPassword === newPassword) {
       setPasswordError("New password must be different from current password");
       return;
     }
-<<<<<<< HEAD
 
     setIsChangingPassword(true);
 
-=======
-    
-    setIsChangingPassword(true);
-    
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
     try {
       // Reauthenticate user with current password
       const credential = EmailAuthProvider.credential(user.email, currentPassword);
       await reauthenticateWithCredential(user, credential);
-<<<<<<< HEAD
 
       // Update password
       await updatePassword(user, newPassword);
 
-=======
-      
-      // Update password
-      await updatePassword(user, newPassword);
-      
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
       setPasswordSuccess("Password changed successfully!");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
       // Close modal after 2 seconds
       setTimeout(() => {
         setShowChangePassword(false);
@@ -898,10 +815,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
     onSearchSelect?.(result.center[0], result.center[1]);
   };
 
-<<<<<<< HEAD
   // Enter key selects first result
-=======
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchResults.length > 0) {
       handleSearchResultClick(searchResults[0]);
@@ -920,7 +834,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
     return () => clearTimeout(timeoutId);
   }, [searchValue]);
 
-<<<<<<< HEAD
     // --- Filter handlers ---
   const handlePortTypeToggle = (portType: string) => {
     const newSelectedTypes = selectedPortTypes.includes(portType)
@@ -930,8 +843,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
     onPortTypeFilterChange?.(newSelectedTypes);
   };
 
-=======
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
   // --- Nearby Pins helpers ---
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
     const R = 6371; // km
@@ -962,11 +873,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
           fromDb: true
         };
       });
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
       // within 10km, exclude essentially same point (< ~10m)
       const nearbyPins = allPins.filter((pin: PinData) => {
         if (pin.lat == null || pin.lng == null) return false;
@@ -992,11 +898,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
   };
 
   useEffect(() => {
-<<<<<<< HEAD
     if (searchCoords?.lat != null && searchCoords?.lng != null) {
-=======
-    if (searchCoords?.lat && searchCoords?.lng) {
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
       checkNearbyPins(searchCoords.lat, searchCoords.lng);
     }
   }, [searchCoords, isExisting]);
@@ -1004,13 +906,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
   return (
     <>
       <div className="fixed top-4 left-0 w-full flex items-center justify-between px-8 z-50 h-14">
-<<<<<<< HEAD
         {/* search bar */}
         <div className={`relative flex items-center px-4 h-full backdrop-blur-sm border font-semibold rounded-full shadow-lg w-[360px]
-=======
-        {/* Search Bar */}
-        <div className={`flex items-center px-4 h-full backdrop-blur-sm border-1 font-semibold rounded-full shadow-lg w-[360px]
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
           ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
           <input
             type="text"
@@ -1020,7 +917,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
             onKeyDown={handleSearchKeyDown}
             className={`bg-transparent outline-none w-full text-md ${lightMode ? "placeholder-black/60" : "placeholder-white/60"}`}
           />
-<<<<<<< HEAD
           <LucideSearch className="w-5 h-5 font-semibold" />
           {/* search results dropdown */}
           {showSearchResults && searchResults.length > 0 && (
@@ -1043,36 +939,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
         <div className="flex items-center gap-6">
           <div className={`relative flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
             ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
-=======
-          <LucideSearch className={`w-5 h-5 font-semibold`} />
-          
-        {showSearchResults && searchResults.length > 0 && (
-          <div className={`absolute top-full left-0 w-full mt-2 bg-white/10 font-semibold rounded-lg shadow-lg max-h-60 overflow-y-auto border-1 backdrop-blur-sm
-            ${lightMode
-          ? " border-white/60 text-black"
-          : " border-white/60 text-white "
-          }`}>
-            {searchResults.map((result, index) => (
-              <div
-                key={index}
-                className="px-4 py-3 hover:bg-white/20 backdrop-blur-sm cursor-pointer border-b border-white/10 last:border-b-0"
-                onClick={() => handleSearchResultClick(result)}
-              >
-                {result.place_name}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Dark/Light Mode Switch */}
-      <div className="flex items-center gap-6"> 
-        <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
-          ${lightMode
-          ? "bg-white/5 border-white/60 text-black"
-          : "bg-white/15 border-white/60 text-white "
-          }`}>
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
             <div
               className={`absolute top-0 h-full w-1/2 rounded-xl transition-all duration-300 ${lightMode ? 'left-0 bg-lime-600/40' : 'left-1/2 bg-lime-900/70'}`}
             />
@@ -1084,7 +950,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </button>
           </div>
 
-<<<<<<< HEAD
           {/* filter button with dropdown */}
           <div className="relative">
             <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
@@ -1095,16 +960,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
               >
                 <span>Filter</span>
                 <ChevronDown className={`w-4 h-4 bold transition-transform ${showFilterDropdown ? "rotate-180" : ""}`} />
-=======
-          {/* Filter Button */}
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
-            ${lightMode
-            ? "bg-white/5 border-white/60 text-black"
-            : "bg-white/15 border-white/60 text-white "
-            }`}>
-              <button className="flex items-center gap-3 text-base">
-                <span>Filter</span> <ChevronDown className="w-4 h-4 bold"/> 
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
               </button>
             </div>
 
@@ -1155,24 +1010,12 @@ const AddOutlet: React.FC<OverlayProps> = ({
               </div>
             )}
           </div>
-<<<<<<< HEAD
 
           {/* toolbar */}
           <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
             ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
             <button className="flex flex-col items-center justify-center w-14 h-14">
               <LucideBookmark className="w-6 h-6" />
-=======
-       
-          {/* Tool Bar */}
-          <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md 
-            ${lightMode
-            ? "bg-white/5 border-white/60 text-black"
-            : "bg-white/15 border-white/60 text-white "
-            }`}>
-            <button className="flex flex-col items-center justify-center  w-14 h-14">
-              <LucideBookmark className="w-6 h-6 "/>
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
               <span className="text-[10px] mt-1 whitespace-nowrap">Saved</span>
             </button>
 
@@ -1210,17 +1053,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
             </button>
           </div>
 
-<<<<<<< HEAD
           {/* profile / sign in */}
           {getIsAuthenticated() ? (
             <div
               className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border shadow-md font-semibold text-sm w-14 cursor-pointer overflow-hidden
-=======
-          {/* User Profile / Sign In */}
-          {getIsAuthenticated() ? ( 
-            <div 
-              className={`flex items-center justify-center h-14 aspect-square rounded-xl backdrop-blur-sm border-1 shadow-md font-semibold text-sm w-14 cursor-pointer overflow-hidden
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
                 ${lightMode ? "bg-white/5 border-white/60" : "bg-white/15 border-white/60"}`}
               onClick={() => setShowSettings(true)}
               title="Settings"
@@ -1242,195 +1078,16 @@ const AddOutlet: React.FC<OverlayProps> = ({
                 </span>
               )}
             </div>
-<<<<<<< HEAD
           ) : (
             <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md bg-lime-700`}>
               <button onClick={() => router.push('/login')} className="flex items-center gap-3 text-base">
                 <span>Sign In</span>
               </button>
             </div>
-=======
-          ) : ( 
-            <div
-              className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border-1 rounded-xl shadow-md bg-lime-700
-                  ? "bg-white/5 border-white/60 text-black"
-                  : "bg-white/15 border-white/60 text-white"
-                }`}> 
-              <button 
-                onClick={() => router.push('/login')}
-                className="flex items-center gap-3 text-base"
-              >
-                <span>Sign In</span> 
-              </button> 
-            </div> 
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
           )}
         </div>
       </div>
 
-<<<<<<< HEAD
-      {showAddOutlet && (
-        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border rounded-3xl shadow-lg w-[28rem] max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
-          ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
-          <div className="flex-grow">
-            <h2 className="font-semibold text-lg pb-1 pt-0 p-1 pl-0">
-              Address <span className="text-red-500">*</span>
-            </h2>
-
-            <div className="flex items-center">
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                readOnly={isExisting}
-                disabled={isExisting}
-                className="text-lg bg-white/35 rounded-md shadow-lg w-full h-7 p-1"
-              />
-              <button
-                onClick={onGeoLocateClick}
-                title="Find my location"
-                className="p-1 pr-0 hover:opacity-75 transition"
-              >
-                <LucideLocateFixed className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="flex items-center space-x-1 p-2 pl-0 pb-1">
-              <h2 className="font-semibold text-lg p-1 pb-1 pt-2 pr-1 pl-0">
-                Number of Outlets <span className="text-red-500">*</span>
-              </h2>
-              <div className="flex items-center bg-white/35 rounded-md px-0 py-0">
-                <button
-                  onClick={() => setOutletCount((prev) => Math.max(prev - 1, 0))}
-                  disabled={isExisting}
-                  className="text-lg px-1"
-                >
-                  &lt;
-                </button>
-                <span className="text-lg font-semibold px-1">{outletCount}</span>
-                <button
-                  onClick={() => setOutletCount((prev) => prev + 1)}
-                  disabled={isExisting}
-                  className="text-lg px-1"
-                >
-                  &gt;
-                </button>
-              </div>
-            </div>
-
-            <h2 className="font-semibold text-lg p-1 pb-1 pt-0 pl-0">Power Type</h2>
-            <input
-              type="text"
-              value={powerType}
-              onChange={(e) => setPowerType(e.target.value)}
-              readOnly={isExisting}
-              disabled={isExisting}
-              className="text-lg bg-white/35 rounded-md shadow-lg w-full h-7 p-1"
-            />
-
-            <div className="flex w-full gap-6">
-              <div className="w-1/2">
-                <h2 className="font-semibold text-lg p-1 pb-0 pl-0">Port Type</h2>
-                {portOptions.map((option) => (
-                  <div
-                    key={option}
-                    className="flex items-center mb-1 cursor-pointer text-md"
-                    onClick={() => { if (!isExisting) setSelectedPort(option); }}
-                  >
-                    <div className={`w-5 h-5 mr-2 flex items-center justify-center rounded-md ${selectedPort === option ? "bg-white/35" : "bg-white/50"}`}>
-                      {selectedPort === option && <span className={`text-md ${lightMode ? "text-lime-600" : "text-lime-500"}`}>✔</span>}
-                    </div>
-                    <span className="text-md">{option}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="w-1/2">
-                <h2 className="font-semibold text-lg p-1 pb-0 pl-0">Condition</h2>
-                {conditionOptions.map((option) => (
-                  <div
-                    key={option}
-                    className="flex items-center mb-1 cursor-pointer text-md"
-                    onClick={() => { if (!isExisting) setSelectedCondition(option); }}
-                  >
-                    <div className={`w-5 h-5 mr-2 flex items-center justify-center rounded-sm ${selectedCondition === option ? "bg-white/35" : "bg-white/50"}`}>
-                      {selectedCondition === option && <span className={`text-md ${lightMode ? "text-lime-600" : "text-lime-500"}`}>✔</span>}
-                    </div>
-                    <span className="text-md">{option}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <h2 className="font-semibold text-lg p-1 pb-0 pl-0">Extra Details</h2>
-            <input
-              type="text"
-              value={extraDetails}
-              onChange={(e) => setExtraDetails(e.target.value)}
-              readOnly={isExisting}
-              disabled={isExisting}
-              className="text-lg bg-white/35 rounded-md shadow-lg w-full h-7 p-1"
-            />
-          </div>
-
-          <div className={`relative p-7 mt-4 w-full min-h-[80px] max-h-[25vh] overflow-hidden backdrop-blur-sm bg-white/1 border-2 border-dotted rounded-2xl shadow-lg flex items-center justify-center text-center
-            ${lightMode ? "text-black/60 bg-white/20 border-white/60" : "text-white/40 bg-white/15 border-white/60"}`}>
-            <LucideUpload className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[80%] w-12 h-12" />
-            <h2 className="font-semibold text-sm p-4 pt-14">Choose a file or drag it in here.</h2>
-          </div>
-
-          <div className="flex justify-between w-full">
-            <button
-              onClick={() => {
-                setShowAddOutlet(false);
-                if (!isExisting) onCancelTempPin?.();
-                onClose();
-              }}
-              className="text-md font-semibold bg-red-600 rounded-2xl mt-3 px-4 py-1.5"
-            >
-              {isExisting ? "Close" : "Cancel"}
-            </button>
-
-            {!isExisting && (
-              <button
-                onClick={async () => {
-                  if (address !== "" && outletCount !== 0) {
-                    try {
-                      // Get the authenticated user's UID (required by Firestore rules)
-                      const currentUser = auth.currentUser;
-                      if (!currentUser) {
-                        throw new Error("You must be signed in to add an outlet.");
-                      }
-                      const userId = currentUser.uid;
-
-                      if (coords) {
-                        await addOutlet({
-                          latitude: coords.lat,
-                          longitude: coords.lng,
-                          userName: userName || "Anonymous",
-                          userId: userId,
-                          locationName: address,
-                          chargerType: powerType || selectedPort,
-                          description: `Condition: ${selectedCondition}. ${extraDetails}`,
-                        });
-                      } else {
-                        await addOutletFrontend({
-                          userName: userName || "Anonymous",
-                          userId: userId,
-                          locationName: address,
-                          chargerType: powerType || selectedPort,
-                          description: `Condition: ${selectedCondition}. ${extraDetails}`,
-                        });
-                      }
-                      setShowAddOutlet(false);
-                    } catch (err) {
-                      console.error("Error submitting outlet:", err);
-                      alert(err instanceof Error ? err.message : "Failed to add outlet. Please try again.");
-                    }
-                  }
-                }}
-                className="text-md font-semibold bg-lime-700 rounded-2xl mt-3 px-4 py-1.5"
-=======
       {/* Add Outlet 5-Step Wizard Modal */}
       {showAddOutlet && (
         <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1 rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
@@ -1562,7 +1219,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
                     ? 'bg-gray-500 cursor-not-allowed'
                     : 'bg-lime-700 hover:bg-lime-800'
                 }`}
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
               >
                 {currentStep === 5 ? "Submit" : "Next"}
               </button>
@@ -1573,7 +1229,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
       {/* Selected pin overlays */}
       {!showAddOutlet && showPinOverlay && (
-<<<<<<< HEAD
         selectedPin ? (
           <div
             className={`fixed top-[95px] right-6 z-50 p-4 rounded-[22px] shadow-lg w-[325px] max-h-[calc(100vh-140px)] overflow-auto backdrop-blur-sm border
@@ -1629,26 +1284,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
             <div
               className={`h-40 rounded-xl mb-4 border-2 border-dashed flex items-center justify-center
           ${lightMode ? "bg-white/10 border-white/40" : "bg-white/10 border-white/30"}`}
-=======
-        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1 text-lg rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
-          ${lightMode
-          ? "bg-white/5 border-white/60 text-black"
-          : "bg-white/15 border-white/60 text-white "
-          }`}>
-          <div className="flex-grow">
-            <h2 className="font-semibold pt-0 p-1 pl-0">
-              You dropped a pin!
-            </h2>
-            <p className="pt-0 p-1 pl-0">
-              Longitude: {coords?.lng.toFixed(5)}
-            </p>
-            <p className="pt-0 p-1 pl-0">
-              Latitude: {coords?.lat.toFixed(5)}
-            </p>
-            <button
-              onClick={onClose}
-              className="font-semibold bg-lime-700 rounded-4xl pl-5 pr-5 p-1 flex justify-center"
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
             >
               <span className="opacity-60 text-sm">Photos coming soon</span>
             </div>
@@ -1737,7 +1372,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
       {/* Settings Modal */}
       {showSettings && (
         <div className="fixed top-1/2 left-1/2 z-50 w-[400px] max-w-full p-0 transform -translate-x-1/2 -translate-y-1/2">
-<<<<<<< HEAD
           <div className={`relative bg-gradient-to-br from-white/30 via-black/20 to-white/10 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl px-8 pt-8 pb-6 flex flex-col items-center ${lightMode ? "text-black" : "text-white"}`}>
             <button
               onClick={() => setShowSettings(false)}
@@ -1961,32 +1595,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
             {!hasEmailPasswordProvider() && (
               <div className="px-4 py-3 rounded-lg bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 text-sm mb-4">
                 Password change is only available for accounts signed in with email and password. Google account users should manage their password through their Google account settings.
-=======
-          {/* Your existing settings modal content */}
-        </div>
-      )}
-
-      {/* Nearby Pins Alert */}
-      {!isExisting && (nearbyPinsMessage || isCheckingNearbyPins) && (
-        <div className={`fixed top-20 left-8 z-50 backdrop-blur-md border-1 rounded-2xl shadow-xl p-4 max-w-md transition-all duration-300 ${
-          isCheckingNearbyPins
-            ? lightMode 
-              ? "bg-blue-100/80 border-blue-300 text-blue-900" 
-              : "bg-blue-900/40 border-blue-500/60 text-blue-100"
-            : hasNearbyPins 
-              ? lightMode 
-                ? "bg-green-100/80 border-green-300 text-green-900" 
-                : "bg-green-900/40 border-green-500/60 text-green-100"
-              : lightMode
-                ? "bg-yellow-100/80 border-yellow-300 text-yellow-900"
-                : "bg-yellow-900/40 border-yellow-500/60 text-yellow-100"
-        }`}>
-          {isCheckingNearbyPins ? (
-            <div className="flex items-center gap-3">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
-              <div>
-                <p className="font-semibold text-sm">Checking nearby outlets...</p>
->>>>>>> 019d1c2 (redesign add outlet into seperated pages)
               </div>
             )}
 
