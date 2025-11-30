@@ -6,7 +6,7 @@ import { addOutletFrontend, addOutlet, isOnLand } from "../utils/addOutlet";
 import {
   LucideBookmark, LucideClock, LucidePlus, LucideLocateFixed, LucideSearch,
   LucideUpload, SunMedium, Moon, ChevronDown, Plus, Bike, PlugZap, User,
-  ArrowRight, MapPin, LucideX, Save, LucidePlugZap, LucideStar, LucideNavigation, LucidePlayCircle
+  ArrowRight, MapPin, LucideX, Save, LucidePlugZap, LucideStar, LucideNavigation, LucidePlayCircle, Cable
 } from 'lucide-react';
 import { auth, db } from "../firebase/firebase";
 import { signOut, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
@@ -42,6 +42,407 @@ interface OverlayProps {
 const portOptions = ["Triple Peg", "Double Peg", "USB", "HDMI"];
 const conditionOptions = ["New", "Worn", "Slightly Damaged", "Damaged"];
 
+// Step 1: Welcome & Location
+const Step1: React.FC<{
+  address: string;
+  onAddressChange: (address: string) => void;
+  lightMode: boolean;
+  isExisting: boolean;
+  onGeoLocateClick?: () => void;
+}> = ({ address, onAddressChange, lightMode, isExisting, onGeoLocateClick }) => (
+  <div className="step-content">
+    <h2 className="font-semibold text-xl mb-5 text-center">Let's get started with the outlet's location</h2>
+    <div className="form-group">
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          value={address}
+          onChange={(e) => onAddressChange(e.target.value)}
+          readOnly={isExisting}
+          disabled={isExisting}
+          placeholder="Enter the address"
+          className={`w-full p-4 rounded-xl border-2 text-lg ${
+            lightMode 
+              ? 'border-gray-300 bg-white/50 text-black placeholder-gray-500' 
+              : 'border-white/40 bg-white/20 text-white placeholder-white/60'
+          } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+        />
+        {!isExisting && onGeoLocateClick && (
+          <button
+            onClick={onGeoLocateClick}
+            title="Find my location"
+            className={`p-4 rounded-xl border-2 transition-all hover:opacity-80 ${
+              lightMode ? 'border-gray-300 bg-white/50 text-black' : 'border-white/40 bg-white/20 text-white'}`}>
+            <LucideLocateFixed className="w-6 h-6" />
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+// Step 2: Outlet Count & Power Type
+const Step2: React.FC<{
+  outletCount: number;
+  onOutletCountChange: (count: number) => void;
+  powerType: string;
+  onPowerTypeChange: (value: string) => void;
+  lightMode: boolean;
+  isExisting: boolean;
+}> = ({ outletCount, onOutletCountChange, powerType, onPowerTypeChange, lightMode, isExisting }) => (
+  <div className="step-content">
+    <h2 className="font-semibold text-xl mb-5 text-center">How many outlets are located here?</h2>
+    <div className="form-group">
+      <div className="flex items-center justify-center gap-6 mb-5">
+        <button
+          onClick={() => !isExisting && onOutletCountChange(Math.max(0, outletCount - 1))}
+          disabled={isExisting || outletCount <= 0}
+          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold transition-all ${
+            lightMode 
+              ? 'bg-white/50 border-2 border-gray-300 text-black hover:bg-white/70' 
+              : 'bg-white/20 border-2 border-white/40 text-white hover:bg-white/30'
+          } ${(isExisting || outletCount <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          -
+        </button>
+        
+        <div className={`w-22 h-22 rounded-full flex items-center justify-center text-3xl font-bold ${
+          lightMode ? 'bg-lime-100 text-lime-800' : 'bg-lime-600 text-white'
+        }`}>
+          {outletCount}
+        </div>
+        
+        <button
+          onClick={() => !isExisting && onOutletCountChange(outletCount + 1)}
+          disabled={isExisting}
+          className={`w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold transition-all ${
+            lightMode 
+              ? 'bg-white/50 border-2 border-gray-300 text-black hover:bg-white/70' 
+              : 'bg-white/20 border-2 border-white/40 text-white hover:bg-white/30'
+          } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          +
+        </button>
+      </div>
+      
+      <div className="text-center mb-4">
+        <p className="text-lg opacity-70">
+          {outletCount === 1 ? '1 outlet' : `${outletCount} outlets`} selected
+        </p>
+      </div>
+
+      {/* Power Type Section - Shows after outlet count is selected */}
+      {outletCount > 0 && (
+        <div>
+          <h3 className="font-semibold text-xl mb-4 text-center">Describe the Power Type</h3>
+          <input
+            type="text"
+            value={powerType}
+            onChange={(e) => onPowerTypeChange(e.target.value)}
+            readOnly={isExisting}
+            disabled={isExisting}
+            placeholder="Describe the power type"
+            className={`w-full p-4 rounded-xl border-2 text-lg ${
+              lightMode 
+                ? 'border-gray-300 bg-white/50 text-black placeholder-gray-500' 
+                : 'border-white/40 bg-white/20 text-white placeholder-white/60'
+            } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          />
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// Step 3: Port Type & Condition
+const Step3: React.FC<{
+  selectedPort: string;
+  onPortChange: (port: string) => void;
+  otherPort: string;
+  onOtherPortChange: (value: string) => void;
+  condition: string;
+  onConditionChange: (condition: string) => void;
+  lightMode: boolean;
+  isExisting: boolean;
+}> = ({ selectedPort, onPortChange, otherPort, onOtherPortChange, condition, onConditionChange, lightMode, isExisting }) => {
+  const portOptions = [
+    { id: 'triple-peg', name: 'Triple Peg', icon: <img src="/images/port2.png.webp" className="w-full h-auto"></img> },
+    { id: 'double-peg', name: 'Double Peg', icon: <img src="/images/port1.png.webp" className="w-full h-auto"></img> },
+    { id: 'usb', name: 'USB', icon: <img src="/images/port3.png.webp" className="w-full h-auto"></img> },
+    { id: 'hdmi', name: 'HDMI', icon: <Cable className="w-6 h-6" /> },
+  ];
+
+  const conditionOptions = [
+    { id: 'perfect', name: 'Perfect'},
+    { id: 'slightly-worn', name: 'Slightly Worn'},
+    { id: 'partially-damaged', name: 'Partially Damaged'},
+    { id: 'damaged', name: 'Damaged'},
+  ];
+
+  return (
+    <div className="step-content">
+      <h2 className="font-semibold text-xl mb-4 text-center">What is the type of port?</h2>
+      
+      {/* Port Type Selection */}
+      <div className="grid grid-cols-4 gap-3 mb-4">
+        {portOptions.map((port) => (
+          <button
+            key={port.id}
+            type="button"
+            onClick={() => !isExisting && onPortChange(port.name)}
+            disabled={isExisting}
+            className={`p-3 rounded-lg border-2 transition-all text-center ${
+              selectedPort === port.name
+                ? lightMode
+                  ? 'border-lime-500 bg-lime-100 text-lime-800'
+                  : 'border-lime-500 bg-lime-600 text-white'
+                : lightMode
+                  ? 'border-gray-300 bg-white/50 text-black hover:border-lime-400'
+                  : 'border-white/40 bg-white/20 text-white hover:border-lime-400'
+            } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <div className={`p-1 rounded ${
+                selectedPort === port.name ? 'bg-white/20' : 'bg-white/10'
+              }`}>
+                {port.icon}
+              </div>
+              <div className="font-semibold text-sm">{port.name}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+      
+      {/* Other Port Option */}
+      <button
+        type="button"
+        onClick={() => !isExisting && onPortChange('Other')}
+        disabled={isExisting}
+        className={`w-full p-3 rounded-lg border-2 transition-all text-center mb-3 ${
+          selectedPort === 'Other'
+            ? lightMode
+              ? 'border-lime-500 bg-lime-100 text-lime-800'
+              : 'border-lime-500 bg-lime-600 text-white'
+            : lightMode
+              ? 'border-gray-300 bg-white/50 text-black hover:border-lime-400'
+              : 'border-white/40 bg-white/20 text-white hover:border-lime-400'
+        } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        <div className="flex items-center justify-center gap-2">
+          <Plus className="w-5 h-5" />
+          <div className="font-semibold text-m">Other</div>
+        </div>
+      </button>
+      
+      {/* Other Port Text Input */}
+      {selectedPort === 'Other' && !isExisting && (
+        <div className="mb-4">
+          <input
+            type="text"
+            value={otherPort}
+            onChange={(e) => onOtherPortChange(e.target.value)}
+            placeholder="Port Type"
+            className={`w-full p-3 rounded-lg border-2 text-sm ${
+              lightMode 
+                ? 'border-gray-300 bg-white/50 text-black placeholder-gray-500' 
+                : 'border-white/40 bg-white/20 text-white placeholder-white/60'
+            }`}
+          />
+        </div>
+      )}
+
+      {/* Condition Section - Shows after port type is selected */}
+      {(selectedPort || otherPort) && (
+        <div className="mt-6">
+          <h3 className="font-semibold text-xl mb-4 text-center">Describe the condition</h3>
+          <div className="grid grid-cols-4 gap-2">
+            {conditionOptions.map((cond) => (
+              <button
+                key={cond.id}
+                type="button"
+                onClick={() => !isExisting && onConditionChange(cond.name)}
+                disabled={isExisting}
+                className={`w-full p-3 rounded-lg border-2 transition-all text-center ${
+                  condition === cond.name
+                    ? lightMode
+                      ? 'border-lime-500 bg-lime-100 text-lime-800'
+                      : 'border-lime-500 bg-lime-600 text-white'
+                    : lightMode
+                      ? 'border-gray-300 bg-white/50 text-black hover:border-lime-400'
+                      : 'border-white/40 bg-white/20 text-white hover:border-lime-400'
+                } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <div className="flex flex-col items-center gap-1">
+                  <div className="font-semibold text-sm">{cond.name}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Step 4: Extra Details & File Upload
+const Step4: React.FC<{
+  extraDetails: string;
+  onExtraDetailsChange: (details: string) => void;
+  images: File[];
+  onImageUpload: (files: FileList) => void;
+  onRemoveImage: (index: number) => void;
+  lightMode: boolean;
+  isExisting: boolean;
+}> = ({ extraDetails, onExtraDetailsChange, images, onImageUpload, onRemoveImage, lightMode, isExisting }) => {
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!isExisting && e.dataTransfer.files) {
+      onImageUpload(e.dataTransfer.files);
+    }
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isExisting && e.target.files) {
+      onImageUpload(e.target.files);
+    }
+  };
+
+  return (
+    <div className="step-content">
+      <h2 className="font-semibold text-xl mb-5 text-center">Any other details?</h2>
+      <div className="form-group">
+        {/* Extra Details Text Area */}
+        <div className="mb-5">
+          <textarea
+            value={extraDetails}
+            onChange={(e) => onExtraDetailsChange(e.target.value)}
+            readOnly={isExisting}
+            disabled={isExisting}
+            placeholder="Additional Details"
+            className={`w-full p-4 rounded-xl border-2 resize-none ${
+              lightMode 
+                ? 'border-gray-300 bg-white/50 text-black placeholder-gray-500' 
+                : 'border-white/40 bg-white/20 text-white placeholder-white/60'
+            } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+          />
+        </div>
+
+        {/* File Upload Section */}
+        <div className="mb-4">
+          <div 
+            className={`relative p-8 border-2 border-dashed rounded-2xl text-center cursor-pointer transition-all ${
+              lightMode
+                ? 'border-gray-300 bg-white/20 hover:border-lime-400'
+                : 'border-white/40 bg-white/10 hover:border-lime-400'
+            } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleDrop}
+            onClick={() => !isExisting && document.getElementById('file-input')?.click()}
+          >
+            <LucideUpload className="mx-auto w-12 h-12 text-lime-600 mb-4" />
+            <p className="text-m">Choose a file or drag it in here</p>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleFileInput}
+              disabled={isExisting}
+              className="hidden"
+              id="file-input"
+            />
+          </div>
+        </div>
+        
+        {/* Image Previews */}
+        {images.length > 0 && (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            {images.map((image, index) => (
+              <div key={index} className="relative aspect-square rounded-lg overflow-hidden">
+                <img 
+                  src={URL.createObjectURL(image)} 
+                  alt={`Preview ${index + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                {!isExisting && (
+                  <button
+                    type="button"
+                    className="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                    onClick={() => onRemoveImage(index)}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Review Step
+const ReviewStep: React.FC<{
+  formData: any;
+  lightMode: boolean;
+}> = ({ formData, lightMode }) => (
+  <div className="step-content">
+    <h2 className="font-semibold text-2xl mb-6 text-center">Review Your Outlet</h2>
+    <div className="form-group">
+      <div className={`p-6 rounded-2xl ${
+        lightMode ? 'bg-white/20 border-2 border-white/30' : 'bg-white/10 border-2 border-white/20'
+      }`}>
+        <div className="space-y-4">
+          <div className="flex justify-between items-start pb-3 border-b border-white/20">
+            <strong className="text-lg">Location:</strong>
+            <span className="text-right text-lg">{formData.address || 'Not specified'}</span>
+          </div>
+          
+          <div className="flex justify-between items-start pb-3 border-b border-white/20">
+            <strong className="text-lg">Outlet Count:</strong>
+            <span className="text-lg">{formData.outletCount}</span>
+          </div>
+          
+          <div className="flex justify-between items-start pb-3 border-b border-white/20">
+            <strong className="text-lg">Power Type:</strong>
+            <span className="text-right text-lg">{formData.powerType || 'Not specified'}</span>
+          </div>
+          
+          <div className="flex justify-between items-start pb-3 border-b border-white/20">
+            <strong className="text-lg">Port Type:</strong>
+            <span className="text-right text-lg">
+              {formData.selectedPort === 'Other' ? formData.otherPort : formData.selectedPort || 'Not specified'}
+            </span>
+          </div>
+          
+          <div className="flex justify-between items-start pb-3 border-b border-white/20">
+            <strong className="text-lg">Condition:</strong>
+            <span className="text-right text-lg">{formData.condition || 'Not specified'}</span>
+          </div>
+          
+          {formData.extraDetails && (
+            <div className="flex justify-between items-start pb-3 border-b border-white/20">
+              <strong className="text-lg">Extra Details:</strong>
+              <span className="text-right text-lg max-w-[60%]">{formData.extraDetails}</span>
+            </div>
+          )}
+          
+          <div className="flex justify-between items-start">
+            <strong className="text-lg">Photos:</strong>
+            <span className="text-right text-lg">{formData.images.length} uploaded</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-6 text-center">
+        <p className="text-lg opacity-70">
+          Confirm all details are correct before submitting.
+        </p>
+      </div>
+    </div>
+  </div>
+);
+
 const AddOutlet: React.FC<OverlayProps> = ({
   showPinOverlay,
   coords,
@@ -64,12 +465,18 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const isLocatingToggleProp = isLocatingToggle;
   const setIsLocatingToggleProp = setIsLocatingToggle;
   const [showAddOutlet, setShowAddOutlet] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Form state for 5-step wizard (4 steps + review)
   const [address, setAddress] = useState("");
-  const [outletCount, setOutletCount] = useState(1);
+  const [outletCount, setOutletCount] = useState(0);
   const [powerType, setPowerType] = useState("");
-  const [selectedPort, setSelectedPort] = useState("Triple Peg");
-  const [selectedCondition, setSelectedCondition] = useState("New");
+  const [selectedPort, setSelectedPort] = useState("");
+  const [otherPort, setOtherPort] = useState("");
+  const [condition, setCondition] = useState("");
   const [extraDetails, setExtraDetails] = useState("");
+  const [images, setImages] = useState<File[]>([]);
+  
   const [showSettings, setShowSettings] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [searchResults, setSearchResults] = useState<Array<{ place_name: string, center: [number, number] }>>([]);
@@ -104,6 +511,84 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
   // Treat presence of selectedPin as "existing outlet view" mode
   const isExisting = Boolean(selectedPin);
+
+  // Form data for summary
+  const formData = {
+    address,
+    outletCount,
+    powerType,
+    selectedPort,
+    otherPort,
+    condition,
+    extraDetails,
+    images
+  };
+
+  // Handlers for form fields
+  const handleOutletCountChange = (count: number) => {
+    setOutletCount(count);
+  };
+
+  const handleImageUpload = (files: FileList) => {
+    const newImages = Array.from(files).slice(0, 4 - images.length);
+    setImages(prev => [...prev, ...newImages]);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleNext = () => {
+    if (currentStep < 5) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (address && outletCount > 0) {
+      try {
+        const portType = selectedPort === 'Other' ? otherPort : selectedPort;
+        if (coords) {
+          await addOutlet({
+            latitude: coords.lat,
+            longitude: coords.lng,
+            userName: userName || "Anonymous",
+            userId: userEmail || "unknown",
+            locationName: address,
+            chargerType: `${powerType}, ${portType}`,
+            description: `Condition: ${condition}. ${extraDetails}`,
+          });
+        } else {
+          await addOutletFrontend({
+            userName: userName || "Anonymous",
+            userId: userEmail || "unknown",
+            locationName: address,
+            chargerType: `${powerType}, ${portType}`,
+            description: `Condition: ${condition}. ${extraDetails}`,
+          });
+        }
+        setShowAddOutlet(false);
+        setCurrentStep(1);
+        // Reset form
+        setAddress("");
+        setOutletCount(1);
+        setPowerType("");
+        setSelectedPort("");
+        setOtherPort("");
+        setCondition("");
+        setExtraDetails("");
+        setImages([]);
+      } catch (err) {
+        console.error("Error submitting outlet:", err);
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -183,7 +668,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
   // If new coordinates are provided (e.g. map click), pre-fill address and auto-open the form
   useEffect(() => {
-
     if (!selectedPin) {
       if (!coords) return;
       setAddress(`${coords.lng.toFixed(5)} ${coords.lat.toFixed(5)}`);
@@ -224,7 +708,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const hasEmailPasswordProvider = () => {
     const user = auth.currentUser;
     if (!user) return false;
-
     // Check if user has password provider linked
     const providers = user.providerData;
     return providers.some(provider => provider.providerId === 'password');
@@ -234,7 +717,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
     e.preventDefault();
     setPasswordError("");
     setPasswordSuccess("");
-
     const user = auth.currentUser;
     if (!user || !user.email) {
       setPasswordError("You must be logged in to change your password");
@@ -246,23 +728,19 @@ const AddOutlet: React.FC<OverlayProps> = ({
       setPasswordError("Password change is not available for accounts signed in with Google. Please use your Google account settings to manage your account.");
       return;
     }
-
     // Validation
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError("All fields are required");
       return;
     }
-
     if (newPassword.length < 6) {
       setPasswordError("New password must be at least 6 characters long");
       return;
     }
-
     if (newPassword !== confirmPassword) {
       setPasswordError("New passwords do not match");
       return;
     }
-
     if (currentPassword === newPassword) {
       setPasswordError("New password must be different from current password");
       return;
@@ -282,7 +760,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
-
       // Close modal after 2 seconds
       setTimeout(() => {
         setShowChangePassword(false);
@@ -396,7 +873,6 @@ const AddOutlet: React.FC<OverlayProps> = ({
           fromDb: true
         };
       });
-
       // within 10km, exclude essentially same point (< ~10m)
       const nearbyPins = allPins.filter((pin: PinData) => {
         if (pin.lat == null || pin.lng == null) return false;
@@ -612,169 +1088,141 @@ const AddOutlet: React.FC<OverlayProps> = ({
         </div>
       </div>
 
+      {/* Add Outlet 5-Step Wizard Modal */}
       {showAddOutlet && (
-        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border rounded-3xl shadow-lg w-[28rem] max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
+        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1 rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
           ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
-          <div className="flex-grow">
-            <h2 className="font-semibold text-lg pb-1 pt-0 p-1 pl-0">
-              Address <span className="text-red-500">*</span>
-            </h2>
+          
+          {/* Progress Bar */}
+          <div className="flex justify-between mb-4 relative">
+            <div className="absolute top-1/2 left-0 right-0 h-1 bg-white/20 -translate-y-1/2 z-0"></div>
+            {[1, 2, 3, 4, 5].map(step => (
+              <div key={step} className="relative z-10">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                  step <= currentStep 
+                        ? (lightMode ? 'bg-lime-600 text-white' : 'bg-lime-600 text-white')
+                        : (lightMode ? 'bg-gray-200 text-black/60' : 'bg-white/30 text-white/60')
+                }`}>
+                  {step}
+                </div>
+              </div>
+            ))}
+          </div>
 
-            <div className="flex items-center">
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                readOnly={isExisting}
-                disabled={isExisting}
-                className="text-lg bg-white/35 rounded-md shadow-lg w-full h-7 p-1"
+          {/* Step Indicator */}
+          {/*<div className="text-center mb-6 text-sm opacity-70">
+            Step {currentStep} of 5
+          </div>*/}
+
+          {/* electrium logo */}
+          <div className="flex justify-center mb-4">
+            <div className="w-1/3">
+              <img src="/images/electrium.png" className="w-full h-auto"></img>
+            </div>
+          </div>
+            
+          {/* Step Content */}
+          <div className="flex-grow mb-6">
+            {/* Step 1: Welcome & Location */}
+            {currentStep === 1 && (
+              <Step1
+                address={address}
+                onAddressChange={setAddress}
+                lightMode={lightMode}
+                isExisting={isExisting}
+                onGeoLocateClick={onGeoLocateClick}
               />
-              <button
-                onClick={onGeoLocateClick}
-                title="Find my location"
-                className="p-1 pr-0 hover:opacity-75 transition"
-              >
-                <LucideLocateFixed className="w-6 h-6" />
-              </button>
-            </div>
+            )}
 
-            <div className="flex items-center space-x-1 p-2 pl-0 pb-1">
-              <h2 className="font-semibold text-lg p-1 pb-1 pt-2 pr-1 pl-0">
-                Number of Outlets <span className="text-red-500">*</span>
-              </h2>
-              <div className="flex items-center bg-white/35 rounded-md px-0 py-0">
-                <button
-                  onClick={() => setOutletCount((prev) => Math.max(prev - 1, 0))}
-                  disabled={isExisting}
-                  className="text-lg px-1"
-                >
-                  &lt;
-                </button>
-                <span className="text-lg font-semibold px-1">{outletCount}</span>
-                <button
-                  onClick={() => setOutletCount((prev) => prev + 1)}
-                  disabled={isExisting}
-                  className="text-lg px-1"
-                >
-                  &gt;
-                </button>
-              </div>
-            </div>
+            {/* Step 2: Outlet Count & Power Type (Merged) */}
+            {currentStep === 2 && (
+              <Step2
+                outletCount={outletCount}
+                onOutletCountChange={handleOutletCountChange}
+                powerType={powerType}
+                onPowerTypeChange={setPowerType}
+                lightMode={lightMode}
+                isExisting={isExisting}
+              />
+            )}
 
-            <h2 className="font-semibold text-lg p-1 pb-1 pt-0 pl-0">Power Type</h2>
-            <input
-              type="text"
-              value={powerType}
-              onChange={(e) => setPowerType(e.target.value)}
-              readOnly={isExisting}
-              disabled={isExisting}
-              className="text-lg bg-white/35 rounded-md shadow-lg w-full h-7 p-1"
-            />
+            {/* Step 3: Port Type & Condition (Merged) */}
+            {currentStep === 3 && (
+              <Step3
+                selectedPort={selectedPort}
+                onPortChange={setSelectedPort}
+                otherPort={otherPort}
+                onOtherPortChange={setOtherPort}
+                condition={condition}
+                onConditionChange={setCondition}
+                lightMode={lightMode}
+                isExisting={isExisting}
+              />
+            )}
 
-            <div className="flex w-full gap-6">
-              <div className="w-1/2">
-                <h2 className="font-semibold text-lg p-1 pb-0 pl-0">Port Type</h2>
-                {portOptions.map((option) => (
-                  <div
-                    key={option}
-                    className="flex items-center mb-1 cursor-pointer text-md"
-                    onClick={() => { if (!isExisting) setSelectedPort(option); }}
-                  >
-                    <div className={`w-5 h-5 mr-2 flex items-center justify-center rounded-md ${selectedPort === option ? "bg-white/35" : "bg-white/50"}`}>
-                      {selectedPort === option && <span className={`text-md ${lightMode ? "text-lime-600" : "text-lime-500"}`}>✔</span>}
-                    </div>
-                    <span className="text-md">{option}</span>
-                  </div>
-                ))}
-              </div>
+            {/* Step 4: Extra Details & File Upload */}
+            {currentStep === 4 && (
+              <Step4
+                extraDetails={extraDetails}
+                onExtraDetailsChange={setExtraDetails}
+                images={images}
+                onImageUpload={handleImageUpload}
+                onRemoveImage={handleRemoveImage}
+                lightMode={lightMode}
+                isExisting={isExisting}
+              />
+            )}
 
-              <div className="w-1/2">
-                <h2 className="font-semibold text-lg p-1 pb-0 pl-0">Condition</h2>
-                {conditionOptions.map((option) => (
-                  <div
-                    key={option}
-                    className="flex items-center mb-1 cursor-pointer text-md"
-                    onClick={() => { if (!isExisting) setSelectedCondition(option); }}
-                  >
-                    <div className={`w-5 h-5 mr-2 flex items-center justify-center rounded-sm ${selectedCondition === option ? "bg-white/35" : "bg-white/50"}`}>
-                      {selectedCondition === option && <span className={`text-md ${lightMode ? "text-lime-600" : "text-lime-500"}`}>✔</span>}
-                    </div>
-                    <span className="text-md">{option}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <h2 className="font-semibold text-lg p-1 pb-0 pl-0">Extra Details</h2>
-            <input
-              type="text"
-              value={extraDetails}
-              onChange={(e) => setExtraDetails(e.target.value)}
-              readOnly={isExisting}
-              disabled={isExisting}
-              className="text-lg bg-white/35 rounded-md shadow-lg w-full h-7 p-1"
-            />
+            {/* Step 5: Review */}
+            {currentStep === 5 && (
+              <ReviewStep
+                formData={formData}
+                lightMode={lightMode}
+              />
+            )}
           </div>
 
-          <div className={`relative p-7 mt-4 w-full min-h-[80px] max-h-[25vh] overflow-hidden backdrop-blur-sm bg-white/1 border-2 border-dotted rounded-2xl shadow-lg flex items-center justify-center text-center
-            ${lightMode ? "text-black/60 bg-white/20 border-white/60" : "text-white/40 bg-white/15 border-white/60"}`}>
-            <LucideUpload className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[80%] w-12 h-12" />
-            <h2 className="font-semibold text-sm p-4 pt-14">Choose a file or drag it in here.</h2>
-          </div>
-
+          {/* Navigation Buttons */}
           <div className="flex justify-between w-full">
             <button
               onClick={() => {
-                setShowAddOutlet(false);
-                if (!isExisting) onCancelTempPin?.();
-                onClose();
+                if (currentStep === 1) {
+                  setShowAddOutlet(false);
+                  if (!isExisting) {
+                    onCancelTempPin?.();
+                  }
+                  onClose();
+                  setCurrentStep(1);
+                } else {
+                  handleBack();
+                }
               }}
-              className="text-md font-semibold bg-red-600 rounded-2xl mt-3 px-4 py-1.5"
+              className="text-md font-semibold text-white bg-red-600 rounded-4xl px-6 py-2 hover:bg-red-700 transition-colors"
             >
-              {isExisting ? "Close" : "Cancel"}
+              {currentStep === 1 ? (isExisting ? "Close" : "Cancel") : "Back"}
             </button>
 
             {!isExisting && (
               <button
-                onClick={async () => {
-                  if (address !== "" && outletCount !== 0) {
-                    try {
-                      // Get the authenticated user's UID (required by Firestore rules)
-                      const currentUser = auth.currentUser;
-                      if (!currentUser) {
-                        throw new Error("You must be signed in to add an outlet.");
-                      }
-                      const userId = currentUser.uid;
-
-                      if (coords) {
-                        await addOutlet({
-                          latitude: coords.lat,
-                          longitude: coords.lng,
-                          userName: userName || "Anonymous",
-                          userId: userId,
-                          locationName: address,
-                          chargerType: powerType || selectedPort,
-                          description: `Condition: ${selectedCondition}. ${extraDetails}`,
-                        });
-                      } else {
-                        await addOutletFrontend({
-                          userName: userName || "Anonymous",
-                          userId: userId,
-                          locationName: address,
-                          chargerType: powerType || selectedPort,
-                          description: `Condition: ${selectedCondition}. ${extraDetails}`,
-                        });
-                      }
-                      setShowAddOutlet(false);
-                    } catch (err) {
-                      console.error("Error submitting outlet:", err);
-                      alert(err instanceof Error ? err.message : "Failed to add outlet. Please try again.");
-                    }
-                  }
-                }}
-                className="text-md font-semibold bg-lime-700 rounded-2xl mt-3 px-4 py-1.5"
+                onClick={currentStep === 5 ? handleSubmit : handleNext}
+                disabled={
+                  (currentStep === 1 && !address.trim()) ||
+                  (currentStep === 2 && (outletCount < 1 || !powerType.trim())) ||
+                  (currentStep === 3 && ((!selectedPort && !otherPort.trim()) || !condition)) ||
+                  (currentStep === 4 && !extraDetails.trim())
+                }
+                className={`text-md font-semibold rounded-4xl px-6 py-2 transition-colors ${
+                  (currentStep === 1 && !address.trim()) ||
+                  (currentStep === 2 && (outletCount < 1 || !powerType.trim())) ||
+                  (currentStep === 3 && ((!selectedPort && !otherPort.trim()) || !condition)) ||
+                  (currentStep === 4 && !extraDetails.trim())
+                    ? 'bg-gray-500 cursor-not-allowed'
+                    : 'bg-lime-700 hover:bg-lime-800'
+                }`}
               >
-                Submit
+                <div className='text-white'>
+                {currentStep === 5 ? "Submit" : "Next"}
+                </div>
               </button>
             )}
           </div>
@@ -923,6 +1371,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
         </div>
       )}
 
+      {/* Settings Modal */}
       {showSettings && (
         <div className="fixed top-1/2 left-1/2 z-50 w-[400px] max-w-full p-0 transform -translate-x-1/2 -translate-y-1/2">
           <div className={`relative bg-gradient-to-br from-white/30 via-black/20 to-white/10 backdrop-blur-xl border border-white/60 rounded-3xl shadow-2xl px-8 pt-8 pb-6 flex flex-col items-center ${lightMode ? "text-black" : "text-white"}`}>
