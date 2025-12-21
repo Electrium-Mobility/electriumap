@@ -49,8 +49,6 @@
 * Hannah Wiens, [@hannahwiens](https://github.com/hannahwiens)
 * Rohan Saha, [@rohansaha27](https://github.com/rohansaha27)
 
-### 🎨 Design
-
 ### 💻 Fullstack team
 
 * Dequan Kong, [@DequanKong](https://github.com/DequanKong)
@@ -62,3 +60,7 @@
 * Yash Jain, [@yashjain128](https://github.com/yashjain128)
 * Chahana Reddy, [@Chahanareddy](https://github.com/Chahanareddy)
 * Krishna Mehta, [@KrishnaM0310](https://github.com/KrishnaM0310)
+
+## W26 TEAM
+
+### 💻 Fullstack team
