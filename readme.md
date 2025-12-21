@@ -64,3 +64,5 @@
 ## W26 TEAM
 
 ### 💻 Fullstack team
+
+* Anna Poutanen, [@anna-poutanen](https://github.com/anna-poutanen)
