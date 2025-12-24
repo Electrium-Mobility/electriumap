@@ -62,9 +62,9 @@
 * Krishna Mehta, [@KrishnaM0310](https://github.com/KrishnaM0310)
 
 ## W26 TEAM
-* Vivian Zhao, [@v1v14nz](https://github.com/v1v14nz)
 
 ### 💻 Fullstack team
 
 * Paloma Fofana, [@palomafofana](https://github.com/palomafofana)
 * Anna Poutanen, [@anna-poutanen](https://github.com/anna-poutanen)
+* Vivian Zhao, [@v1v14nz](https://github.com/v1v14nz)
