@@ -62,6 +62,7 @@
 * Krishna Mehta, [@KrishnaM0310](https://github.com/KrishnaM0310)
 
 ## W26 TEAM
-* Paloma Fofana, [@palomafofana](https://github.com/palomafofana)
 
 ### 💻 Fullstack team
+
+* Paloma Fofana, [@palomafofana](https://github.com/palomafofana)
