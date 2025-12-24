@@ -66,3 +66,4 @@
 ### 💻 Fullstack team
 
 * Paloma Fofana, [@palomafofana](https://github.com/palomafofana)
+* Anna Poutanen, [@anna-poutanen](https://github.com/anna-poutanen)
