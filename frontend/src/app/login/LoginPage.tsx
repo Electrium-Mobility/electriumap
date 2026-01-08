@@ -130,7 +130,15 @@ const LoginPage: React.FC = () => {
 
                 {/* render error message if errorMsg is not empty*/}
                 {errorMsg && ( <p className='text-red-500 text-sm'>{errorMsg}</p>)}
-
+                <div className="flex justify-end w-full">
+                    <Link 
+                        href="/forgot-password" 
+                        className="text-sm hover:underline"
+                        style={{ color: '#2E7D32' }}
+                    >
+                        Forgot password?
+                    </Link>
+                </div>
                 <div className="flex gap-4 items-center flex-col sm:flex-row mt-3">
                     <button 
                         className="w-full text-white p-2 rounded"
