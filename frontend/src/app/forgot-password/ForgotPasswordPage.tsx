@@ -26,7 +26,6 @@ const ForgotPasswordPage: React.FC = () => {
         setIsLoading(true);
 
         try {
-            console.log('working')
             await sendPasswordResetEmail(auth, email);
             setSuccessMsg("Password reset email sent! Please check your inbox.");
             setEmail('');
