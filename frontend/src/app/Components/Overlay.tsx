@@ -16,6 +16,20 @@ import { useRouter } from 'next/navigation';
 import Image from "next/image";
 import { useUserData } from '../create-account/UserDataContext';
 
+type PortOption =
+  | {
+      id: string;
+      name: string;
+      imageKey: string;
+      icon?: never;
+    }
+  | {
+      id: string;
+      name: string;
+      icon: React.ReactNode;
+      imageKey?: never;
+    };
+
 interface OverlayProps {
   showPinOverlay: boolean;
   coords: { lat: number; lng: number } | null;
@@ -165,10 +179,10 @@ const Step3: React.FC<{
   lightMode: boolean;
   isExisting: boolean;
 }> = ({ selectedPort, onPortChange, otherPort, onOtherPortChange, condition, onConditionChange, lightMode, isExisting }) => {
-  const portOptions = [
-    { id: 'triple-peg', name: 'Triple Peg', icon: <img src="/images/port2.png.webp" className="w-full h-auto"></img> },
-    { id: 'double-peg', name: 'Double Peg', icon: <img src="/images/port1.png.webp" className="w-full h-auto"></img> },
-    { id: 'usb', name: 'USB', icon: <img src="/images/port3.png.webp" className="w-full h-auto"></img> },
+  const portOptions: PortOption[] = [
+    { id: 'triple-peg', name: 'Triple Peg', imageKey: 'port2' },
+    { id: 'double-peg', name: 'Double Peg', imageKey: 'port1' },
+    { id: 'usb', name: 'USB', imageKey: 'port3' },
     { id: 'hdmi', name: 'HDMI', icon: <Cable className="w-6 h-6" /> },
   ];
 
@@ -178,6 +192,18 @@ const Step3: React.FC<{
     { id: 'partially-damaged', name: 'Partially Damaged'},
     { id: 'damaged', name: 'Damaged'},
   ];
+
+const getPortImageSrc = (imageKey: string, isSelected: boolean) => {
+  if (lightMode && isSelected) {
+    return `/images/${imageKey}green.png.webp`;
+  }
+
+  if (lightMode) {
+    return `/images/${imageKey}black.png`;
+  }
+
+  return `/images/${imageKey}.png.webp`;
+};
 
   return (
     <div className="step-content">
@@ -202,10 +228,16 @@ const Step3: React.FC<{
             } ${isExisting ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <div className="flex flex-col items-center gap-1">
-              <div className={`p-1 rounded ${
-                selectedPort === port.name ? 'bg-white/20' : 'bg-white/10'
-              }`}>
-                {port.icon}
+              <div className="p-1 rounded">
+                {port.imageKey ? (
+                  <img
+                    src={getPortImageSrc(port.imageKey, selectedPort === port.name)}
+                    className="w-full h-auto"
+                    alt={port.name}
+                  />
+                ) : (
+                  port.icon
+                )}
               </div>
               <div className="font-semibold text-sm">{port.name}</div>
             </div>
@@ -1090,7 +1122,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
 
       {/* Add Outlet 5-Step Wizard Modal */}
       {showAddOutlet && (
-        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1 rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
+        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-lg border-1 rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
           ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
           
           {/* Progress Bar */}
@@ -1100,8 +1132,10 @@ const AddOutlet: React.FC<OverlayProps> = ({
               <div key={step} className="relative z-10">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
                   step <= currentStep 
-                        ? (lightMode ? 'bg-lime-600 text-white' : 'bg-lime-600 text-white')
-                        : (lightMode ? 'bg-gray-200 text-black/60' : 'bg-white/30 text-white/60')
+                    ? 'bg-lime-600 text-white'
+                    : lightMode
+                      ? 'bg-gray-100 text-black'
+                      : 'bg-gray-500 text-white'
                 }`}>
                   {step}
                 </div>
@@ -1117,7 +1151,15 @@ const AddOutlet: React.FC<OverlayProps> = ({
           {/* electrium logo */}
           <div className="flex justify-center mb-4">
             <div className="w-1/3">
-              <img src="/images/electrium.png" className="w-full h-auto"></img>
+              <img
+                src={
+                  lightMode
+                    ? "/images/electrium_light_mode.png"
+                    : "/images/electrium.png"
+                }
+                className="w-full h-auto"
+                alt="Electrium logo"
+              />
             </div>
           </div>
             
