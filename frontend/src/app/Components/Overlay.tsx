@@ -1108,6 +1108,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
             <button 
               onClick={() => setShowSavedOutlets(false)}
               className="text-2xl hover:opacity-70"
+              aria-label="Close"
             >
               ×
             </button>
