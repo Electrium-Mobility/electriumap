@@ -1021,7 +1021,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
             <button 
               onClick={() => setShowSavedOutlets((prev) => !prev)}
               className={`flex flex-col items-center justify-center w-14 h-14 ${
-                showSavedOutlets ?  'text-lime-600' : ''
+                showSavedOutlets ? 'text-lime-600' : ''
               }`}
             >
               <LucideBookmark className="w-6 h-6" />
