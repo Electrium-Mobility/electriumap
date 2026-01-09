@@ -504,7 +504,7 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // Saved Outlets state
-  const [showSavedOutlets, setShowSavedOutlets] = useState(false)
+  const [showSavedOutlets, setShowSavedOutlets] = useState(false);
 
   // Nearby pins state
   const [nearbyPinsMessage, setNearbyPinsMessage] = useState<string>("");
