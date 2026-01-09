@@ -491,7 +491,8 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [userOutlets, setUserOutlets] = useState<Array<{ id: string, locationName: string }>>([]);
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const [isUpdatingProfileImage, setIsUpdatingProfileImage] = useState(false);
-      // Filter dropdown state
+  
+  // Filter dropdown state
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
 
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -501,6 +502,9 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Saved Outlets state
+  const [showSavedOutlets, setShowSavedOutlets] = useState(false);
 
   // Nearby pins state
   const [nearbyPinsMessage, setNearbyPinsMessage] = useState<string>("");
@@ -1014,7 +1018,12 @@ const AddOutlet: React.FC<OverlayProps> = ({
           {/* toolbar */}
           <div className={`flex items-stretch justify-between gap-6 px-6 h-14 backdrop-blur-sm font-semibold border rounded-xl shadow-md
             ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
-            <button className="flex flex-col items-center justify-center w-14 h-14">
+            <button 
+              onClick={() => setShowSavedOutlets((prev) => !prev)}
+              className={`flex flex-col items-center justify-center w-14 h-14 ${
+                showSavedOutlets ? 'text-lime-600' : ''
+              }`}
+            >
               <LucideBookmark className="w-6 h-6" />
               <span className="text-[10px] mt-1 whitespace-nowrap">Saved</span>
             </button>
@@ -1087,6 +1096,70 @@ const AddOutlet: React.FC<OverlayProps> = ({
           )}
         </div>
       </div>
+      
+      {/* Saved Outlets Modal */}
+      {showSavedOutlets && (
+        <div className={`fixed top-[95px] right-6 z-50 p-6 backdrop-blur-sm border-1 rounded-4xl shadow-lg w-112 max-h-[calc(100vh-140px)] min-h-[140px] overflow-auto overflow-x-hidden scrollbar-hide custom-scrollbar flex flex-col
+          ${lightMode ? "bg-white/5 border-white/60 text-black" : "bg-white/15 border-white/60 text-white"}`}>
+          
+          {/* Header */}
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Saved Outlets</h2>
+            <button 
+              onClick={() => setShowSavedOutlets(false)}
+              className="text-2xl hover:opacity-70"
+              aria-label="Close"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Placeholder Cards */}
+          <div className="space-y-3">
+            {/* Card 1 */}
+            <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/10">
+              <img
+                src="/images/pin_lightning.webp"
+                alt="Outlet pin"
+                loading="lazy"
+                className="w-16 h-16 object-contain rounded-lg"
+              />
+              <div>
+                <div className="font-medium">User Named Title</div>
+                <div className="text-sm opacity-70">123 University Ave, Waterloo, ON LH387H</div>
+              </div>
+            </div>
+            
+            {/* Card 2 */}
+            <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/10">
+              <img
+                src="/images/pin_lightning.webp"
+                alt="Outlet pin"
+                loading="lazy"
+                className="w-16 h-16 object-contain rounded-lg"
+              />
+              <div>
+                <div className="font-medium">User Named Title</div>
+                <div className="text-sm opacity-70">123 University Ave, Waterloo, ON LH387H</div>
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="flex items-center space-x-3 p-3 rounded-lg bg-white/10">
+              <img
+                src="/images/pin_lightning.webp"
+                alt="Outlet pin"
+                loading="lazy"
+                className="w-16 h-16 object-contain rounded-lg"
+              />
+              <div>
+                <div className="font-medium">User Named Title</div>
+                <div className="text-sm opacity-70">123 University Ave, Waterloo, ON LH387H</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Outlet 5-Step Wizard Modal */}
       {showAddOutlet && (
