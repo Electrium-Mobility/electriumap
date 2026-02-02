@@ -720,12 +720,12 @@ const MapBox = forwardRef<{
               "interpolate",
               ["linear"],
               ["heatmap-density"],
-              0, "rgba(33,102,172,0)",
-              0.2, "rgb(103,169,207)",
-              0.4, "rgb(209,229,240)",
-              0.6, "rgb(253,219,199)",
-              0.8, "rgb(239,138,98)",
-              1, "rgb(178,24,43)"
+              0, "rgba(232,245,233,0)",    // transparent light green
+              0.2, "rgb(200,230,201)",      // very light green
+              0.4, "rgb(165,214,167)",      // light green
+              0.6, "rgb(129,199,132)",      // light-medium green
+              0.8, "rgb(102,187,106)",      // medium green
+              1, "rgb(46,125,50)"           // #2E7D32
             ],
             "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 0, 1, 2, 4, 3, 8, 4, 12],
             "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 1, 9, 0.8, 10, 0.5, 11, 0]
@@ -903,12 +903,12 @@ const MapBox = forwardRef<{
               "interpolate",
               ["linear"],
               ["heatmap-density"],
-              0, "rgba(33,102,172,0)",
-              0.2, "rgb(103,169,207)",
-              0.4, "rgb(209,229,240)",
-              0.6, "rgb(253,219,199)",
-              0.8, "rgb(239,138,98)",
-              1, "rgb(178,24,43)"
+              0, "rgba(232,245,233,0)",    // transparent light green
+              0.2, "rgb(200,230,201)",      // very light green
+              0.4, "rgb(165,214,167)",      // light green
+              0.6, "rgb(129,199,132)",      // light-medium green
+              0.8, "rgb(102,187,106)",      // medium green
+              1, "rgb(46,125,50)"           // #2E7D32
             ],
             "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 1, 1, 2, 2, 3, 4, 4, 6, 5, 8, 6, 12, 7, 16, 8, 18, 9, 20],
             "heatmap-opacity": ["interpolate", ["linear"], ["zoom"], 7, 1, 9, 0.8, 10, 0.5, 11, 0]
