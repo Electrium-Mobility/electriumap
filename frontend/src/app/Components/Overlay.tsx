@@ -520,7 +520,14 @@ const AddOutlet: React.FC<OverlayProps> = ({
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [vehicles, setVehicles] = useState<Array<{ id: string, title: string, type: string }>>([]);
-  const [userOutlets, setUserOutlets] = useState<Array<{ id: string, locationName: string }>>([]);
+  const [userOutlets, setUserOutlets] = useState<Array<{ //store user's shared outlets with coordinates for fly-to functionality
+    id: string; 
+    locationName: string; 
+    latitude?: number; 
+    longitude?: number;
+    lat?: number;
+    lng?: number;
+  }>>([]);
   const [profileImageUrl, setProfileImageUrl] = useState("");
   const [isUpdatingProfileImage, setIsUpdatingProfileImage] = useState(false);
   
@@ -666,26 +673,29 @@ const AddOutlet: React.FC<OverlayProps> = ({
               })) as Array<{ id: string, title: string, type: string }>;
               setVehicles(vehiclesData);
 
-              // Fetch user's outlet references
-              const userOutletsRef = collection(db, "Users", user.uid, "Outlets");
-              const userOutletsSnap = await getDocs(userOutletsRef);
+              //Fetch user's outlets
+              try {
+                const res = await fetch(`/api/my-outlets`);
+                
+                //Check if the response is successful
+                if (res.ok) {
+                  const data = await res.json();
 
-              // Fetch the actual outlet documents
-              const outletPromises = userOutletsSnap.docs.map(async (docSnap) => {
-                const outletRef = doc(db, "Outlets", docSnap.id);
-                const outletSnap = await getDoc(outletRef);
-                if (outletSnap.exists()) {
-                  return {
-                    id: outletSnap.id,
-                    locationName: (outletSnap.data() as any).locationName || "Unknown Location",
-                    ...(outletSnap.data() as any),
-                  };
+                  //Verify data exists and is an array
+                  if (data && Array.isArray(data)) {
+                    setUserOutlets(data);
+                  } 
+                  else {
+                    console.error("No outlets returned from /api/my-outlets");
+                  }
+                } 
+                else {
+                  console.error("Failed to fetch outlets, status:", res.status);
                 }
-                return null;
-              });
-
-              const outlets = (await Promise.all(outletPromises)).filter(Boolean) as any[];
-              setUserOutlets(outlets);
+              } 
+              catch(error) {
+                console.error("Error loading user outlets from /api/my-outlets", error);
+              }
             }
           }
         } else {
@@ -1584,6 +1594,19 @@ const AddOutlet: React.FC<OverlayProps> = ({
                   userOutlets.map((outlet) => (
                     <button
                       key={outlet.id}
+                      
+                      onClick={() => {
+                        const lat = outlet.latitude ?? outlet.lat;
+                        const lng = outlet.longitude ?? outlet.lng;
+                        
+                        if (lat != null && lng != null) {
+                          setShowSettings(false);
+                          onSearchSelect?.(lng, lat);
+                        } 
+                        else {
+                          console.warn("Outlet missing coordinates:", outlet);
+                        }
+                      }}
                       className={`flex items-center justify-between w-full px-4 py-2 rounded-md h-12 ${lightMode ? "hover:bg-lime-600/30" : "hover:bg-lime-900"}`}
                     >
                       <span className="truncate max-w-[280px]" title={outlet.locationName}>
