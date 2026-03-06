@@ -95,7 +95,7 @@ const MapBox = forwardRef<{
   
   //Drops pin at current location 
   const dropPinAt = (lat: number, lng: number) => {
-    const land = isOnLand(lng, lat);
+    const land = isOnLand(lat, lng);
     if (!land) {
       console.log("Dropped point is in water — ignoring.");
       return;
@@ -547,7 +547,7 @@ const MapBox = forwardRef<{
         if (targetEl && targetEl.closest(".mapboxgl-marker")) return;
 
         const { lng, lat } = e.lngLat;
-        if (!isOnLand(lng, lat)) return;
+        if (!isOnLand(lat, lng)) return;
 
         const zoom = map.getZoom();
 
